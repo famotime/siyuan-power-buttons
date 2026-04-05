@@ -397,15 +397,15 @@
                   type="button"
                   class="switch-button"
                   :class="{ 'is-on': config.experimental.clickSequenceAdapter }"
-                  title="为后续实验点击序列预留，目前尚未实现"
-                  aria-label="为后续实验点击序列预留，目前尚未实现"
+                  :title="config.experimental.clickSequenceAdapter ? '关闭实验点击序列适配' : '开启实验点击序列适配'"
+                  :aria-label="config.experimental.clickSequenceAdapter ? '关闭实验点击序列适配' : '开启实验点击序列适配'"
                   @click="toggleExperimentalFlag('clickSequenceAdapter')"
                 >
                   <span class="switch-button__dot" />
                 </button>
               </label>
               <div class="form-grid__full">
-                <small>实验能力默认关闭。快捷键适配依赖当前焦点和思源版本，失败时会自动回退并提示。</small>
+                <small>实验能力默认关闭。快捷键适配依赖当前焦点；点击序列依赖当前 DOM 结构，两者都可能随思源版本变化失效。</small>
               </div>
             </div>
           </section>
@@ -493,6 +493,77 @@
                 <div class="form-grid__full">
                   <small v-if="!config.experimental.shortcutAdapter">实验快捷键适配当前未启用。即使保存按钮，运行时也会提示未启用或无法执行。</small>
                   <small v-else>会优先按思源 keymap 反查命令，再决定回退到稳定命令执行或模拟按键。</small>
+                </div>
+              </template>
+
+              <template v-else-if="selectedItem.actionType === 'experimental-click-sequence'">
+                <div class="form-grid__full click-sequence-editor">
+                  <div class="click-sequence-editor__header">
+                    <span>点击步骤</span>
+                    <button class="b3-button b3-button--outline" type="button" @click="addClickSequenceStep">新增步骤</button>
+                  </div>
+
+                  <div
+                    v-for="(step, index) in selectedItem.experimentalClickSequence!.steps"
+                    :key="`${selectedItem.id}-step-${index}`"
+                    class="click-sequence-step"
+                  >
+                    <div class="click-sequence-step__title">
+                      <strong>步骤 {{ index + 1 }}</strong>
+                      <button
+                        class="b3-button b3-button--outline"
+                        type="button"
+                        :disabled="selectedItem.experimentalClickSequence!.steps.length <= 1"
+                        @click="removeClickSequenceStep(index)"
+                      >
+                        删除
+                      </button>
+                    </div>
+                    <div class="form-grid">
+                      <label class="form-grid__full">
+                        <span>选择器</span>
+                        <input
+                          v-model="step.selector"
+                          class="b3-text-field"
+                          placeholder="例如：barSettings / text:复制块引用 / .b3-menu__item"
+                          @change="syncExperimentalClickSequence"
+                        />
+                      </label>
+                      <label>
+                        <span>等待超时(ms)</span>
+                        <input v-model.number="step.timeoutMs" class="b3-text-field" type="number" min="0" step="100" @change="syncExperimentalClickSequence" />
+                      </label>
+                      <label>
+                        <span>重试次数</span>
+                        <input v-model.number="step.retryCount" class="b3-text-field" type="number" min="0" step="1" @change="syncExperimentalClickSequence" />
+                      </label>
+                      <label>
+                        <span>重试间隔(ms)</span>
+                        <input v-model.number="step.retryDelayMs" class="b3-text-field" type="number" min="0" step="50" @change="syncExperimentalClickSequence" />
+                      </label>
+                      <label>
+                        <span>步骤后延迟(ms)</span>
+                        <input v-model.number="step.delayAfterMs" class="b3-text-field" type="number" min="0" step="50" @change="syncExperimentalClickSequence" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <label class="form-switch">
+                  <span>失败即停止</span>
+                  <button
+                    type="button"
+                    class="switch-button"
+                    :class="{ 'is-on': selectedItem.experimentalClickSequence!.stopOnFailure }"
+                    :title="selectedItem.experimentalClickSequence!.stopOnFailure ? '关闭失败即停止' : '开启失败即停止'"
+                    :aria-label="selectedItem.experimentalClickSequence!.stopOnFailure ? '关闭失败即停止' : '开启失败即停止'"
+                    @click="toggleSelectedClickSequenceStopOnFailure"
+                  >
+                    <span class="switch-button__dot" />
+                  </button>
+                </label>
+                <div class="form-grid__full">
+                  <small v-if="!config.experimental.clickSequenceAdapter">实验点击序列当前未启用。保存配置后，运行时仍会被拦截并提示。</small>
+                  <small v-else>支持简单标识符、`text:` 文本匹配和原始 CSS 选择器。失败提示会标出具体步骤。</small>
                 </div>
               </template>
 
@@ -611,6 +682,8 @@ import {
 } from "@/shared/utils";
 import type {
   BuiltinCommandDefinition,
+  ClickSequenceStep,
+  ExperimentalClickSequenceConfig,
   PluginCommandDefinition,
   ExperimentalShortcutConfig,
   PowerButtonItem,
@@ -791,8 +864,11 @@ function applyActionDefaults(): void {
   } else if (selectedItem.value.actionType === "custom-action") {
     selectedItem.value.actionId = customActions[0]?.id || "open-settings";
   } else if (selectedItem.value.actionType === "experimental-shortcut") {
-    selectedItem.value.actionId = selectedItem.value.experimentalShortcut?.shortcut || "Ctrl+B";
     selectedItem.value.experimentalShortcut = ensureExperimentalShortcut(selectedItem.value);
+    selectedItem.value.actionId = selectedItem.value.experimentalShortcut.shortcut || "Ctrl+B";
+  } else if (selectedItem.value.actionType === "experimental-click-sequence") {
+    selectedItem.value.experimentalClickSequence = ensureExperimentalClickSequence(selectedItem.value);
+    selectedItem.value.actionId = summarizeClickSequence(selectedItem.value.experimentalClickSequence);
   } else {
     selectedItem.value.actionId = "https://example.com";
   }
@@ -834,12 +910,51 @@ function ensureExperimentalShortcut(item: PowerButtonItem): ExperimentalShortcut
   return item.experimentalShortcut;
 }
 
+function createClickSequenceStep(overrides: Partial<ClickSequenceStep> = {}): ClickSequenceStep {
+  return {
+    selector: overrides.selector || "text:设置",
+    timeoutMs: overrides.timeoutMs ?? 5000,
+    retryCount: overrides.retryCount ?? 2,
+    retryDelayMs: overrides.retryDelayMs ?? 300,
+    delayAfterMs: overrides.delayAfterMs ?? 200,
+  };
+}
+
+function ensureExperimentalClickSequence(item: PowerButtonItem): ExperimentalClickSequenceConfig {
+  if (!item.experimentalClickSequence) {
+    item.experimentalClickSequence = {
+      steps: [createClickSequenceStep({
+        selector: item.actionId && item.actionId !== "globalSearch" ? item.actionId : "text:设置",
+      })],
+      stopOnFailure: true,
+    };
+  } else if (!item.experimentalClickSequence.steps.length) {
+    item.experimentalClickSequence.steps = [createClickSequenceStep()];
+  } else {
+    item.experimentalClickSequence.steps = item.experimentalClickSequence.steps.map(step => createClickSequenceStep(step));
+  }
+  return item.experimentalClickSequence;
+}
+
+function summarizeClickSequence(sequence: ExperimentalClickSequenceConfig): string {
+  return sequence.steps[0]?.selector || "text:设置";
+}
+
 function syncExperimentalShortcut(): void {
   if (!selectedItem.value) {
     return;
   }
   const config = ensureExperimentalShortcut(selectedItem.value);
   selectedItem.value.actionId = config.shortcut || "Ctrl+B";
+  void persist();
+}
+
+function syncExperimentalClickSequence(): void {
+  if (!selectedItem.value) {
+    return;
+  }
+  const config = ensureExperimentalClickSequence(selectedItem.value);
+  selectedItem.value.actionId = summarizeClickSequence(config);
   void persist();
 }
 
@@ -850,6 +965,39 @@ function toggleSelectedShortcutOption(key: "sendEscapeBefore" | "allowDirectWind
   const config = ensureExperimentalShortcut(selectedItem.value);
   config[key] = !config[key];
   selectedItem.value.actionId = config.shortcut || "Ctrl+B";
+  void persist();
+}
+
+function addClickSequenceStep(): void {
+  if (!selectedItem.value) {
+    return;
+  }
+  const config = ensureExperimentalClickSequence(selectedItem.value);
+  config.steps.push(createClickSequenceStep());
+  selectedItem.value.actionId = summarizeClickSequence(config);
+  void persist();
+}
+
+function removeClickSequenceStep(index: number): void {
+  if (!selectedItem.value) {
+    return;
+  }
+  const config = ensureExperimentalClickSequence(selectedItem.value);
+  if (config.steps.length <= 1) {
+    return;
+  }
+  config.steps.splice(index, 1);
+  selectedItem.value.actionId = summarizeClickSequence(config);
+  void persist();
+}
+
+function toggleSelectedClickSequenceStopOnFailure(): void {
+  if (!selectedItem.value) {
+    return;
+  }
+  const config = ensureExperimentalClickSequence(selectedItem.value);
+  config.stopOnFailure = !config.stopOnFailure;
+  selectedItem.value.actionId = summarizeClickSequence(config);
   void persist();
 }
 

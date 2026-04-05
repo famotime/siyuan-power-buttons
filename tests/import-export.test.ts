@@ -88,4 +88,55 @@ describe("config import and export", () => {
 
     expect(roundTripped).toEqual(config);
   });
+
+  it("round-trips experimental click sequence settings through import/export", () => {
+    const config = importConfigFromJson(JSON.stringify({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "exp-sequence",
+          title: "打开设置面板",
+          visible: true,
+          iconType: "builtin",
+          iconValue: "iconSettings",
+          surface: "topbar",
+          order: 0,
+          actionType: "experimental-click-sequence",
+          actionId: "barSettings",
+          tooltip: "实验点击序列",
+          experimentalClickSequence: {
+            stopOnFailure: true,
+            steps: [
+              {
+                selector: "barSettings",
+                timeoutMs: 3000,
+                retryCount: 1,
+                retryDelayMs: 100,
+                delayAfterMs: 50,
+              },
+              {
+                selector: "text:设置",
+                timeoutMs: 5000,
+                retryCount: 2,
+                retryDelayMs: 300,
+                delayAfterMs: 200,
+              },
+            ],
+          },
+        },
+      ],
+      experimental: {
+        nativeToolbarControl: false,
+        internalCommandAdapter: false,
+        shortcutAdapter: false,
+        clickSequenceAdapter: true,
+      },
+    }));
+
+    const serialized = exportConfigAsJson(config);
+    const roundTripped = importConfigFromJson(serialized);
+
+    expect(roundTripped).toEqual(config);
+  });
 });

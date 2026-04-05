@@ -22,6 +22,7 @@ export const ACTION_TYPES = [
   "custom-action",
   "open-url",
   "experimental-shortcut",
+  "experimental-click-sequence",
 ] as const;
 
 export const ICON_TYPES = [
@@ -42,6 +43,19 @@ export interface ExperimentalShortcutConfig {
   allowDirectWindowDispatch: boolean;
 }
 
+export interface ClickSequenceStep {
+  selector: string;
+  timeoutMs: number;
+  retryCount: number;
+  retryDelayMs: number;
+  delayAfterMs: number;
+}
+
+export interface ExperimentalClickSequenceConfig {
+  steps: ClickSequenceStep[];
+  stopOnFailure: boolean;
+}
+
 export interface PowerButtonItem {
   id: string;
   title: string;
@@ -54,6 +68,7 @@ export interface PowerButtonItem {
   actionId: string;
   tooltip?: string;
   experimentalShortcut?: ExperimentalShortcutConfig;
+  experimentalClickSequence?: ExperimentalClickSequenceConfig;
 }
 
 export interface PowerButtonsConfig {

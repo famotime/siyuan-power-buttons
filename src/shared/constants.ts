@@ -21,6 +21,7 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   "custom-action": "插件动作",
   "open-url": "打开链接",
   "experimental-shortcut": "实验：快捷键适配",
+  "experimental-click-sequence": "实验：点击序列",
 };
 
 export const CUSTOM_ACTIONS = [

@@ -16,9 +16,12 @@ export class CommandExecutor {
     openSetting: () => void | Promise<void>;
     runBuiltinCommand?: (commandId: string) => boolean | Promise<boolean>;
     runExperimentalShortcut?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalShortcut">) => boolean | Promise<boolean>;
+    runExperimentalClickSequence?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalClickSequence">) => boolean | Promise<boolean>;
   }) {}
 
-  async execute(item: Pick<PowerButtonItem, "actionType" | "actionId">): Promise<void> {
+  async execute(
+    item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalShortcut" | "experimentalClickSequence">,
+  ): Promise<void> {
     switch (item.actionType) {
       case "builtin-global-command":
         if (typeof this.options.plugin.globalCommand === "function") {
@@ -46,6 +49,12 @@ export class CommandExecutor {
           return;
         }
         await this.options.notify?.(`实验快捷键当前无法执行：${item.actionId}`, "error");
+        return;
+      case "experimental-click-sequence":
+        if (await this.options.runExperimentalClickSequence?.(item)) {
+          return;
+        }
+        await this.options.notify?.(`实验点击序列当前无法执行：${item.actionId}`, "error");
         return;
       default:
         return;

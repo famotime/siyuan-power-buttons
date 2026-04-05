@@ -17,6 +17,8 @@ import {
 } from "@/shared/utils";
 import type {
   ActionType,
+  ClickSequenceStep,
+  ExperimentalClickSequenceConfig,
   ExperimentalShortcutConfig,
   IconType,
   PowerButtonItem,
@@ -68,6 +70,35 @@ function sanitizeExperimentalShortcut(raw: Record<string, unknown>, actionId: st
   };
 }
 
+function sanitizeClickSequenceStep(value: unknown, fallbackSelector: string): ClickSequenceStep {
+  const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
+
+  return {
+    selector: typeof raw.selector === "string" && raw.selector.trim()
+      ? raw.selector.trim()
+      : fallbackSelector,
+    timeoutMs: Number.isFinite(raw.timeoutMs) && Number(raw.timeoutMs) >= 0 ? Number(raw.timeoutMs) : 5000,
+    retryCount: Number.isFinite(raw.retryCount) && Number(raw.retryCount) >= 0 ? Number(raw.retryCount) : 2,
+    retryDelayMs: Number.isFinite(raw.retryDelayMs) && Number(raw.retryDelayMs) >= 0 ? Number(raw.retryDelayMs) : 300,
+    delayAfterMs: Number.isFinite(raw.delayAfterMs) && Number(raw.delayAfterMs) >= 0 ? Number(raw.delayAfterMs) : 200,
+  };
+}
+
+function sanitizeExperimentalClickSequence(raw: Record<string, unknown>, actionId: string): ExperimentalClickSequenceConfig {
+  const input = raw.experimentalClickSequence && typeof raw.experimentalClickSequence === "object"
+    ? raw.experimentalClickSequence as Record<string, unknown>
+    : {};
+  const fallbackSelector = actionId || "text:设置";
+  const steps = Array.isArray(input.steps) && input.steps.length
+    ? input.steps.map(step => sanitizeClickSequenceStep(step, fallbackSelector))
+    : [sanitizeClickSequenceStep(undefined, fallbackSelector)];
+
+  return {
+    steps,
+    stopOnFailure: input.stopOnFailure !== false,
+  };
+}
+
 function shouldMigrateLegacyOpenSettingsPreset(raw: Record<string, unknown>, actionType: ActionType, actionId: string): boolean {
   if (actionType !== "builtin-global-command" || actionId !== "fileTree") {
     return false;
@@ -96,6 +127,8 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
       actionId = DEFAULT_CUSTOM_ACTION;
     } else if (actionType === "experimental-shortcut") {
       actionId = "Ctrl+B";
+    } else if (actionType === "experimental-click-sequence") {
+      actionId = "text:设置";
     } else {
       actionId = "globalSearch";
     }
@@ -121,6 +154,10 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
 
   if (actionType === "experimental-shortcut") {
     sanitizedItem.experimentalShortcut = sanitizeExperimentalShortcut(raw, actionId);
+  }
+
+  if (actionType === "experimental-click-sequence") {
+    sanitizedItem.experimentalClickSequence = sanitizeExperimentalClickSequence(raw, actionId);
   }
 
   return sanitizedItem;

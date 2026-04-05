@@ -12,6 +12,7 @@ import {
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
+  executeExperimentalClickSequence,
   executeExperimentalShortcut,
   executeBuiltinCommandByDom,
   PLUGIN_COMMANDS,
@@ -41,25 +42,43 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     },
     openSetting: () => this.openSetting(),
     runBuiltinCommand: commandId => executeBuiltinCommandByDom(commandId, document),
-    runExperimentalShortcut: item => executeExperimentalShortcut(item, {
-      getKeymap: () => (window as typeof window & { siyuan?: { config?: { keymap?: unknown } } }).siyuan?.config?.keymap as never,
-      executeBuiltinCommand: commandId => {
-        const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
-        if (typeof pluginWithGlobal.globalCommand === "function") {
-          pluginWithGlobal.globalCommand(commandId);
+    runExperimentalShortcut: item => {
+      if (!this.configStore.getConfig().experimental.shortcutAdapter) {
+        return false;
+      }
+      return executeExperimentalShortcut(item, {
+        getKeymap: () => (window as typeof window & { siyuan?: { config?: { keymap?: unknown } } }).siyuan?.config?.keymap as never,
+        executeBuiltinCommand: commandId => {
+          const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
+          if (typeof pluginWithGlobal.globalCommand === "function") {
+            pluginWithGlobal.globalCommand(commandId);
+            return true;
+          }
+          return executeBuiltinCommandByDom(commandId, document);
+        },
+        executePluginCommand: async commandId => {
+          const handler = this.pluginCommandHandlers.get(commandId);
+          if (!handler) {
+            return false;
+          }
+          await handler();
           return true;
-        }
-        return executeBuiltinCommandByDom(commandId, document);
-      },
-      executePluginCommand: async commandId => {
-        const handler = this.pluginCommandHandlers.get(commandId);
-        if (!handler) {
-          return false;
-        }
-        await handler();
-        return true;
-      },
-    }),
+        },
+      });
+    },
+    runExperimentalClickSequence: item => {
+      if (!this.configStore.getConfig().experimental.clickSequenceAdapter) {
+        return false;
+      }
+      return executeExperimentalClickSequence(item, {
+        document,
+        root: document,
+        windowTarget: window,
+        onStepError: ({ index, selector }) => {
+          showMessage(`点击序列第 ${index + 1} 步失败：${selector}`, 5000, "error");
+        },
+      });
+    },
   });
 
   public readonly version = pluginInfo.version;

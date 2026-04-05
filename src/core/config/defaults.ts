@@ -8,6 +8,8 @@ import {
 } from "@/shared/utils";
 import type {
   ActionType,
+  ClickSequenceStep,
+  ExperimentalClickSequenceConfig,
   ExperimentalShortcutConfig,
   IconType,
   PowerButtonItem,
@@ -24,9 +26,33 @@ function createExperimentalShortcutConfig(overrides: Partial<ExperimentalShortcu
   };
 }
 
+function createClickSequenceStep(overrides: Partial<ClickSequenceStep> = {}): ClickSequenceStep {
+  return {
+    selector: overrides.selector || "text:设置",
+    timeoutMs: overrides.timeoutMs ?? 5000,
+    retryCount: overrides.retryCount ?? 2,
+    retryDelayMs: overrides.retryDelayMs ?? 300,
+    delayAfterMs: overrides.delayAfterMs ?? 200,
+  };
+}
+
+function createExperimentalClickSequenceConfig(overrides: Partial<ExperimentalClickSequenceConfig> = {}): ExperimentalClickSequenceConfig {
+  return {
+    steps: overrides.steps?.length
+      ? overrides.steps.map(step => createClickSequenceStep(step))
+      : [createClickSequenceStep()],
+    stopOnFailure: overrides.stopOnFailure ?? true,
+  };
+}
+
 export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): PowerButtonItem {
   const actionType = (overrides.actionType || "builtin-global-command") as ActionType;
-  const actionId = overrides.actionId || (actionType === "experimental-shortcut" ? "Ctrl+B" : "globalSearch");
+  const actionId = overrides.actionId
+    || (actionType === "experimental-shortcut"
+      ? "Ctrl+B"
+      : actionType === "experimental-click-sequence"
+        ? "text:设置"
+        : "globalSearch");
 
   return {
     id: overrides.id || createId(),
@@ -47,6 +73,9 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
           allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
         })
       : overrides.experimentalShortcut,
+    experimentalClickSequence: actionType === "experimental-click-sequence"
+      ? createExperimentalClickSequenceConfig(overrides.experimentalClickSequence)
+      : overrides.experimentalClickSequence,
   };
 }
 

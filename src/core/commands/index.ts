@@ -1,5 +1,7 @@
 export * from "@/core/commands/catalog";
 export * from "@/core/commands/builtin-dom";
+export * from "@/core/commands/click-sequence";
+export * from "@/core/commands/dom-query";
 export * from "@/core/commands/experimental-shortcut";
 export * from "@/core/commands/executor";
 export * from "@/core/commands/plugin-commands";

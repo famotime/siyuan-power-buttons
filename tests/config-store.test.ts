@@ -150,4 +150,72 @@ describe("config store model", () => {
     expect(config.experimental.shortcutAdapter).toBe(true);
     expect(config.experimental.clickSequenceAdapter).toBe(false);
   });
+
+  it("preserves experimental click sequence items and adapter flags", () => {
+    const config = sanitizeConfig({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "exp-sequence",
+          title: "打开设置面板",
+          visible: true,
+          iconType: "builtin",
+          iconValue: "iconSettings",
+          surface: "topbar",
+          order: 0,
+          actionType: "experimental-click-sequence",
+          actionId: "barSettings",
+          tooltip: "实验点击序列",
+          experimentalClickSequence: {
+            stopOnFailure: true,
+            steps: [
+              {
+                selector: "barSettings",
+                timeoutMs: 3000,
+                retryCount: 1,
+                retryDelayMs: 100,
+                delayAfterMs: 50,
+              },
+              {
+                selector: "text:设置",
+                timeoutMs: 5000,
+                retryCount: 2,
+                retryDelayMs: 300,
+                delayAfterMs: 200,
+              },
+            ],
+          },
+        },
+      ],
+      experimental: {
+        nativeToolbarControl: false,
+        internalCommandAdapter: false,
+        shortcutAdapter: false,
+        clickSequenceAdapter: true,
+      },
+    });
+
+    expect(config.items[0].actionType).toBe("experimental-click-sequence");
+    expect(config.items[0].experimentalClickSequence).toEqual({
+      stopOnFailure: true,
+      steps: [
+        {
+          selector: "barSettings",
+          timeoutMs: 3000,
+          retryCount: 1,
+          retryDelayMs: 100,
+          delayAfterMs: 50,
+        },
+        {
+          selector: "text:设置",
+          timeoutMs: 5000,
+          retryCount: 2,
+          retryDelayMs: 300,
+          delayAfterMs: 200,
+        },
+      ],
+    });
+    expect(config.experimental.clickSequenceAdapter).toBe(true);
+  });
 });

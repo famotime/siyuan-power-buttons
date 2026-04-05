@@ -173,4 +173,70 @@ describe("command executor", () => {
 
     expect(notify).toHaveBeenCalledWith("实验快捷键当前无法执行：Ctrl+B", "error");
   });
+
+  it("dispatches experimental click sequences through the injected runner", async () => {
+    const runExperimentalClickSequence = vi.fn(() => true);
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      openUrl: vi.fn(),
+      openSetting: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      runExperimentalClickSequence,
+    });
+
+    const item = createItem({
+      actionType: "experimental-click-sequence" as never,
+      actionId: "barSettings",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "barSettings",
+            timeoutMs: 3000,
+            retryCount: 1,
+            retryDelayMs: 100,
+            delayAfterMs: 50,
+          },
+        ],
+      },
+    });
+
+    await executor.execute(item);
+
+    expect(runExperimentalClickSequence).toHaveBeenCalledWith(item);
+  });
+
+  it("notifies when an experimental click sequence cannot be executed", async () => {
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify,
+      openUrl: vi.fn(),
+      openSetting: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      runExperimentalClickSequence: vi.fn(() => false),
+    });
+
+    await executor.execute(createItem({
+      actionType: "experimental-click-sequence" as never,
+      actionId: "barSettings",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "barSettings",
+            timeoutMs: 3000,
+            retryCount: 1,
+            retryDelayMs: 100,
+            delayAfterMs: 50,
+          },
+        ],
+      },
+    }));
+
+    expect(notify).toHaveBeenCalledWith("实验点击序列当前无法执行：barSettings", "error");
+  });
 });
