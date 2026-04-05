@@ -21,6 +21,7 @@ export const ACTION_TYPES = [
   "plugin-command",
   "custom-action",
   "open-url",
+  "experimental-shortcut",
 ] as const;
 
 export const ICON_TYPES = [
@@ -34,6 +35,13 @@ export type ConfigurableSurfaceType = (typeof CONFIGURABLE_SURFACES)[number];
 export type ActionType = (typeof ACTION_TYPES)[number];
 export type IconType = (typeof ICON_TYPES)[number];
 
+export interface ExperimentalShortcutConfig {
+  shortcut: string;
+  sendEscapeBefore: boolean;
+  dispatchTarget: "auto" | "active-editor" | "window" | "body";
+  allowDirectWindowDispatch: boolean;
+}
+
 export interface PowerButtonItem {
   id: string;
   title: string;
@@ -45,15 +53,18 @@ export interface PowerButtonItem {
   actionType: ActionType;
   actionId: string;
   tooltip?: string;
+  experimentalShortcut?: ExperimentalShortcutConfig;
 }
 
 export interface PowerButtonsConfig {
-  version: 1;
+  version: 2;
   desktopOnly: boolean;
   items: PowerButtonItem[];
   experimental: {
     nativeToolbarControl: boolean;
     internalCommandAdapter: boolean;
+    shortcutAdapter: boolean;
+    clickSequenceAdapter: boolean;
   };
 }
 

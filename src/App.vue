@@ -376,6 +376,41 @@
           </section>
 
           <section class="editor-card">
+            <div class="editor-card__title">实验功能</div>
+            <div class="form-grid">
+              <label class="form-switch">
+                <span>快捷键适配</span>
+                <button
+                  type="button"
+                  class="switch-button"
+                  :class="{ 'is-on': config.experimental.shortcutAdapter }"
+                  :title="config.experimental.shortcutAdapter ? '关闭实验快捷键适配' : '开启实验快捷键适配'"
+                  :aria-label="config.experimental.shortcutAdapter ? '关闭实验快捷键适配' : '开启实验快捷键适配'"
+                  @click="toggleExperimentalFlag('shortcutAdapter')"
+                >
+                  <span class="switch-button__dot" />
+                </button>
+              </label>
+              <label class="form-switch">
+                <span>点击序列适配</span>
+                <button
+                  type="button"
+                  class="switch-button"
+                  :class="{ 'is-on': config.experimental.clickSequenceAdapter }"
+                  title="为后续实验点击序列预留，目前尚未实现"
+                  aria-label="为后续实验点击序列预留，目前尚未实现"
+                  @click="toggleExperimentalFlag('clickSequenceAdapter')"
+                >
+                  <span class="switch-button__dot" />
+                </button>
+              </label>
+              <div class="form-grid__full">
+                <small>实验能力默认关闭。快捷键适配依赖当前焦点和思源版本，失败时会自动回退并提示。</small>
+              </div>
+            </div>
+          </section>
+
+          <section class="editor-card">
             <div class="editor-card__title">动作设置</div>
             <div class="form-grid">
               <label>
@@ -409,6 +444,57 @@
                   <option v-for="action in customActions" :key="action.id" :value="action.id">{{ action.title }}</option>
                 </select>
               </label>
+
+              <template v-else-if="selectedItem.actionType === 'experimental-shortcut'">
+                <label>
+                  <span>快捷键</span>
+                  <input
+                    v-model="selectedItem.experimentalShortcut!.shortcut"
+                    class="b3-text-field"
+                    placeholder="例如：Ctrl+B / Alt+5"
+                    @change="syncExperimentalShortcut"
+                  />
+                </label>
+                <label>
+                  <span>派发目标</span>
+                  <select v-model="selectedItem.experimentalShortcut!.dispatchTarget" class="b3-select" @change="syncExperimentalShortcut">
+                    <option value="auto">自动</option>
+                    <option value="active-editor">活动编辑器</option>
+                    <option value="body">页面主体</option>
+                    <option value="window">窗口</option>
+                  </select>
+                </label>
+                <label class="form-switch">
+                  <span>先发 Escape</span>
+                  <button
+                    type="button"
+                    class="switch-button"
+                    :class="{ 'is-on': selectedItem.experimentalShortcut!.sendEscapeBefore }"
+                    :title="selectedItem.experimentalShortcut!.sendEscapeBefore ? '关闭预先发送 Escape' : '开启预先发送 Escape'"
+                    :aria-label="selectedItem.experimentalShortcut!.sendEscapeBefore ? '关闭预先发送 Escape' : '开启预先发送 Escape'"
+                    @click="toggleSelectedShortcutOption('sendEscapeBefore')"
+                  >
+                    <span class="switch-button__dot" />
+                  </button>
+                </label>
+                <label class="form-switch">
+                  <span>允许直接发到 window</span>
+                  <button
+                    type="button"
+                    class="switch-button"
+                    :class="{ 'is-on': selectedItem.experimentalShortcut!.allowDirectWindowDispatch }"
+                    :title="selectedItem.experimentalShortcut!.allowDirectWindowDispatch ? '关闭 window 直接派发' : '开启 window 直接派发'"
+                    :aria-label="selectedItem.experimentalShortcut!.allowDirectWindowDispatch ? '关闭 window 直接派发' : '开启 window 直接派发'"
+                    @click="toggleSelectedShortcutOption('allowDirectWindowDispatch')"
+                  >
+                    <span class="switch-button__dot" />
+                  </button>
+                </label>
+                <div class="form-grid__full">
+                  <small v-if="!config.experimental.shortcutAdapter">实验快捷键适配当前未启用。即使保存按钮，运行时也会提示未启用或无法执行。</small>
+                  <small v-else>会优先按思源 keymap 反查命令，再决定回退到稳定命令执行或模拟按键。</small>
+                </div>
+              </template>
 
               <label v-else>
                 <span>目标链接</span>
@@ -526,6 +612,7 @@ import {
 import type {
   BuiltinCommandDefinition,
   PluginCommandDefinition,
+  ExperimentalShortcutConfig,
   PowerButtonItem,
   PowerButtonsConfig,
   PreviewButtonItem,
@@ -703,6 +790,9 @@ function applyActionDefaults(): void {
     selectedItem.value.actionId = pluginCommands.value[0]?.id || "open-settings";
   } else if (selectedItem.value.actionType === "custom-action") {
     selectedItem.value.actionId = customActions[0]?.id || "open-settings";
+  } else if (selectedItem.value.actionType === "experimental-shortcut") {
+    selectedItem.value.actionId = selectedItem.value.experimentalShortcut?.shortcut || "Ctrl+B";
+    selectedItem.value.experimentalShortcut = ensureExperimentalShortcut(selectedItem.value);
   } else {
     selectedItem.value.actionId = "https://example.com";
   }
@@ -729,6 +819,42 @@ function selectBuiltinIcon(value: string): void {
   }
   selectedItem.value.iconType = "builtin";
   selectedItem.value.iconValue = value;
+  void persist();
+}
+
+function ensureExperimentalShortcut(item: PowerButtonItem): ExperimentalShortcutConfig {
+  if (!item.experimentalShortcut) {
+    item.experimentalShortcut = {
+      shortcut: item.actionId || "Ctrl+B",
+      sendEscapeBefore: false,
+      dispatchTarget: "auto",
+      allowDirectWindowDispatch: false,
+    };
+  }
+  return item.experimentalShortcut;
+}
+
+function syncExperimentalShortcut(): void {
+  if (!selectedItem.value) {
+    return;
+  }
+  const config = ensureExperimentalShortcut(selectedItem.value);
+  selectedItem.value.actionId = config.shortcut || "Ctrl+B";
+  void persist();
+}
+
+function toggleSelectedShortcutOption(key: "sendEscapeBefore" | "allowDirectWindowDispatch"): void {
+  if (!selectedItem.value) {
+    return;
+  }
+  const config = ensureExperimentalShortcut(selectedItem.value);
+  config[key] = !config[key];
+  selectedItem.value.actionId = config.shortcut || "Ctrl+B";
+  void persist();
+}
+
+function toggleExperimentalFlag(key: "shortcutAdapter" | "clickSequenceAdapter"): void {
+  config.experimental[key] = !config.experimental[key];
   void persist();
 }
 

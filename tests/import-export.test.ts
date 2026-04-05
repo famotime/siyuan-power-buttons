@@ -51,4 +51,41 @@ describe("config import and export", () => {
     expect(config.items[0].actionId).toBe("open-settings");
     expect(saveData).toHaveBeenCalledTimes(1);
   });
+
+  it("round-trips experimental shortcut settings through import/export", () => {
+    const config = importConfigFromJson(JSON.stringify({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "exp-shortcut",
+          title: "加粗",
+          visible: true,
+          iconType: "builtin",
+          iconValue: "iconBold",
+          surface: "topbar",
+          order: 0,
+          actionType: "experimental-shortcut",
+          actionId: "Ctrl+B",
+          tooltip: "实验快捷键",
+          experimentalShortcut: {
+            shortcut: "Ctrl+B",
+            sendEscapeBefore: true,
+            dispatchTarget: "active-editor",
+          },
+        },
+      ],
+      experimental: {
+        nativeToolbarControl: false,
+        internalCommandAdapter: false,
+        shortcutAdapter: true,
+        clickSequenceAdapter: false,
+      },
+    }));
+
+    const serialized = exportConfigAsJson(config);
+    const roundTripped = importConfigFromJson(serialized);
+
+    expect(roundTripped).toEqual(config);
+  });
 });

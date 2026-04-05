@@ -20,6 +20,7 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   "plugin-command": "插件命令",
   "custom-action": "插件动作",
   "open-url": "打开链接",
+  "experimental-shortcut": "实验：快捷键适配",
 };
 
 export const CUSTOM_ACTIONS = [

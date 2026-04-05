@@ -15,6 +15,7 @@ export class CommandExecutor {
     openUrl: (url: string) => void | Promise<void>;
     openSetting: () => void | Promise<void>;
     runBuiltinCommand?: (commandId: string) => boolean | Promise<boolean>;
+    runExperimentalShortcut?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalShortcut">) => boolean | Promise<boolean>;
   }) {}
 
   async execute(item: Pick<PowerButtonItem, "actionType" | "actionId">): Promise<void> {
@@ -39,6 +40,12 @@ export class CommandExecutor {
         return;
       case "open-url":
         await this.options.openUrl(item.actionId);
+        return;
+      case "experimental-shortcut":
+        if (await this.options.runExperimentalShortcut?.(item)) {
+          return;
+        }
+        await this.options.notify?.(`实验快捷键当前无法执行：${item.actionId}`, "error");
         return;
       default:
         return;

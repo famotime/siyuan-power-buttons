@@ -17,6 +17,7 @@ import {
 } from "@/shared/utils";
 import type {
   ActionType,
+  ExperimentalShortcutConfig,
   IconType,
   PowerButtonItem,
   PowerButtonsConfig,
@@ -50,6 +51,23 @@ function ensureIconType(value: unknown): IconType {
   return ICON_TYPES.includes(value as IconType) ? value as IconType : "builtin";
 }
 
+function sanitizeExperimentalShortcut(raw: Record<string, unknown>, actionId: string): ExperimentalShortcutConfig {
+  const input = raw.experimentalShortcut && typeof raw.experimentalShortcut === "object"
+    ? raw.experimentalShortcut as Record<string, unknown>
+    : {};
+
+  return {
+    shortcut: typeof input.shortcut === "string" && input.shortcut.trim()
+      ? input.shortcut.trim()
+      : actionId,
+    sendEscapeBefore: Boolean(input.sendEscapeBefore),
+    dispatchTarget: ["auto", "active-editor", "window", "body"].includes(String(input.dispatchTarget))
+      ? input.dispatchTarget as ExperimentalShortcutConfig["dispatchTarget"]
+      : "auto",
+    allowDirectWindowDispatch: Boolean(input.allowDirectWindowDispatch),
+  };
+}
+
 function shouldMigrateLegacyOpenSettingsPreset(raw: Record<string, unknown>, actionType: ActionType, actionId: string): boolean {
   if (actionType !== "builtin-global-command" || actionId !== "fileTree") {
     return false;
@@ -74,7 +92,13 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   let actionType = ensureActionType(raw.actionType);
   let actionId = typeof raw.actionId === "string" ? raw.actionId.trim() : "";
   if (!actionId) {
-    actionId = actionType === "custom-action" ? DEFAULT_CUSTOM_ACTION : "globalSearch";
+    if (actionType === "custom-action") {
+      actionId = DEFAULT_CUSTOM_ACTION;
+    } else if (actionType === "experimental-shortcut") {
+      actionId = "Ctrl+B";
+    } else {
+      actionId = "globalSearch";
+    }
   }
 
   if (shouldMigrateLegacyOpenSettingsPreset(raw, actionType, actionId)) {
@@ -82,7 +106,7 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
     actionId = DEFAULT_CUSTOM_ACTION;
   }
 
-  return {
+  const sanitizedItem: PowerButtonItem = {
     id: typeof raw.id === "string" && raw.id.trim() ? raw.id.trim() : fallback.id,
     title: safeTitle,
     visible: typeof raw.visible === "boolean" ? raw.visible : true,
@@ -94,6 +118,12 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
     actionId,
     tooltip: typeof raw.tooltip === "string" ? raw.tooltip : "",
   };
+
+  if (actionType === "experimental-shortcut") {
+    sanitizedItem.experimentalShortcut = sanitizeExperimentalShortcut(raw, actionId);
+  }
+
+  return sanitizedItem;
 }
 
 export function sanitizeConfig(input: unknown): PowerButtonsConfig {
@@ -104,12 +134,14 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
     : defaults.items;
 
   return {
-    version: 1,
+    version: 2,
     desktopOnly: typeof raw.desktopOnly === "boolean" ? raw.desktopOnly : true,
     items,
     experimental: {
       nativeToolbarControl: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).nativeToolbarControl),
       internalCommandAdapter: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).internalCommandAdapter),
+      shortcutAdapter: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).shortcutAdapter),
+      clickSequenceAdapter: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).clickSequenceAdapter),
     },
   };
 }

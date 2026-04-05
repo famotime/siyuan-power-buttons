@@ -7,15 +7,17 @@ import {
 import { CONFIGURABLE_SURFACES } from "@/shared/types";
 
 describe("config store model", () => {
-  it("creates a desktop-only default config with starter buttons", () => {
+  it("creates a desktop-only default config with starter buttons and disabled experimental adapters", () => {
     const config = createDefaultConfig();
 
-    expect(config.version).toBe(1);
+    expect(config.version).toBe(2);
     expect(config.desktopOnly).toBe(true);
     expect(config.items.length).toBeGreaterThanOrEqual(3);
     expect(config.items.every(item => item.visible)).toBe(true);
     expect(config.items.map(item => item.title)).toEqual(["全局搜索", "插件设置", "大纲"]);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
+    expect(config.experimental.shortcutAdapter).toBe(false);
+    expect(config.experimental.clickSequenceAdapter).toBe(false);
   });
 
   it("creates new buttons with a Chinese default title", () => {
@@ -42,12 +44,14 @@ describe("config store model", () => {
       experimental: null,
     });
 
-    expect(config.version).toBe(1);
+    expect(config.version).toBe(2);
     expect(config.desktopOnly).toBe(true);
     expect(config.items).toHaveLength(1);
     expect(config.items[0].surface).toBe("topbar");
     expect(config.items[0].actionType).toBe("builtin-global-command");
     expect(config.items[0].title.length).toBeGreaterThan(0);
+    expect(config.experimental.shortcutAdapter).toBe(false);
+    expect(config.experimental.clickSequenceAdapter).toBe(false);
   });
 
   it("migrates legacy dock surfaces into configurable statusbar surfaces", () => {
@@ -101,5 +105,49 @@ describe("config store model", () => {
 
     expect(config.items[0].actionType).toBe("custom-action");
     expect(config.items[0].actionId).toBe("open-settings");
+  });
+
+  it("preserves experimental shortcut items and adapter flags", () => {
+    const config = sanitizeConfig({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "exp-shortcut",
+          title: "加粗",
+          visible: true,
+          iconType: "builtin",
+          iconValue: "iconBold",
+          surface: "topbar",
+          order: 0,
+          actionType: "experimental-shortcut",
+          actionId: "Ctrl+B",
+          tooltip: "实验快捷键",
+          experimentalShortcut: {
+            shortcut: "Ctrl+B",
+            sendEscapeBefore: true,
+            dispatchTarget: "active-editor",
+          },
+        },
+      ],
+      experimental: {
+        nativeToolbarControl: false,
+        internalCommandAdapter: false,
+        shortcutAdapter: true,
+        clickSequenceAdapter: false,
+      },
+    });
+
+    expect(config.version).toBe(2);
+    expect(config.items[0].actionType).toBe("experimental-shortcut");
+    expect(config.items[0].actionId).toBe("Ctrl+B");
+    expect(config.items[0].experimentalShortcut).toEqual({
+      shortcut: "Ctrl+B",
+      sendEscapeBefore: true,
+      dispatchTarget: "active-editor",
+      allowDirectWindowDispatch: false,
+    });
+    expect(config.experimental.shortcutAdapter).toBe(true);
+    expect(config.experimental.clickSequenceAdapter).toBe(false);
   });
 });

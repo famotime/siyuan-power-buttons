@@ -119,4 +119,58 @@ describe("command executor", () => {
 
     expect(openSetting).toHaveBeenCalledTimes(1);
   });
+
+  it("dispatches experimental shortcuts through the injected runner", async () => {
+    const runExperimentalShortcut = vi.fn(() => true);
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      openUrl: vi.fn(),
+      openSetting: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      runExperimentalShortcut,
+    });
+
+    const item = createItem({
+      actionType: "experimental-shortcut" as never,
+      actionId: "Ctrl+B",
+      experimentalShortcut: {
+        shortcut: "Ctrl+B",
+        sendEscapeBefore: true,
+        dispatchTarget: "active-editor",
+        allowDirectWindowDispatch: false,
+      },
+    });
+
+    await executor.execute(item);
+
+    expect(runExperimentalShortcut).toHaveBeenCalledWith(item);
+  });
+
+  it("notifies when an experimental shortcut cannot be executed", async () => {
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify,
+      openUrl: vi.fn(),
+      openSetting: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      runExperimentalShortcut: vi.fn(() => false),
+    });
+
+    await executor.execute(createItem({
+      actionType: "experimental-shortcut" as never,
+      actionId: "Ctrl+B",
+      experimentalShortcut: {
+        shortcut: "Ctrl+B",
+        sendEscapeBefore: false,
+        dispatchTarget: "auto",
+        allowDirectWindowDispatch: false,
+      },
+    }));
+
+    expect(notify).toHaveBeenCalledWith("实验快捷键当前无法执行：Ctrl+B", "error");
+  });
 });

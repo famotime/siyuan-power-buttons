@@ -12,6 +12,7 @@ import {
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
+  executeExperimentalShortcut,
   executeBuiltinCommandByDom,
   PLUGIN_COMMANDS,
 } from "@/core/commands";
@@ -40,6 +41,25 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     },
     openSetting: () => this.openSetting(),
     runBuiltinCommand: commandId => executeBuiltinCommandByDom(commandId, document),
+    runExperimentalShortcut: item => executeExperimentalShortcut(item, {
+      getKeymap: () => (window as typeof window & { siyuan?: { config?: { keymap?: unknown } } }).siyuan?.config?.keymap as never,
+      executeBuiltinCommand: commandId => {
+        const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
+        if (typeof pluginWithGlobal.globalCommand === "function") {
+          pluginWithGlobal.globalCommand(commandId);
+          return true;
+        }
+        return executeBuiltinCommandByDom(commandId, document);
+      },
+      executePluginCommand: async commandId => {
+        const handler = this.pluginCommandHandlers.get(commandId);
+        if (!handler) {
+          return false;
+        }
+        await handler();
+        return true;
+      },
+    }),
   });
 
   public readonly version = pluginInfo.version;

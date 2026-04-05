@@ -8,13 +8,26 @@ import {
 } from "@/shared/utils";
 import type {
   ActionType,
+  ExperimentalShortcutConfig,
   IconType,
   PowerButtonItem,
   PowerButtonsConfig,
   SurfaceType,
 } from "@/shared/types";
 
+function createExperimentalShortcutConfig(overrides: Partial<ExperimentalShortcutConfig> = {}): ExperimentalShortcutConfig {
+  return {
+    shortcut: overrides.shortcut || "Ctrl+B",
+    sendEscapeBefore: overrides.sendEscapeBefore ?? false,
+    dispatchTarget: overrides.dispatchTarget || "auto",
+    allowDirectWindowDispatch: overrides.allowDirectWindowDispatch ?? false,
+  };
+}
+
 export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): PowerButtonItem {
+  const actionType = (overrides.actionType || "builtin-global-command") as ActionType;
+  const actionId = overrides.actionId || (actionType === "experimental-shortcut" ? "Ctrl+B" : "globalSearch");
+
   return {
     id: overrides.id || createId(),
     title: overrides.title || "新建按钮",
@@ -23,9 +36,17 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
     iconValue: overrides.iconValue || DEFAULT_BUILTIN_ICON,
     surface: (overrides.surface || "topbar") as SurfaceType,
     order: overrides.order ?? 0,
-    actionType: (overrides.actionType || "builtin-global-command") as ActionType,
-    actionId: overrides.actionId || "globalSearch",
+    actionType,
+    actionId,
     tooltip: overrides.tooltip || "",
+    experimentalShortcut: actionType === "experimental-shortcut"
+      ? createExperimentalShortcutConfig({
+          shortcut: overrides.experimentalShortcut?.shortcut || actionId,
+          sendEscapeBefore: overrides.experimentalShortcut?.sendEscapeBefore,
+          dispatchTarget: overrides.experimentalShortcut?.dispatchTarget,
+          allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
+        })
+      : overrides.experimentalShortcut,
   };
 }
 
@@ -58,12 +79,14 @@ export function createDefaultConfig(): PowerButtonsConfig {
   ]);
 
   return {
-    version: 1,
+    version: 2,
     desktopOnly: true,
     items,
     experimental: {
       nativeToolbarControl: false,
       internalCommandAdapter: false,
+      shortcutAdapter: false,
+      clickSequenceAdapter: false,
     },
   };
 }
