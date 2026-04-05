@@ -37,6 +37,10 @@ describe("surface manager", () => {
     expect(addStatusBar).toHaveBeenCalledTimes(1);
     expect(addDock).toHaveBeenCalledTimes(1);
 
+    const statusOptions = addStatusBar.mock.calls[0][0];
+    const statusButton = statusOptions.element as HTMLButtonElement;
+    expect(statusButton.querySelector(".siyuan-power-buttons__label")).toBeNull();
+
     manager.destroy();
 
     expect(removeDock).toHaveBeenCalledTimes(1);

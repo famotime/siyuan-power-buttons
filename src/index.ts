@@ -12,6 +12,7 @@ import {
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
+  executeBuiltinCommandByDom,
   PLUGIN_COMMANDS,
 } from "@/core/commands";
 import { SurfaceManager } from "@/core/surfaces";
@@ -30,11 +31,15 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
   private executor = new CommandExecutor({
     plugin: this as Plugin & { globalCommand?: (command: string) => void },
+    notify: (message, type = "info") => {
+      showMessage(message, 5000, type);
+    },
     pluginCommands: this.pluginCommandHandlers,
     openUrl: (url: string) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
     openSetting: () => this.openSetting(),
+    runBuiltinCommand: commandId => executeBuiltinCommandByDom(commandId, document),
   });
 
   public readonly version = pluginInfo.version;

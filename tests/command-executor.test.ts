@@ -30,9 +30,11 @@ describe("command executor", () => {
     const globalCommand = vi.fn();
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
+      notify: vi.fn(),
       openUrl: vi.fn(),
       openSetting: vi.fn(),
       pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
     });
 
     await executor.execute(createItem({}));
@@ -40,14 +42,50 @@ describe("command executor", () => {
     expect(globalCommand).toHaveBeenCalledWith("globalSearch");
   });
 
+  it("falls back to the injected builtin runner when plugin globalCommand is unavailable", async () => {
+    const runBuiltinCommand = vi.fn(() => true);
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: {} as never,
+      notify,
+      openUrl: vi.fn(),
+      openSetting: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand,
+    });
+
+    await executor.execute(createItem({}));
+
+    expect(runBuiltinCommand).toHaveBeenCalledWith("globalSearch");
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("notifies instead of failing silently when a builtin command cannot be executed", async () => {
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: {} as never,
+      notify,
+      openUrl: vi.fn(),
+      openSetting: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(() => false),
+    });
+
+    await executor.execute(createItem({}));
+
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：globalSearch", "error");
+  });
+
   it("dispatches plugin commands and urls through injected handlers", async () => {
     const pluginAction = vi.fn();
     const openUrl = vi.fn();
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
       openUrl,
       openSetting: vi.fn(),
       pluginCommands: new Map([["open-help", pluginAction]]),
+      runBuiltinCommand: vi.fn(),
     });
 
     await executor.execute(createItem({
@@ -67,9 +105,11 @@ describe("command executor", () => {
     const openSetting = vi.fn();
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
       openUrl: vi.fn(),
       openSetting,
       pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
     });
 
     await executor.execute(createItem({

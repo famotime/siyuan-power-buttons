@@ -512,6 +512,29 @@
   flex: 0 0 auto;
 }
 
+.siyuan-power-buttons__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.siyuan-power-buttons__button:hover {
+  background: color-mix(in srgb, var(--b3-theme-on-background) 8%, transparent);
+}
+
+.siyuan-power-buttons__button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--b3-theme-primary) 50%, transparent);
+  outline-offset: 1px;
+}
+
 .emoji-icon {
   font-size: 17px;
   line-height: 1;

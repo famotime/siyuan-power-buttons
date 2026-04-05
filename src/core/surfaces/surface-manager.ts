@@ -79,9 +79,10 @@ function createStatusElement(item: PowerButtonItem, executor: CommandExecutor): 
   button.type = "button";
   button.className = "siyuan-power-buttons__button";
   button.title = item.tooltip || item.title;
+  button.setAttribute("aria-label", item.tooltip || item.title);
   button.dataset.powerButtonsOwned = "true";
   button.dataset.powerButtonsItemId = item.id;
-  button.innerHTML = `${getIconMarkup(item)}<span class="siyuan-power-buttons__label">${item.title}</span>`;
+  button.innerHTML = getIconMarkup(item);
   button.addEventListener("click", () => {
     void executor.execute(item);
   });
