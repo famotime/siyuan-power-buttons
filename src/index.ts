@@ -4,11 +4,16 @@ import {
   getFrontend,
   showMessage,
 } from "siyuan";
+import { version as getAppVersion } from "@/api";
 import pluginInfo from "@/../plugin.json";
 import {
   ConfigStore,
   exportConfigAsJson,
 } from "@/core/config";
+import {
+  getExperimentalFeatureSupport,
+  type ExperimentalFeatureKey,
+} from "@/core/compatibility/version-guard";
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
@@ -26,6 +31,7 @@ type Unmount = () => void;
 
 export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
+  private appVersion: string | null = null;
   private surfaceManager: SurfaceManager | null = null;
   private settingsDialog: Dialog | null = null;
   private unmountSettingsApp: Unmount | null = null;
@@ -43,8 +49,10 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     openSetting: () => this.openSetting(),
     runBuiltinCommand: commandId => executeBuiltinCommandByDom(commandId, document),
     runExperimentalShortcut: item => {
-      if (!this.configStore.getConfig().experimental.shortcutAdapter) {
-        return false;
+      const support = this.getExperimentalSupport("shortcutAdapter");
+      if (!support.supported) {
+        showMessage(support.reason || "实验快捷键适配当前不可用。", 5000, "error");
+        return true;
       }
       return executeExperimentalShortcut(item, {
         getKeymap: () => (window as typeof window & { siyuan?: { config?: { keymap?: unknown } } }).siyuan?.config?.keymap as never,
@@ -67,8 +75,10 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       });
     },
     runExperimentalClickSequence: item => {
-      if (!this.configStore.getConfig().experimental.clickSequenceAdapter) {
-        return false;
+      const support = this.getExperimentalSupport("clickSequenceAdapter");
+      if (!support.supported) {
+        showMessage(support.reason || "实验点击序列当前不可用。", 5000, "error");
+        return true;
       }
       return executeExperimentalClickSequence(item, {
         document,
@@ -85,6 +95,11 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.configStore.load();
+    try {
+      this.appVersion = await getAppVersion();
+    } catch {
+      this.appVersion = null;
+    }
     this.registerPluginCommands();
     this.unsubscribeConfig = this.configStore.subscribe((config) => {
       this.surfaceManager?.render(config);
@@ -149,6 +164,16 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       return true;
     }
     return frontend === "desktop" || frontend === "desktop-window" || frontend === "browser-desktop";
+  }
+
+  private getExperimentalSupport(feature: ExperimentalFeatureKey): { supported: boolean; reason?: string } {
+    return getExperimentalFeatureSupport({
+      feature,
+      enabled: this.configStore.getConfig().experimental[feature],
+      frontend: getFrontend(),
+      appVersion: this.appVersion,
+      minAppVersion: pluginInfo.minAppVersion,
+    });
   }
 
   private registerPluginCommands(): void {
