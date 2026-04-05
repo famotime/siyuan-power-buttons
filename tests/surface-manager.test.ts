@@ -41,4 +41,29 @@ describe("surface manager", () => {
 
     expect(removeDock).toHaveBeenCalledTimes(1);
   });
+
+  it("skips dock teardown when the registration model has no remove method", () => {
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn(() => ({
+      model: {},
+    }));
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openSetting: vi.fn(),
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    expect(() => manager.render(createDefaultConfig())).not.toThrow();
+    expect(() => manager.destroy()).not.toThrow();
+  });
 });

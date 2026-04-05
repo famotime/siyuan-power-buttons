@@ -64,3 +64,17 @@ export interface PluginCommandDefinition {
   title: string;
   description: string;
 }
+
+export type PreviewSource = "config" | "native";
+
+export interface PreviewButtonItem {
+  id: string;
+  title: string;
+  visible: boolean;
+  surface: SurfaceType;
+  order: number;
+  editable: boolean;
+  source: PreviewSource;
+  iconMarkup?: string;
+  itemId?: string;
+}

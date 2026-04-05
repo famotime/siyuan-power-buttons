@@ -93,15 +93,28 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px;
   border-radius: 12px;
-  cursor: pointer;
   text-align: left;
 }
 
 .button-list__item.is-active {
   border-color: var(--b3-theme-primary);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--b3-theme-primary) 30%, transparent);
+}
+
+.button-list__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  padding: 2px 4px;
 }
 
 .button-list__drag {
@@ -136,12 +149,21 @@
   opacity: 0.7;
 }
 
-.button-list__state {
-  font-size: 12px;
-  white-space: nowrap;
+.button-list__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--b3-theme-on-background) 56%, transparent);
+  cursor: pointer;
 }
 
-.button-list__state.is-off {
+.button-list__delete:hover {
+  border-color: color-mix(in srgb, var(--b3-theme-error) 28%, transparent);
   color: var(--b3-theme-error);
 }
 
@@ -149,6 +171,20 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.surface-summary__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.surface-summary__header p {
+  margin-top: 4px;
+  opacity: 0.7;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .workspace-preview {
@@ -222,6 +258,14 @@
   min-width: 0;
 }
 
+.workspace-preview__segment {
+  min-height: 54px;
+}
+
+.workspace-preview__segment--end {
+  justify-content: flex-end;
+}
+
 .workspace-preview__stack--row {
   flex-direction: row;
   flex-wrap: wrap;
@@ -241,6 +285,9 @@
 }
 
 .workspace-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--b3-border-color) 90%, transparent);
@@ -256,8 +303,39 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--b3-theme-primary) 28%, transparent);
 }
 
-.workspace-chip--muted {
-  opacity: 0.82;
+.workspace-chip.is-draggable {
+  cursor: grab;
+}
+
+.workspace-chip.is-native {
+  color: color-mix(in srgb, var(--b3-theme-on-background) 52%, transparent);
+  background: color-mix(in srgb, var(--b3-theme-background) 48%, transparent);
+}
+
+.workspace-chip.is-hidden {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.workspace-chip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
+}
+
+.workspace-chip.is-native .workspace-chip__icon {
+  background: color-mix(in srgb, var(--b3-theme-on-background) 8%, transparent);
+}
+
+.workspace-chip__label {
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .editor-card {
@@ -314,14 +392,33 @@
 }
 
 .switch-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 40px;
   border-radius: 10px;
   cursor: pointer;
 }
 
+.switch-button--compact {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .switch-button.is-on {
   border-color: var(--b3-theme-primary);
   color: var(--b3-theme-primary);
+}
+
+.switch-button__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.75;
 }
 
 .icon-grid {
@@ -374,6 +471,16 @@
   line-height: 1;
 }
 
+.siyuan-power-buttons__native-fallback-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  line-height: 1;
+}
+
 @media (max-width: 980px) {
   .settings-layout {
     grid-template-columns: 1fr;
@@ -394,6 +501,10 @@
   }
 
   .workspace-preview__bottom-dock {
+    flex-direction: column;
+  }
+
+  .surface-summary__header {
     flex-direction: column;
   }
 }

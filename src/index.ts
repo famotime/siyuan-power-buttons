@@ -16,6 +16,7 @@ import {
 } from "@/core/commands";
 import { SurfaceManager } from "@/core/surfaces";
 import { mountSettingsApp } from "@/main";
+import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
 import type { PowerButtonsConfig } from "@/shared/types";
 
 type Unmount = () => void;
@@ -90,6 +91,9 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       },
       onNotify: (message, type = "info") => {
         showMessage(message, 4000, type);
+      },
+      onReadCurrentLayout: () => {
+        return readNativeSurfaceSnapshot(document);
       },
     });
   }

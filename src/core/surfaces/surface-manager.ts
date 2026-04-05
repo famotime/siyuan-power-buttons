@@ -18,8 +18,12 @@ import type {
 
 type DockRegistration = {
   type: string;
-  model: Dock;
+  model: unknown;
 };
+
+function hasDockRemove(model: unknown): model is Pick<Dock, "remove"> {
+  return typeof (model as { remove?: unknown } | null | undefined)?.remove === "function";
+}
 
 function escapeAttribute(value: string): string {
   return value
@@ -75,6 +79,8 @@ function createStatusElement(item: PowerButtonItem, executor: CommandExecutor): 
   button.type = "button";
   button.className = "siyuan-power-buttons__button";
   button.title = item.tooltip || item.title;
+  button.dataset.powerButtonsOwned = "true";
+  button.dataset.powerButtonsItemId = item.id;
   button.innerHTML = `${getIconMarkup(item)}<span class="siyuan-power-buttons__label">${item.title}</span>`;
   button.addEventListener("click", () => {
     void executor.execute(item);
@@ -124,6 +130,8 @@ export class SurfaceManager {
             void this.executor.execute(item);
           },
         });
+        element.dataset.powerButtonsOwned = "true";
+        element.dataset.powerButtonsItemId = item.id;
         this.topbarElements.push(element);
         continue;
       }
@@ -178,7 +186,9 @@ export class SurfaceManager {
     this.statusElements = [];
 
     for (const registration of this.dockRegistrations) {
-      registration.model.remove(registration.type);
+      if (hasDockRemove(registration.model)) {
+        registration.model.remove(registration.type);
+      }
     }
     this.dockRegistrations = [];
   }

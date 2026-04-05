@@ -3,7 +3,7 @@
     <header class="settings-header">
       <div>
         <h1>思源快捷按钮</h1>
-        <p>先在左侧选按钮，再在右侧修改位置、动作和图标。所有改动会自动保存。</p>
+        <p>左侧管理按钮清单，预览区会自动读取当前界面布局；彩色按钮可拖拽改位置，灰色原生按钮仅供查看。</p>
       </div>
       <div class="settings-header__actions">
         <button class="b3-button" @click="addItem">新建按钮</button>
@@ -16,51 +16,86 @@
         <div class="panel-title">
           <div>
             <h2>1. 按钮列表</h2>
-            <p>{{ config.items.length }} 个按钮，拖拽可排序</p>
+            <p>{{ config.items.length }} 个按钮，左侧可快速显隐，拖拽可排序</p>
           </div>
           <button class="b3-button b3-button--outline" :disabled="!selectedItem" @click="duplicateItem">复制</button>
         </div>
 
         <div class="button-list">
-          <button
+          <div
             v-for="(item, index) in config.items"
             :key="item.id"
-            type="button"
             class="button-list__item"
             :class="{ 'is-active': selectedId === item.id }"
             draggable="true"
-            @click="selectItem(item.id)"
-            @dragstart="onDragStart(index)"
+            @dragstart="onListDragStart(index)"
             @dragover.prevent
-            @drop="onDrop(index)"
+            @drop="onListDrop(index)"
           >
-            <span class="button-list__drag">⋮⋮</span>
-            <span class="button-list__icon" v-html="renderBuiltinIconMarkup(item)" />
-            <span class="button-list__content">
-              <strong>{{ item.title || "未命名按钮" }}</strong>
-              <small>{{ surfaceLabel(item.surface) }}</small>
-            </span>
-            <span class="button-list__state" :class="{ 'is-off': !item.visible }">
-              {{ item.visible ? "显示" : "隐藏" }}
-            </span>
-          </button>
+            <button type="button" class="button-list__main" @click="selectItem(item.id)">
+              <span class="button-list__drag">⋮⋮</span>
+              <span class="button-list__icon" v-html="renderBuiltinIconMarkup(item)" />
+              <span class="button-list__content">
+                <strong>{{ item.title || "未命名按钮" }}</strong>
+                <small>{{ surfaceLabel(item.surface) }}</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="switch-button switch-button--compact"
+              :class="{ 'is-on': item.visible }"
+              :title="item.visible ? '切换为隐藏' : '切换为显示'"
+              @click.stop="toggleVisible(item.id)"
+            >
+              <span class="switch-button__dot" />
+              <span>{{ item.visible ? "显示" : "隐藏" }}</span>
+            </button>
+            <button
+              type="button"
+              class="button-list__delete"
+              title="删除按钮"
+              aria-label="删除按钮"
+              @click.stop="removeItem(item.id)"
+            >
+              <span v-html="TRASH_ICON" />
+            </button>
+          </div>
         </div>
 
         <div class="surface-summary">
-          <h3>位置预览</h3>
+          <div class="surface-summary__header">
+            <div>
+              <h3>位置预览</h3>
+              <p>灰色为原生按钮，半透明为隐藏态。拖拽彩色按钮图标可切换区域和顺序。</p>
+            </div>
+            <button class="b3-button b3-button--outline" :disabled="isRefreshingLayout" @click="refreshCurrentLayout">
+              {{ isRefreshingLayout ? "读取中..." : "读取当前布局" }}
+            </button>
+          </div>
+
           <div class="workspace-preview">
-            <div class="workspace-preview__topbar">
+            <div
+              class="workspace-preview__topbar"
+              @dragover.prevent
+              @drop="onPreviewSurfaceDrop('topbar')"
+            >
               <span class="workspace-preview__tag">顶栏</span>
               <div class="workspace-preview__stack workspace-preview__stack--row">
                 <button
-                  v-for="item in previewLayout.topbar"
+                  v-for="(item, index) in previewLayout.topbar"
                   :key="item.id"
                   type="button"
                   class="workspace-chip"
-                  :class="{ 'is-active': selectedId === item.id }"
-                  @click="selectItem(item.id)"
+                  :class="previewChipClass(item)"
+                  :draggable="item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart(item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('topbar', previewLayout.topbar, index)"
                 >
-                  {{ item.title }}
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
                 </button>
                 <span v-if="!previewLayout.topbar.length" class="surface-summary__empty">空</span>
               </div>
@@ -69,55 +104,99 @@
             <div class="workspace-preview__body">
               <div class="workspace-preview__dock">
                 <span class="workspace-preview__tag">左 Dock</span>
-                <div class="workspace-preview__stack">
+                <div
+                  class="workspace-preview__stack workspace-preview__segment"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-left-top')"
+                >
                   <button
-                    v-for="item in previewLayout.leftDockTop"
+                    v-for="(item, index) in previewLayout.leftDockTop"
                     :key="item.id"
                     type="button"
                     class="workspace-chip"
-                    :class="{ 'is-active': selectedId === item.id }"
-                    @click="selectItem(item.id)"
+                    :class="previewChipClass(item)"
+                    :draggable="item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart(item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-left-top', previewLayout.leftDockTop, index)"
                   >
-                    {{ item.title }}
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
                   </button>
+                  <span v-if="!previewLayout.leftDockTop.length" class="surface-summary__empty">空</span>
+                </div>
+                <div
+                  class="workspace-preview__stack workspace-preview__segment workspace-preview__segment--end"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-left-bottom')"
+                >
                   <button
-                    v-for="item in previewLayout.leftDockBottom"
+                    v-for="(item, index) in previewLayout.leftDockBottom"
                     :key="item.id"
                     type="button"
-                    class="workspace-chip workspace-chip--muted"
-                    :class="{ 'is-active': selectedId === item.id }"
-                    @click="selectItem(item.id)"
+                    class="workspace-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart(item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-left-bottom', previewLayout.leftDockBottom, index)"
                   >
-                    {{ item.title }}
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
                   </button>
+                  <span v-if="!previewLayout.leftDockBottom.length" class="surface-summary__empty">空</span>
                 </div>
               </div>
 
               <div class="workspace-preview__canvas">
                 <div class="workspace-preview__canvas-note">编辑区</div>
                 <div class="workspace-preview__bottom-dock">
-                  <div class="workspace-preview__stack workspace-preview__stack--row">
+                  <div
+                    class="workspace-preview__stack workspace-preview__stack--row"
+                    @dragover.prevent
+                    @drop="onPreviewSurfaceDrop('dock-bottom-left')"
+                  >
                     <button
-                      v-for="item in previewLayout.bottomDockLeft"
+                      v-for="(item, index) in previewLayout.bottomDockLeft"
                       :key="item.id"
                       type="button"
                       class="workspace-chip"
-                      :class="{ 'is-active': selectedId === item.id }"
-                      @click="selectItem(item.id)"
+                      :class="previewChipClass(item)"
+                      :draggable="item.editable"
+                      :title="previewChipTitle(item)"
+                      @click="handlePreviewChipClick(item)"
+                      @dragstart="onPreviewDragStart(item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('dock-bottom-left', previewLayout.bottomDockLeft, index)"
                     >
-                      {{ item.title }}
+                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                      <span class="workspace-chip__label">{{ item.title }}</span>
                     </button>
                   </div>
-                  <div class="workspace-preview__stack workspace-preview__stack--row">
+                  <div
+                    class="workspace-preview__stack workspace-preview__stack--row"
+                    @dragover.prevent
+                    @drop="onPreviewSurfaceDrop('dock-bottom-right')"
+                  >
                     <button
-                      v-for="item in previewLayout.bottomDockRight"
+                      v-for="(item, index) in previewLayout.bottomDockRight"
                       :key="item.id"
                       type="button"
                       class="workspace-chip"
-                      :class="{ 'is-active': selectedId === item.id }"
-                      @click="selectItem(item.id)"
+                      :class="previewChipClass(item)"
+                      :draggable="item.editable"
+                      :title="previewChipTitle(item)"
+                      @click="handlePreviewChipClick(item)"
+                      @dragstart="onPreviewDragStart(item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('dock-bottom-right', previewLayout.bottomDockRight, index)"
                     >
-                      {{ item.title }}
+                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                      <span class="workspace-chip__label">{{ item.title }}</span>
                     </button>
                   </div>
                 </div>
@@ -125,56 +204,100 @@
 
               <div class="workspace-preview__dock">
                 <span class="workspace-preview__tag">右 Dock</span>
-                <div class="workspace-preview__stack">
+                <div
+                  class="workspace-preview__stack workspace-preview__segment"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-right-top')"
+                >
                   <button
-                    v-for="item in previewLayout.rightDockTop"
+                    v-for="(item, index) in previewLayout.rightDockTop"
                     :key="item.id"
                     type="button"
                     class="workspace-chip"
-                    :class="{ 'is-active': selectedId === item.id }"
-                    @click="selectItem(item.id)"
+                    :class="previewChipClass(item)"
+                    :draggable="item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart(item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-right-top', previewLayout.rightDockTop, index)"
                   >
-                    {{ item.title }}
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
                   </button>
+                  <span v-if="!previewLayout.rightDockTop.length" class="surface-summary__empty">空</span>
+                </div>
+                <div
+                  class="workspace-preview__stack workspace-preview__segment workspace-preview__segment--end"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-right-bottom')"
+                >
                   <button
-                    v-for="item in previewLayout.rightDockBottom"
+                    v-for="(item, index) in previewLayout.rightDockBottom"
                     :key="item.id"
                     type="button"
-                    class="workspace-chip workspace-chip--muted"
-                    :class="{ 'is-active': selectedId === item.id }"
-                    @click="selectItem(item.id)"
+                    class="workspace-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart(item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-right-bottom', previewLayout.rightDockBottom, index)"
                   >
-                    {{ item.title }}
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
                   </button>
+                  <span v-if="!previewLayout.rightDockBottom.length" class="surface-summary__empty">空</span>
                 </div>
               </div>
             </div>
 
             <div class="workspace-preview__statusbar">
-              <div class="workspace-preview__stack workspace-preview__stack--row">
+              <div
+                class="workspace-preview__stack workspace-preview__stack--row"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('statusbar-left')"
+              >
                 <span class="workspace-preview__tag">状态栏左侧</span>
                 <button
-                  v-for="item in previewLayout.statusbarLeft"
+                  v-for="(item, index) in previewLayout.statusbarLeft"
                   :key="item.id"
                   type="button"
                   class="workspace-chip"
-                  :class="{ 'is-active': selectedId === item.id }"
-                  @click="selectItem(item.id)"
+                  :class="previewChipClass(item)"
+                  :draggable="item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart(item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('statusbar-left', previewLayout.statusbarLeft, index)"
                 >
-                  {{ item.title }}
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
                 </button>
                 <span v-if="!previewLayout.statusbarLeft.length" class="surface-summary__empty">空</span>
               </div>
-              <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__stack--right">
+              <div
+                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__stack--right"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('statusbar-right')"
+              >
                 <button
-                  v-for="item in previewLayout.statusbarRight"
+                  v-for="(item, index) in previewLayout.statusbarRight"
                   :key="item.id"
                   type="button"
                   class="workspace-chip"
-                  :class="{ 'is-active': selectedId === item.id }"
-                  @click="selectItem(item.id)"
+                  :class="previewChipClass(item)"
+                  :draggable="item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart(item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('statusbar-right', previewLayout.statusbarRight, index)"
                 >
-                  {{ item.title }}
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
                 </button>
                 <span v-if="!previewLayout.statusbarRight.length" class="surface-summary__empty">空</span>
               </div>
@@ -190,7 +313,6 @@
             <p v-if="selectedItem">当前正在编辑：{{ selectedItem.title || "未命名按钮" }}</p>
             <p v-else>请先在左侧选中一个按钮</p>
           </div>
-          <button class="b3-button b3-button--outline" :disabled="!selectedItem" @click="removeItem">删除</button>
         </div>
 
         <template v-if="selectedItem">
@@ -224,8 +346,9 @@
               </label>
               <label class="form-switch">
                 <span>显示状态</span>
-                <button type="button" class="switch-button" :class="{ 'is-on': selectedItem.visible }" @click="toggleVisible">
-                  {{ selectedItem.visible ? "已显示" : "已隐藏" }}
+                <button type="button" class="switch-button" :class="{ 'is-on': selectedItem.visible }" @click="toggleVisible(selectedItem.id)">
+                  <span class="switch-button__dot" />
+                  <span>{{ selectedItem.visible ? "已显示" : "已隐藏" }}</span>
                 </button>
               </label>
             </div>
@@ -339,7 +462,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+} from "vue";
 import {
   createButtonItem,
   createDefaultConfig,
@@ -361,6 +489,10 @@ import {
   SURFACE_LABELS,
 } from "@/shared/constants";
 import {
+  buildPreviewLayout,
+  movePreviewItem,
+} from "@/shared/preview-layout";
+import {
   ACTION_TYPES,
   ICON_TYPES,
   SURFACES,
@@ -370,13 +502,20 @@ import {
   moveItem,
   normalizeItemOrder,
 } from "@/shared/utils";
-import { buildPreviewLayout } from "@/shared/preview-layout";
 import type {
   BuiltinCommandDefinition,
   PluginCommandDefinition,
   PowerButtonItem,
   PowerButtonsConfig,
+  PreviewButtonItem,
+  SurfaceType,
 } from "@/shared/types";
+
+const TRASH_ICON = `
+  <svg class="siyuan-power-buttons__icon" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4zm1 6h2v8h-2zm4 0h2v8h-2zM7 9h2v8H7zm1 12a2 2 0 0 1-2-2V7h12v12a2 2 0 0 1-2 2z" />
+  </svg>
+`;
 
 const props = withDefaults(defineProps<{
   initialConfig: PowerButtonsConfig;
@@ -384,14 +523,19 @@ const props = withDefaults(defineProps<{
   pluginCommands?: PluginCommandDefinition[];
   onChange: (config: PowerButtonsConfig) => void | Promise<void>;
   onNotify: (message: string, type?: "info" | "error") => void;
+  onReadCurrentLayout?: () => PreviewButtonItem[] | Promise<PreviewButtonItem[]>;
 }>(), {
   builtinCommands: () => BUILTIN_COMMANDS,
   pluginCommands: () => PLUGIN_COMMANDS,
+  onReadCurrentLayout: () => [],
 });
 
 const config = reactive<PowerButtonsConfig>(cloneConfig(props.initialConfig));
 const selectedId = ref(config.items[0]?.id || "");
-const dragIndex = ref<number | null>(null);
+const listDragIndex = ref<number | null>(null);
+const previewDragId = ref<string>("");
+const runtimePreviewItems = ref<PreviewButtonItem[]>([]);
+const isRefreshingLayout = ref(false);
 const jsonBuffer = ref("");
 const iconKeyword = ref("");
 
@@ -416,7 +560,23 @@ const customActions = CUSTOM_ACTIONS;
 
 const selectedItem = computed<PowerButtonItem | undefined>(() => config.items.find(item => item.id === selectedId.value));
 
-const previewLayout = computed(() => buildPreviewLayout(config.items));
+const configPreviewItems = computed<PreviewButtonItem[]>(() => {
+  return config.items.map(item => ({
+    id: item.id,
+    itemId: item.id,
+    title: item.title || "未命名按钮",
+    visible: item.visible,
+    surface: item.surface,
+    order: item.order + 1000,
+    editable: true,
+    source: "config",
+    iconMarkup: renderBuiltinIconMarkup(item),
+  }));
+});
+
+const previewLayout = computed(() => {
+  return buildPreviewLayout([...runtimePreviewItems.value, ...configPreviewItems.value], { includeHidden: true });
+});
 
 const filteredBuiltinIcons = computed(() => {
   const result = filterBuiltinIcons(iconKeyword.value);
@@ -427,9 +587,24 @@ function selectItem(id: string): void {
   selectedId.value = id;
 }
 
-function persist(): void {
+async function refreshCurrentLayout(): Promise<void> {
+  if (!props.onReadCurrentLayout || isRefreshingLayout.value) {
+    return;
+  }
+  isRefreshingLayout.value = true;
+  try {
+    runtimePreviewItems.value = await props.onReadCurrentLayout();
+  } catch (error) {
+    props.onNotify(error instanceof Error ? error.message : String(error), "error");
+  } finally {
+    isRefreshingLayout.value = false;
+  }
+}
+
+async function persist(): Promise<void> {
   config.items = normalizeItemOrder(config.items);
-  void props.onChange(cloneConfig(config));
+  await props.onChange(cloneConfig(config));
+  await refreshCurrentLayout();
 }
 
 function addItem(): void {
@@ -439,7 +614,7 @@ function addItem(): void {
   });
   config.items.push(item);
   selectedId.value = item.id;
-  persist();
+  void persist();
 }
 
 function duplicateItem(): void {
@@ -454,21 +629,24 @@ function duplicateItem(): void {
   });
   config.items.push(item);
   selectedId.value = item.id;
-  persist();
+  void persist();
 }
 
-function removeItem(): void {
-  if (!selectedItem.value) {
+function removeItem(itemId: string): void {
+  const target = config.items.find(item => item.id === itemId);
+  if (!target) {
     return;
   }
-  const shouldRemove = window.confirm(`确定删除按钮「${selectedItem.value.title || "未命名按钮"}」吗？`);
+  const shouldRemove = window.confirm(`确定删除按钮「${target.title || "未命名按钮"}」吗？`);
   if (!shouldRemove) {
     return;
   }
-  const index = config.items.findIndex(item => item.id === selectedItem.value?.id);
+  const index = config.items.findIndex(item => item.id === itemId);
   config.items.splice(index, 1);
-  selectedId.value = config.items[0]?.id || "";
-  persist();
+  if (selectedId.value === itemId) {
+    selectedId.value = config.items[0]?.id || "";
+  }
+  void persist();
 }
 
 function resetConfig(): void {
@@ -480,15 +658,16 @@ function resetConfig(): void {
   config.desktopOnly = nextConfig.desktopOnly;
   config.experimental = nextConfig.experimental;
   selectedId.value = config.items[0]?.id || "";
-  persist();
+  void persist();
 }
 
-function toggleVisible(): void {
-  if (!selectedItem.value) {
+function toggleVisible(itemId: string): void {
+  const target = config.items.find(item => item.id === itemId);
+  if (!target) {
     return;
   }
-  selectedItem.value.visible = !selectedItem.value.visible;
-  persist();
+  target.visible = !target.visible;
+  void persist();
 }
 
 function applyActionDefaults(): void {
@@ -505,7 +684,7 @@ function applyActionDefaults(): void {
   } else {
     selectedItem.value.actionId = "https://example.com";
   }
-  persist();
+  void persist();
 }
 
 function applyIconDefaults(): void {
@@ -519,7 +698,7 @@ function applyIconDefaults(): void {
   } else {
     selectedItem.value.iconValue = `<svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>`;
   }
-  persist();
+  void persist();
 }
 
 function selectBuiltinIcon(value: string): void {
@@ -528,20 +707,57 @@ function selectBuiltinIcon(value: string): void {
   }
   selectedItem.value.iconType = "builtin";
   selectedItem.value.iconValue = value;
-  persist();
+  void persist();
 }
 
-function onDragStart(index: number): void {
-  dragIndex.value = index;
+function onListDragStart(index: number): void {
+  listDragIndex.value = index;
 }
 
-function onDrop(index: number): void {
-  if (dragIndex.value === null || dragIndex.value === index) {
+function onListDrop(index: number): void {
+  if (listDragIndex.value === null || listDragIndex.value === index) {
     return;
   }
-  config.items = normalizeItemOrder(moveItem(config.items, dragIndex.value, index));
-  dragIndex.value = null;
-  persist();
+  config.items = normalizeItemOrder(moveItem(config.items, listDragIndex.value, index));
+  listDragIndex.value = null;
+  void persist();
+}
+
+function onPreviewDragStart(item: PreviewButtonItem): void {
+  if (!item.editable || !item.itemId) {
+    return;
+  }
+  previewDragId.value = item.itemId;
+}
+
+function getPreviewInsertIndex(surfaceItems: PreviewButtonItem[], targetIndex: number): number {
+  return surfaceItems.slice(0, targetIndex).filter(item => item.editable).length;
+}
+
+function moveFromPreview(surface: SurfaceType, targetIndex: number): void {
+  if (!previewDragId.value) {
+    return;
+  }
+  config.items = movePreviewItem(config.items, previewDragId.value, surface, targetIndex);
+  selectedId.value = previewDragId.value;
+  previewDragId.value = "";
+  void persist();
+}
+
+function onPreviewItemDrop(surface: SurfaceType, surfaceItems: PreviewButtonItem[], targetIndex: number): void {
+  moveFromPreview(surface, getPreviewInsertIndex(surfaceItems, targetIndex));
+}
+
+function onPreviewSurfaceDrop(surface: SurfaceType): void {
+  moveFromPreview(surface, config.items.filter(item => item.surface === surface).length);
+}
+
+function handlePreviewChipClick(item: PreviewButtonItem): void {
+  if (!item.editable || !item.itemId) {
+    props.onNotify("原生按钮当前仅支持读取预览，暂不可直接编辑。");
+    return;
+  }
+  selectItem(item.itemId);
 }
 
 function loadExportJson(): void {
@@ -566,7 +782,7 @@ function applyImportJson(): void {
     config.desktopOnly = imported.desktopOnly;
     config.experimental = imported.experimental;
     selectedId.value = config.items[0]?.id || "";
-    persist();
+    void persist();
     props.onNotify("配置已导入。");
   } catch (error) {
     props.onNotify(error instanceof Error ? error.message : String(error), "error");
@@ -577,7 +793,7 @@ function renderNamedIcon(iconName: string): string {
   return `<svg class="siyuan-power-buttons__icon" aria-hidden="true"><use xlink:href="#${iconName}"></use></svg>`;
 }
 
-function renderBuiltinIconMarkup(item: PowerButtonItem): string {
+function renderBuiltinIconMarkup(item: Pick<PowerButtonItem, "iconType" | "iconValue">): string {
   if (item.iconType === "emoji") {
     return `<span class="emoji-icon">${item.iconValue || "⚡"}</span>`;
   }
@@ -587,6 +803,26 @@ function renderBuiltinIconMarkup(item: PowerButtonItem): string {
   return renderNamedIcon(item.iconValue || DEFAULT_BUILTIN_ICON);
 }
 
+function previewIconMarkup(item: PreviewButtonItem): string {
+  return item.iconMarkup || renderNamedIcon(DEFAULT_BUILTIN_ICON);
+}
+
+function previewChipClass(item: PreviewButtonItem): Record<string, boolean> {
+  return {
+    "is-active": item.itemId === selectedId.value,
+    "is-native": !item.editable,
+    "is-hidden": item.editable && !item.visible,
+    "is-draggable": item.editable,
+  };
+}
+
+function previewChipTitle(item: PreviewButtonItem): string {
+  if (!item.editable) {
+    return `${item.title} · 原生按钮，仅预览`;
+  }
+  return `${item.title} · ${item.visible ? "显示中" : "隐藏中"} · 可拖拽调整`;
+}
+
 function surfaceLabel(value: string): string {
   return SURFACE_LABELS[value];
 }
@@ -594,4 +830,8 @@ function surfaceLabel(value: string): string {
 function actionTypeLabel(value: string): string {
   return ACTION_TYPE_LABELS[value];
 }
+
+onMounted(() => {
+  void refreshCurrentLayout();
+});
 </script>
