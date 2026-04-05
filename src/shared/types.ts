@@ -10,6 +10,12 @@ export const SURFACES = [
   "dock-bottom-right",
 ] as const;
 
+export const CONFIGURABLE_SURFACES = [
+  "topbar",
+  "statusbar-left",
+  "statusbar-right",
+] as const;
+
 export const ACTION_TYPES = [
   "builtin-global-command",
   "plugin-command",
@@ -24,6 +30,7 @@ export const ICON_TYPES = [
 ] as const;
 
 export type SurfaceType = (typeof SURFACES)[number];
+export type ConfigurableSurfaceType = (typeof CONFIGURABLE_SURFACES)[number];
 export type ActionType = (typeof ACTION_TYPES)[number];
 export type IconType = (typeof ICON_TYPES)[number];
 

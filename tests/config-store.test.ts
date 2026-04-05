@@ -4,6 +4,7 @@ import {
   createDefaultConfig,
   sanitizeConfig,
 } from "@/core/config";
+import { CONFIGURABLE_SURFACES } from "@/shared/types";
 
 describe("config store model", () => {
   it("creates a desktop-only default config with starter buttons", () => {
@@ -14,6 +15,7 @@ describe("config store model", () => {
     expect(config.items.length).toBeGreaterThanOrEqual(3);
     expect(config.items.every(item => item.visible)).toBe(true);
     expect(config.items.map(item => item.title)).toEqual(["全局搜索", "插件设置", "大纲"]);
+    expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
   });
 
   it("creates new buttons with a Chinese default title", () => {
@@ -46,5 +48,58 @@ describe("config store model", () => {
     expect(config.items[0].surface).toBe("topbar");
     expect(config.items[0].actionType).toBe("builtin-global-command");
     expect(config.items[0].title.length).toBeGreaterThan(0);
+  });
+
+  it("migrates legacy dock surfaces into configurable statusbar surfaces", () => {
+    const config = sanitizeConfig({
+      version: 1,
+      desktopOnly: true,
+      items: [
+        createButtonItem({
+          id: "legacy-left",
+          title: "旧左侧 Dock",
+          surface: "dock-left-top",
+        }),
+        createButtonItem({
+          id: "legacy-right",
+          title: "旧右侧 Dock",
+          surface: "dock-right-bottom",
+        }),
+        createButtonItem({
+          id: "legacy-bottom",
+          title: "旧底部 Dock",
+          surface: "dock-bottom-left",
+        }),
+      ],
+      experimental: null,
+    });
+
+    expect(config.items.map(item => item.surface)).toEqual([
+      "statusbar-left",
+      "statusbar-right",
+      "statusbar-left",
+    ]);
+  });
+
+  it("migrates the legacy open settings preset away from fileTree", () => {
+    const config = sanitizeConfig({
+      version: 1,
+      desktopOnly: true,
+      items: [
+        createButtonItem({
+          id: "legacy-open-settings",
+          title: "Open Settings",
+          tooltip: "Open Power Buttons settings",
+          iconValue: "iconInfo",
+          surface: "topbar",
+          actionType: "builtin-global-command",
+          actionId: "fileTree",
+        }),
+      ],
+      experimental: null,
+    });
+
+    expect(config.items[0].actionType).toBe("custom-action");
+    expect(config.items[0].actionId).toBe("open-settings");
   });
 });

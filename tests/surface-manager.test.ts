@@ -5,7 +5,7 @@ import { CommandExecutor } from "@/core/commands";
 import { SurfaceManager } from "@/core/surfaces";
 
 describe("surface manager", () => {
-  it("renders top bar, status bar and dock entries, then destroys them cleanly", () => {
+  it("renders top bar and status bar entries, then destroys them cleanly", () => {
     const topBarElement = document.createElement("button");
     const statusElement = document.createElement("div");
     const removeDock = vi.fn();
@@ -34,8 +34,8 @@ describe("surface manager", () => {
     manager.render(createDefaultConfig());
 
     expect(addTopBar).toHaveBeenCalledTimes(1);
-    expect(addStatusBar).toHaveBeenCalledTimes(1);
-    expect(addDock).toHaveBeenCalledTimes(1);
+    expect(addStatusBar).toHaveBeenCalledTimes(2);
+    expect(addDock).not.toHaveBeenCalled();
 
     const statusOptions = addStatusBar.mock.calls[0][0];
     const statusButton = statusOptions.element as HTMLButtonElement;
@@ -43,7 +43,7 @@ describe("surface manager", () => {
 
     manager.destroy();
 
-    expect(removeDock).toHaveBeenCalledTimes(1);
+    expect(removeDock).not.toHaveBeenCalled();
   });
 
   it("skips dock teardown when the registration model has no remove method", () => {

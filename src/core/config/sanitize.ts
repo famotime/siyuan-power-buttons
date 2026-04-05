@@ -8,8 +8,8 @@ import {
 } from "@/shared/constants";
 import {
   ACTION_TYPES,
+  CONFIGURABLE_SURFACES,
   ICON_TYPES,
-  SURFACES,
 } from "@/shared/types";
 import {
   normalizeItemOrder,
@@ -23,8 +23,23 @@ import type {
   SurfaceType,
 } from "@/shared/types";
 
+const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
+  "dock-bottom-left": "statusbar-left",
+  "dock-bottom-right": "statusbar-right",
+  "dock-left-bottom": "statusbar-left",
+  "dock-left-top": "statusbar-left",
+  "dock-right-bottom": "statusbar-right",
+  "dock-right-top": "statusbar-right",
+};
+
 function ensureSurface(value: unknown): SurfaceType {
-  return SURFACES.includes(value as SurfaceType) ? value as SurfaceType : "topbar";
+  if (CONFIGURABLE_SURFACES.includes(value as typeof CONFIGURABLE_SURFACES[number])) {
+    return value as SurfaceType;
+  }
+  if (typeof value === "string" && LEGACY_SURFACE_MIGRATIONS[value]) {
+    return LEGACY_SURFACE_MIGRATIONS[value];
+  }
+  return "topbar";
 }
 
 function ensureActionType(value: unknown): ActionType {
@@ -35,17 +50,36 @@ function ensureIconType(value: unknown): IconType {
   return ICON_TYPES.includes(value as IconType) ? value as IconType : "builtin";
 }
 
+function shouldMigrateLegacyOpenSettingsPreset(raw: Record<string, unknown>, actionType: ActionType, actionId: string): boolean {
+  if (actionType !== "builtin-global-command" || actionId !== "fileTree") {
+    return false;
+  }
+
+  const title = typeof raw.title === "string" ? raw.title.trim().toLowerCase() : "";
+  const tooltip = typeof raw.tooltip === "string" ? raw.tooltip.trim().toLowerCase() : "";
+
+  return title === "open settings"
+    || title === "插件设置"
+    || tooltip.includes("power buttons settings")
+    || tooltip.includes("快捷按钮设置");
+}
+
 function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   const fallback = createButtonItem({ order: index });
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
-  const actionType = ensureActionType(raw.actionType);
   const safeTitle = typeof raw.title === "string" && raw.title.trim()
     ? raw.title.trim()
     : `Button ${index + 1}`;
 
+  let actionType = ensureActionType(raw.actionType);
   let actionId = typeof raw.actionId === "string" ? raw.actionId.trim() : "";
   if (!actionId) {
     actionId = actionType === "custom-action" ? DEFAULT_CUSTOM_ACTION : "globalSearch";
+  }
+
+  if (shouldMigrateLegacyOpenSettingsPreset(raw, actionType, actionId)) {
+    actionType = "custom-action";
+    actionId = DEFAULT_CUSTOM_ACTION;
   }
 
   return {

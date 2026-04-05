@@ -50,7 +50,7 @@ export function createDefaultConfig(): PowerButtonsConfig {
     createButtonItem({
       title: "大纲",
       iconValue: "iconList",
-      surface: "dock-left-top",
+      surface: "statusbar-left",
       actionType: "builtin-global-command",
       actionId: "outline",
       tooltip: "显示大纲",

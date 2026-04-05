@@ -16,6 +16,9 @@ export class ConfigStore {
   async load(): Promise<PowerButtonsConfig> {
     const stored = await this.plugin.loadData(CONFIG_STORAGE_NAME);
     this.config = sanitizeConfig(stored);
+    if (JSON.stringify(stored ?? null) !== JSON.stringify(this.config)) {
+      await this.persist();
+    }
     return this.snapshot();
   }
 

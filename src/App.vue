@@ -3,7 +3,7 @@
     <header class="settings-header">
       <div>
         <h1>思源快捷按钮</h1>
-        <p>左侧管理按钮清单，预览区会自动读取当前界面布局；彩色按钮可拖拽改位置，灰色原生按钮仅供查看。</p>
+        <p>左侧管理按钮清单，预览区会自动读取当前界面布局；彩色按钮仅可在顶栏和底栏状态区间拖拽改位置，灰色原生按钮仅供查看。</p>
       </div>
       <div class="settings-header__actions">
         <button class="b3-button" @click="addItem">新建按钮</button>
@@ -515,8 +515,8 @@ import {
 } from "@/shared/preview-layout";
 import {
   ACTION_TYPES,
+  CONFIGURABLE_SURFACES,
   ICON_TYPES,
-  SURFACES,
 } from "@/shared/types";
 import {
   cloneConfig,
@@ -561,7 +561,7 @@ const showPreviewLabels = ref(false);
 const jsonBuffer = ref("");
 const iconKeyword = ref("");
 
-const surfaces = SURFACES.map(value => ({
+const surfaces = CONFIGURABLE_SURFACES.map(value => ({
   value,
   label: SURFACE_LABELS[value],
 }));
@@ -758,6 +758,11 @@ function getPreviewInsertIndex(surfaceItems: PreviewButtonItem[], targetIndex: n
 
 function moveFromPreview(surface: SurfaceType, targetIndex: number): void {
   if (!previewDragId.value) {
+    return;
+  }
+  if (!CONFIGURABLE_SURFACES.includes(surface as typeof CONFIGURABLE_SURFACES[number])) {
+    props.onNotify("Dock 区域当前仅保留预览，不能放置快捷按钮。", "error");
+    previewDragId.value = "";
     return;
   }
   config.items = movePreviewItem(config.items, previewDragId.value, surface, targetIndex);

@@ -6,12 +6,12 @@ import {
 } from "@/shared/preview-layout";
 
 describe("preview layout", () => {
-  it("maps buttons into topbar, side docks and statusbar regions", () => {
+  it("maps configurable buttons into topbar and statusbar regions", () => {
     const config = createDefaultConfig();
     const layout = buildPreviewLayout(config.items);
 
     expect(layout.topbar.length).toBe(1);
-    expect(layout.leftDockTop.length).toBe(1);
+    expect(layout.statusbarLeft.length).toBe(1);
     expect(layout.statusbarRight.length).toBe(1);
     expect(layout.canvas.length).toBe(0);
   });
