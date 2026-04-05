@@ -1,10 +1,10 @@
 {
-  "name": "plugin-sample-vite-vue",
-  "author": "wetoria",
-  "url": "https://github.com/Wetoria/plugin-sample-vite-vue",
-  "version": "0.0.1",
-  "minAppVersion": "2.10.14",
-  "disabledInPublish": true,
+  "name": "siyuan-power-buttons",
+  "author": "",
+  "url": "",
+  "version": "0.1.0",
+  "minAppVersion": "3.5.7",
+  "disabledInPublish": false,
   "backends": [
     "all"
   ],
@@ -12,19 +12,19 @@
     "all"
   ],
   "displayName": {
-    "default": "plugin-sample-vite-vue",
-    "en_US": "plugin-sample-vite-vue",
-    "zh_CN": "plugin-sample-vite-vue"
+    "default": "Siyuan Power Buttons",
+    "en_US": "Siyuan Power Buttons",
+    "zh_CN": "思源快捷按钮"
   },
   "description": {
-    "default": "plugin-sample-vite-vue",
-    "en_US": "plugin-sample-vite-vue",
-    "zh_CN": "plugin-sample-vite-vue"
+    "default": "Configurable power buttons for Siyuan surfaces.",
+    "en_US": "Configurable power buttons for Siyuan surfaces.",
+    "zh_CN": "为思源顶栏、状态栏与 Dock 提供可配置快捷按钮。"
   },
   "readme": {
     "default": "README.md",
     "en_US": "README.md",
-    "zh_CN": "README_zh_CN.md"
+    "zh_CN": "README.md"
   },
   "funding": {
     "custom": []

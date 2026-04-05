@@ -1,37 +1,24 @@
-import {
-  Plugin,
-} from "siyuan";
-import { createApp } from 'vue'
-import App from './App.vue'
+import { createApp } from "vue";
+import App from "@/App.vue";
+import "@/index.scss";
+import type {
+  BuiltinCommandDefinition,
+  PluginCommandDefinition,
+  PowerButtonsConfig,
+} from "@/shared/types";
 
-let plugin = null
-export function usePlugin(pluginProps?: Plugin): Plugin {
-  console.log('usePlugin', pluginProps, plugin)
-  if (pluginProps) {
-    plugin = pluginProps
-  }
-  if (!plugin && !pluginProps) {
-    console.error('need bind plugin')
-  }
-  return plugin;
+export interface SettingsAppProps {
+  initialConfig: PowerButtonsConfig;
+  builtinCommands: BuiltinCommandDefinition[];
+  pluginCommands: PluginCommandDefinition[];
+  onChange: (config: PowerButtonsConfig) => void | Promise<void>;
+  onNotify: (message: string, type?: "info" | "error") => void;
 }
 
-
-let app = null
-export function init(plugin: Plugin) {
-  // bind plugin hook
-  usePlugin(plugin);
-
-  const div = document.createElement('div')
-  div.classList.toggle('plugin-sample-vite-vue-app')
-  div.id = this.name
-  app = createApp(App)
-  app.mount(div)
-  document.body.appendChild(div)
-}
-
-export function destroy() {
-  app.unmount()
-  const div = document.getElementById(this.name)
-  document.body.removeChild(div)
+export function mountSettingsApp(target: HTMLElement, props: SettingsAppProps): () => void {
+  const app = createApp(App, props as unknown as Record<string, unknown>);
+  app.mount(target);
+  return () => {
+    app.unmount();
+  };
 }

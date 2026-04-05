@@ -1,0 +1,44 @@
+/* @vitest-environment jsdom */
+import { describe, expect, it, vi } from "vitest";
+import { createDefaultConfig } from "@/core/config";
+import { CommandExecutor } from "@/core/commands";
+import { SurfaceManager } from "@/core/surfaces";
+
+describe("surface manager", () => {
+  it("renders top bar, status bar and dock entries, then destroys them cleanly", () => {
+    const topBarElement = document.createElement("button");
+    const statusElement = document.createElement("div");
+    const removeDock = vi.fn();
+    const addTopBar = vi.fn(() => topBarElement);
+    const addStatusBar = vi.fn(() => statusElement);
+    const addDock = vi.fn(() => ({
+      model: {
+        remove: removeDock,
+      },
+    }));
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openSetting: vi.fn(),
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    manager.render(createDefaultConfig());
+
+    expect(addTopBar).toHaveBeenCalledTimes(1);
+    expect(addStatusBar).toHaveBeenCalledTimes(1);
+    expect(addDock).toHaveBeenCalledTimes(1);
+
+    manager.destroy();
+
+    expect(removeDock).toHaveBeenCalledTimes(1);
+  });
+});
