@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createButtonItem,
   createDefaultConfig,
   sanitizeConfig,
 } from "@/core/config";
@@ -12,6 +13,11 @@ describe("config store model", () => {
     expect(config.desktopOnly).toBe(true);
     expect(config.items.length).toBeGreaterThanOrEqual(3);
     expect(config.items.every(item => item.visible)).toBe(true);
+    expect(config.items.map(item => item.title)).toEqual(["全局搜索", "插件设置", "大纲"]);
+  });
+
+  it("creates new buttons with a Chinese default title", () => {
+    expect(createButtonItem().title).toBe("新建按钮");
   });
 
   it("sanitizes malformed input into a safe config", () => {

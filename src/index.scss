@@ -180,6 +180,22 @@
   gap: 12px;
 }
 
+.surface-summary__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.surface-summary__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.82;
+}
+
 .surface-summary__header p {
   margin-top: 4px;
   opacity: 0.7;
@@ -332,10 +348,15 @@
 }
 
 .workspace-chip__label {
+  display: none;
   max-width: 84px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.workspace-preview.show-labels .workspace-chip__label {
+  display: inline;
 }
 
 .editor-card {
@@ -394,31 +415,56 @@
 .switch-button {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  border-radius: 10px;
+  justify-content: flex-start;
+  width: 48px;
+  min-width: 48px;
+  min-height: 28px;
+  padding: 3px;
+  border-radius: 999px;
   cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 .switch-button--compact {
-  min-height: 34px;
-  padding: 0 10px;
-  font-size: 12px;
-  white-space: nowrap;
+  width: 42px;
+  min-width: 42px;
+  min-height: 24px;
+}
+
+.switch-button--icon-only {
+  width: 42px;
+  min-width: 42px;
+  min-height: 24px;
 }
 
 .switch-button.is-on {
   border-color: var(--b3-theme-primary);
-  color: var(--b3-theme-primary);
+  background: color-mix(in srgb, var(--b3-theme-primary) 22%, transparent);
+}
+
+.switch-button.is-on .switch-button__dot {
+  transform: translateX(18px);
+  background: var(--b3-theme-primary);
+}
+
+.switch-button--compact.is-on .switch-button__dot,
+.switch-button--icon-only.is-on .switch-button__dot {
+  transform: translateX(16px);
 }
 
 .switch-button__dot {
-  width: 9px;
-  height: 9px;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
-  background: currentColor;
-  opacity: 0.75;
+  background: color-mix(in srgb, var(--b3-theme-on-background) 72%, transparent);
+  opacity: 1;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+
+.switch-button--compact .switch-button__dot,
+.switch-button--icon-only .switch-button__dot {
+  width: 14px;
+  height: 14px;
 }
 
 .icon-grid {
@@ -506,5 +552,9 @@
 
   .surface-summary__header {
     flex-direction: column;
+  }
+
+  .surface-summary__controls {
+    justify-content: flex-start;
   }
 }

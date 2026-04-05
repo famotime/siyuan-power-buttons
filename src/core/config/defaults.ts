@@ -17,7 +17,7 @@ import type {
 export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): PowerButtonItem {
   return {
     id: overrides.id || createId(),
-    title: overrides.title || "New Button",
+    title: overrides.title || "新建按钮",
     visible: overrides.visible ?? true,
     iconType: (overrides.iconType || "builtin") as IconType,
     iconValue: overrides.iconValue || DEFAULT_BUILTIN_ICON,

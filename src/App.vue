@@ -45,10 +45,10 @@
               class="switch-button switch-button--compact"
               :class="{ 'is-on': item.visible }"
               :title="item.visible ? '切换为隐藏' : '切换为显示'"
+              :aria-label="item.visible ? '切换为隐藏' : '切换为显示'"
               @click.stop="toggleVisible(item.id)"
             >
               <span class="switch-button__dot" />
-              <span>{{ item.visible ? "显示" : "隐藏" }}</span>
             </button>
             <button
               type="button"
@@ -68,12 +68,27 @@
               <h3>位置预览</h3>
               <p>灰色为原生按钮，半透明为隐藏态。拖拽彩色按钮图标可切换区域和顺序。</p>
             </div>
-            <button class="b3-button b3-button--outline" :disabled="isRefreshingLayout" @click="refreshCurrentLayout">
-              {{ isRefreshingLayout ? "读取中..." : "读取当前布局" }}
-            </button>
+            <div class="surface-summary__controls">
+              <label class="surface-summary__toggle">
+                <span>显示文字</span>
+                <button
+                  type="button"
+                  class="switch-button switch-button--icon-only"
+                  :class="{ 'is-on': showPreviewLabels }"
+                  title="切换预览中的按钮文字显示"
+                  aria-label="切换预览中的按钮文字显示"
+                  @click="showPreviewLabels = !showPreviewLabels"
+                >
+                  <span class="switch-button__dot" />
+                </button>
+              </label>
+              <button class="b3-button b3-button--outline" :disabled="isRefreshingLayout" @click="refreshCurrentLayout">
+                {{ isRefreshingLayout ? "读取中..." : "读取当前布局" }}
+              </button>
+            </div>
           </div>
 
-          <div class="workspace-preview">
+          <div class="workspace-preview" :class="{ 'show-labels': showPreviewLabels }">
             <div
               class="workspace-preview__topbar"
               @dragover.prevent
@@ -346,9 +361,15 @@
               </label>
               <label class="form-switch">
                 <span>显示状态</span>
-                <button type="button" class="switch-button" :class="{ 'is-on': selectedItem.visible }" @click="toggleVisible(selectedItem.id)">
+                <button
+                  type="button"
+                  class="switch-button"
+                  :class="{ 'is-on': selectedItem.visible }"
+                  :title="selectedItem.visible ? '切换为隐藏' : '切换为显示'"
+                  :aria-label="selectedItem.visible ? '切换为隐藏' : '切换为显示'"
+                  @click="toggleVisible(selectedItem.id)"
+                >
                   <span class="switch-button__dot" />
-                  <span>{{ selectedItem.visible ? "已显示" : "已隐藏" }}</span>
                 </button>
               </label>
             </div>
@@ -536,6 +557,7 @@ const listDragIndex = ref<number | null>(null);
 const previewDragId = ref<string>("");
 const runtimePreviewItems = ref<PreviewButtonItem[]>([]);
 const isRefreshingLayout = ref(false);
+const showPreviewLabels = ref(false);
 const jsonBuffer = ref("");
 const iconKeyword = ref("");
 
