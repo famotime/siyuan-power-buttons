@@ -6,7 +6,6 @@
         <p>左侧管理按钮清单，预览区会自动读取当前界面布局；彩色按钮仅可在顶栏和底栏状态区间拖拽改位置，灰色原生按钮仅供查看。</p>
       </div>
       <div class="settings-header__actions">
-        <button class="b3-button" @click="addItem">新建按钮</button>
         <button class="b3-button b3-button--outline" @click="resetConfig">恢复默认</button>
       </div>
     </header>
@@ -16,9 +15,12 @@
         <div class="panel-title">
           <div>
             <h2>1. 按钮列表</h2>
-            <p>{{ config.items.length }} 个按钮，左侧可快速显隐，拖拽可排序</p>
+            <p>{{ config.items.length }} 个按钮，拖拽可排序</p>
           </div>
-          <button class="b3-button b3-button--outline" :disabled="!selectedItem" @click="duplicateItem">复制</button>
+          <div class="panel-title__actions">
+            <button class="b3-button" @click="addItem">新建</button>
+            <button class="b3-button b3-button--outline" :disabled="!selectedItem" @click="duplicateItem">复制</button>
+          </div>
         </div>
 
         <div class="button-list">
@@ -331,17 +333,6 @@
         </div>
 
         <template v-if="selectedItem">
-          <section class="editor-card editor-card--preview">
-            <div class="editor-card__title">当前预览</div>
-            <div class="preview-card">
-              <div class="preview-card__icon" v-html="renderBuiltinIconMarkup(selectedItem)" />
-              <div class="preview-card__meta">
-                <strong>{{ selectedItem.title || "未命名按钮" }}</strong>
-                <span>{{ surfaceLabel(selectedItem.surface) }} · {{ actionTypeLabel(selectedItem.actionType) }}</span>
-              </div>
-            </div>
-          </section>
-
           <section class="editor-card">
             <div class="editor-card__title">基本信息</div>
             <div class="form-grid">
@@ -372,41 +363,6 @@
                   <span class="switch-button__dot" />
                 </button>
               </label>
-            </div>
-          </section>
-
-          <section class="editor-card">
-            <div class="editor-card__title">实验功能</div>
-            <div class="form-grid">
-              <label class="form-switch">
-                <span>快捷键适配</span>
-                <button
-                  type="button"
-                  class="switch-button"
-                  :class="{ 'is-on': config.experimental.shortcutAdapter }"
-                  :title="config.experimental.shortcutAdapter ? '关闭实验快捷键适配' : '开启实验快捷键适配'"
-                  :aria-label="config.experimental.shortcutAdapter ? '关闭实验快捷键适配' : '开启实验快捷键适配'"
-                  @click="toggleExperimentalFlag('shortcutAdapter')"
-                >
-                  <span class="switch-button__dot" />
-                </button>
-              </label>
-              <label class="form-switch">
-                <span>点击序列适配</span>
-                <button
-                  type="button"
-                  class="switch-button"
-                  :class="{ 'is-on': config.experimental.clickSequenceAdapter }"
-                  :title="config.experimental.clickSequenceAdapter ? '关闭实验点击序列适配' : '开启实验点击序列适配'"
-                  :aria-label="config.experimental.clickSequenceAdapter ? '关闭实验点击序列适配' : '开启实验点击序列适配'"
-                  @click="toggleExperimentalFlag('clickSequenceAdapter')"
-                >
-                  <span class="switch-button__dot" />
-                </button>
-              </label>
-              <div class="form-grid__full">
-                <small>实验能力默认关闭。快捷键适配依赖当前焦点；点击序列依赖当前 DOM 结构，两者都可能随思源版本变化失效。</small>
-              </div>
             </div>
           </section>
 
@@ -576,21 +532,18 @@
 
           <section class="editor-card">
             <div class="editor-card__title">图标设置</div>
-            <div class="form-grid">
-              <label>
-                <span>图标来源</span>
-                <select v-model="selectedItem.iconType" class="b3-select" @change="applyIconDefaults">
-                  <option v-for="iconType in iconTypes" :key="iconType.value" :value="iconType.value">{{ iconType.label }}</option>
-                </select>
-              </label>
-              <label v-if="selectedItem.iconType === 'emoji'">
-                <span>Emoji</span>
-                <input v-model="selectedItem.iconValue" class="b3-text-field" placeholder="例如：⚡" @change="persist" />
-              </label>
-              <label v-else-if="selectedItem.iconType === 'svg'" class="form-grid__full">
-                <span>SVG 内容或图标 id</span>
-                <textarea v-model="selectedItem.iconValue" class="b3-text-field" rows="5" @change="persist" />
-              </label>
+            <div class="icon-tabs" role="tablist" aria-label="图标类型">
+              <button
+                v-for="iconType in iconTypes"
+                :key="iconType.value"
+                type="button"
+                class="icon-tabs__tab"
+                :class="{ 'is-active': selectedItem.iconType === iconType.value }"
+                :aria-selected="selectedItem.iconType === iconType.value"
+                @click="selectIconType(iconType.value)"
+              >
+                {{ iconType.label }}
+              </button>
             </div>
 
             <template v-if="selectedItem.iconType === 'builtin'">
@@ -614,6 +567,34 @@
                   <small>{{ icon.value }}</small>
                 </button>
               </div>
+            </template>
+
+            <template v-else-if="selectedItem.iconType === 'emoji'">
+              <label class="icon-editor">
+                <span>自定义 Emoji</span>
+                <input v-model="selectedItem.iconValue" class="b3-text-field" placeholder="例如：⚡" @change="persist" />
+              </label>
+
+              <div class="emoji-grid">
+                <button
+                  v-for="emoji in commonEmojiOptions"
+                  :key="emoji"
+                  type="button"
+                  class="emoji-grid__item"
+                  :class="{ 'is-active': selectedItem.iconValue === emoji }"
+                  :title="`使用 ${emoji}`"
+                  @click="selectEmojiIcon(emoji)"
+                >
+                  <span class="emoji-grid__preview">{{ emoji }}</span>
+                </button>
+              </div>
+            </template>
+
+            <template v-else>
+              <label class="icon-editor">
+                <span>SVG 内容或图标 id</span>
+                <textarea v-model="selectedItem.iconValue" class="b3-text-field" rows="5" @change="persist" />
+              </label>
             </template>
           </section>
 
@@ -658,6 +639,7 @@ import {
 } from "@/core/commands";
 import {
   BUILTIN_ICON_OPTIONS,
+  COMMON_EMOJI_OPTIONS,
   filterBuiltinIcons,
 } from "@/shared/icon-catalog";
 import {
@@ -735,6 +717,7 @@ const iconTypes = ICON_TYPES.map(value => ({
   value,
   label: value === "builtin" ? "内置图标" : value === "emoji" ? "Emoji" : "SVG",
 }));
+const commonEmojiOptions = COMMON_EMOJI_OPTIONS;
 
 const builtinCommands = computed(() => props.builtinCommands);
 const pluginCommands = computed(() => props.pluginCommands);
@@ -889,11 +872,28 @@ function applyIconDefaults(): void {
   void persist();
 }
 
+function selectIconType(value: PowerButtonItem["iconType"]): void {
+  if (!selectedItem.value || selectedItem.value.iconType === value) {
+    return;
+  }
+  selectedItem.value.iconType = value;
+  applyIconDefaults();
+}
+
 function selectBuiltinIcon(value: string): void {
   if (!selectedItem.value) {
     return;
   }
   selectedItem.value.iconType = "builtin";
+  selectedItem.value.iconValue = value;
+  void persist();
+}
+
+function selectEmojiIcon(value: string): void {
+  if (!selectedItem.value) {
+    return;
+  }
+  selectedItem.value.iconType = "emoji";
   selectedItem.value.iconValue = value;
   void persist();
 }
@@ -998,11 +998,6 @@ function toggleSelectedClickSequenceStopOnFailure(): void {
   const config = ensureExperimentalClickSequence(selectedItem.value);
   config.stopOnFailure = !config.stopOnFailure;
   selectedItem.value.actionId = summarizeClickSequence(config);
-  void persist();
-}
-
-function toggleExperimentalFlag(key: "shortcutAdapter" | "clickSequenceAdapter"): void {
-  config.experimental[key] = !config.experimental[key];
   void persist();
 }
 

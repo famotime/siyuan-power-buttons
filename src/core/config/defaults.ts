@@ -56,7 +56,7 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
 
   return {
     id: overrides.id || createId(),
-    title: overrides.title || "新建按钮",
+    title: overrides.title || "新建",
     visible: overrides.visible ?? true,
     iconType: (overrides.iconType || "builtin") as IconType,
     iconValue: overrides.iconValue || DEFAULT_BUILTIN_ICON,
@@ -67,11 +67,11 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
     tooltip: overrides.tooltip || "",
     experimentalShortcut: actionType === "experimental-shortcut"
       ? createExperimentalShortcutConfig({
-          shortcut: overrides.experimentalShortcut?.shortcut || actionId,
-          sendEscapeBefore: overrides.experimentalShortcut?.sendEscapeBefore,
-          dispatchTarget: overrides.experimentalShortcut?.dispatchTarget,
-          allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
-        })
+        shortcut: overrides.experimentalShortcut?.shortcut || actionId,
+        sendEscapeBefore: overrides.experimentalShortcut?.sendEscapeBefore,
+        dispatchTarget: overrides.experimentalShortcut?.dispatchTarget,
+        allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
+      })
       : overrides.experimentalShortcut,
     experimentalClickSequence: actionType === "experimental-click-sequence"
       ? createExperimentalClickSequenceConfig(overrides.experimentalClickSequence)
@@ -114,8 +114,8 @@ export function createDefaultConfig(): PowerButtonsConfig {
     experimental: {
       nativeToolbarControl: false,
       internalCommandAdapter: false,
-      shortcutAdapter: false,
-      clickSequenceAdapter: false,
+      shortcutAdapter: true,
+      clickSequenceAdapter: true,
     },
   };
 }

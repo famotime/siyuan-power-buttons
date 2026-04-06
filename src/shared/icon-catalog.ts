@@ -25,6 +25,18 @@ export const BUILTIN_ICON_OPTIONS: BuiltinIconOption[] = [
   { value: "iconInfo", label: "信息", keywords: ["info", "信息"] },
 ];
 
+export const COMMON_EMOJI_OPTIONS = [
+  "⚡",
+  "🔍",
+  "⚙️",
+  "📝",
+  "📌",
+  "⭐",
+  "📚",
+  "🧩",
+  "📎",
+];
+
 export function filterBuiltinIcons(keyword: string): BuiltinIconOption[] {
   const normalized = keyword.trim().toLowerCase();
   if (!normalized) {

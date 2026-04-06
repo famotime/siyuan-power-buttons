@@ -99,6 +99,19 @@ function sanitizeExperimentalClickSequence(raw: Record<string, unknown>, actionI
   };
 }
 
+function readExperimentalFlag(
+  experimental: unknown,
+  key: "nativeToolbarControl" | "internalCommandAdapter" | "shortcutAdapter" | "clickSequenceAdapter",
+  fallback: boolean,
+): boolean {
+  if (!experimental || typeof experimental !== "object") {
+    return fallback;
+  }
+
+  const value = (experimental as Record<string, unknown>)[key];
+  return typeof value === "boolean" ? value : fallback;
+}
+
 function shouldMigrateLegacyOpenSettingsPreset(raw: Record<string, unknown>, actionType: ActionType, actionId: string): boolean {
   if (actionType !== "builtin-global-command" || actionId !== "fileTree") {
     return false;
@@ -175,10 +188,10 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
     desktopOnly: typeof raw.desktopOnly === "boolean" ? raw.desktopOnly : true,
     items,
     experimental: {
-      nativeToolbarControl: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).nativeToolbarControl),
-      internalCommandAdapter: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).internalCommandAdapter),
-      shortcutAdapter: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).shortcutAdapter),
-      clickSequenceAdapter: Boolean(raw.experimental && typeof raw.experimental === "object" && (raw.experimental as Record<string, unknown>).clickSequenceAdapter),
+      nativeToolbarControl: readExperimentalFlag(raw.experimental, "nativeToolbarControl", false),
+      internalCommandAdapter: readExperimentalFlag(raw.experimental, "internalCommandAdapter", false),
+      shortcutAdapter: readExperimentalFlag(raw.experimental, "shortcutAdapter", true),
+      clickSequenceAdapter: readExperimentalFlag(raw.experimental, "clickSequenceAdapter", true),
     },
   };
 }

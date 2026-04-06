@@ -7,7 +7,7 @@ import {
 import { CONFIGURABLE_SURFACES } from "@/shared/types";
 
 describe("config store model", () => {
-  it("creates a desktop-only default config with starter buttons and disabled experimental adapters", () => {
+  it("creates a desktop-only default config with starter buttons and enabled experimental adapters", () => {
     const config = createDefaultConfig();
 
     expect(config.version).toBe(2);
@@ -16,12 +16,12 @@ describe("config store model", () => {
     expect(config.items.every(item => item.visible)).toBe(true);
     expect(config.items.map(item => item.title)).toEqual(["全局搜索", "插件设置", "大纲"]);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
-    expect(config.experimental.shortcutAdapter).toBe(false);
-    expect(config.experimental.clickSequenceAdapter).toBe(false);
+    expect(config.experimental.shortcutAdapter).toBe(true);
+    expect(config.experimental.clickSequenceAdapter).toBe(true);
   });
 
   it("creates new buttons with a Chinese default title", () => {
-    expect(createButtonItem().title).toBe("新建按钮");
+    expect(createButtonItem().title).toBe("新建");
   });
 
   it("sanitizes malformed input into a safe config", () => {
@@ -50,8 +50,8 @@ describe("config store model", () => {
     expect(config.items[0].surface).toBe("topbar");
     expect(config.items[0].actionType).toBe("builtin-global-command");
     expect(config.items[0].title.length).toBeGreaterThan(0);
-    expect(config.experimental.shortcutAdapter).toBe(false);
-    expect(config.experimental.clickSequenceAdapter).toBe(false);
+    expect(config.experimental.shortcutAdapter).toBe(true);
+    expect(config.experimental.clickSequenceAdapter).toBe(true);
   });
 
   it("migrates legacy dock surfaces into configurable statusbar surfaces", () => {
