@@ -544,10 +544,6 @@
                 </div>
               </template>
 
-              <label v-else>
-                <span>目标链接</span>
-                <input v-model="selectedItem.actionId" class="b3-text-field" placeholder="https://example.com" @change="persist" />
-              </label>
             </div>
           </section>
 
@@ -719,10 +715,12 @@ const surfaces = CONFIGURABLE_SURFACES.map(value => ({
   label: SURFACE_LABELS[value],
 }));
 
-const actionTypes = ACTION_TYPES.map(value => ({
-  value,
-  label: ACTION_TYPE_LABELS[value],
-}));
+const actionTypes = ACTION_TYPES
+  .filter(value => value !== "open-url")
+  .map(value => ({
+    value,
+    label: ACTION_TYPE_LABELS[value],
+  }));
 
 const iconTypes = ICON_TYPES.map(value => ({
   value,
@@ -881,8 +879,6 @@ function applyActionDefaults(): void {
   } else if (selectedItem.value.actionType === "experimental-click-sequence") {
     selectedItem.value.experimentalClickSequence = ensureExperimentalClickSequence(selectedItem.value);
     selectedItem.value.actionId = summarizeClickSequence(selectedItem.value.experimentalClickSequence);
-  } else {
-    selectedItem.value.actionId = "https://example.com";
   }
   void persist();
 }
@@ -963,6 +959,21 @@ function ensureExperimentalClickSequence(item: PowerButtonItem): ExperimentalCli
     item.experimentalClickSequence.steps = item.experimentalClickSequence.steps.map(step => createClickSequenceStep(step));
   }
   return item.experimentalClickSequence;
+}
+
+function ensureSelectedActionConfig(): void {
+  if (!selectedItem.value) {
+    return;
+  }
+
+  if (selectedItem.value.actionType === "experimental-shortcut") {
+    ensureExperimentalShortcut(selectedItem.value);
+    return;
+  }
+
+  if (selectedItem.value.actionType === "experimental-click-sequence") {
+    ensureExperimentalClickSequence(selectedItem.value);
+  }
 }
 
 function summarizeClickSequence(sequence: ExperimentalClickSequenceConfig): string {
@@ -1207,8 +1218,9 @@ function actionTypeLabel(value: string): string {
 }
 
 watch(() => `${selectedId.value}:${selectedItem.value?.actionType || ""}`, () => {
+  ensureSelectedActionConfig();
   shortcutCaptureError.value = "";
-});
+}, { immediate: true, flush: "sync" });
 
 onMounted(() => {
   void refreshCurrentLayout();

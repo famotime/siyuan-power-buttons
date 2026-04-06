@@ -158,6 +158,49 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("initializes experimental action configs immediately when switching action type", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onNotify = vi.fn();
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "experimental-shortcut"));
+    expect(actionTypeSelect).not.toBeNull();
+
+    actionTypeSelect!.value = "experimental-shortcut";
+    actionTypeSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
+      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
+    expect(shortcutInput).not.toBeUndefined();
+    expect(onNotify).not.toHaveBeenCalledWith(expect.stringMatching(/TypeError/), "error");
+
+    actionTypeSelect!.value = "experimental-click-sequence";
+    actionTypeSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(target.textContent).toContain("点击步骤");
+    expect(target.textContent).toContain("步骤 1");
+
+    unmount();
+  });
+
   it("captures shortcut combinations directly from keyboard input", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -309,6 +352,32 @@ describe("settings app layout", () => {
     expect(Array.from(actionTypeSelect!.options).map(option => option.value)).not.toContain("custom-action");
     expect(Array.from(actionTypeSelect!.options).map(option => option.textContent?.trim())).not.toContain("插件动作");
     expect(target.textContent).toContain("插件命令");
+
+    unmount();
+  });
+
+  it("removes the open url action type from the settings selector", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
+
+    expect(actionTypeSelect).not.toBeNull();
+    expect(Array.from(actionTypeSelect!.options).map(option => option.value)).not.toContain("open-url");
+    expect(Array.from(actionTypeSelect!.options).map(option => option.textContent?.trim())).not.toContain("打开链接");
+    expect(target.textContent).not.toContain("目标链接");
 
     unmount();
   });
