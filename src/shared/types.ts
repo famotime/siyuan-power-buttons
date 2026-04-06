@@ -99,12 +99,13 @@ export interface PluginCommandDefinition {
 }
 
 export type PreviewSource = "config" | "native";
+export type PreviewSurfaceType = SurfaceType | "canvas";
 
 export interface PreviewButtonItem {
   id: string;
   title: string;
   visible: boolean;
-  surface: SurfaceType;
+  surface: PreviewSurfaceType;
   order: number;
   editable: boolean;
   source: PreviewSource;

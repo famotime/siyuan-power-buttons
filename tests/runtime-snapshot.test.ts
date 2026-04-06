@@ -23,8 +23,8 @@ describe("runtime surface snapshot", () => {
   it("collects native buttons and skips plugin-owned entries", () => {
     document.body.innerHTML = `
       <div id="toolbar">
-        <button id="barWorkspace" title="工作空间"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg></button>
-        <button title="插件按钮" data-power-buttons-owned="true"></button>
+        <button id="barWorkspace" class="toolbar__item" title="工作空间"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg></button>
+        <button class="toolbar__item" title="插件按钮" data-power-buttons-owned="true"></button>
       </div>
       <div id="status">
         <button id="barDock" title="停靠区"></button>
@@ -33,6 +33,7 @@ describe("runtime surface snapshot", () => {
       <div id="dockLeft">
         <button class="dock__item" data-type="file" aria-label="文件"></button>
         <button class="dock__item" data-type="bookmark" aria-label="书签"></button>
+        <button class="dock__item dock__item--pin" aria-label="钉住侧栏"></button>
         <button class="dock__item" data-type="siyuan-power-buttons-demo" aria-label="插件 Dock"></button>
       </div>
       <div id="dockBottom">
@@ -44,7 +45,7 @@ describe("runtime surface snapshot", () => {
     const dockLeft = document.getElementById("dockLeft");
     const dockBottom = document.getElementById("dockBottom");
     const [barDock, statusHelp] = Array.from(document.querySelectorAll("#status button"));
-    const [dockFile, dockBookmark] = Array.from(document.querySelectorAll("#dockLeft .dock__item"));
+    const [dockFile, dockBookmark, dockPin] = Array.from(document.querySelectorAll("#dockLeft .dock__item"));
     const [dockGraph] = Array.from(document.querySelectorAll("#dockBottom .dock__item"));
 
     mockRect(status!, { left: 0, right: 200, width: 200 });
@@ -53,6 +54,7 @@ describe("runtime surface snapshot", () => {
     mockRect(dockLeft!, { top: 0, bottom: 200, height: 200 });
     mockRect(dockFile, { top: 10, bottom: 30, height: 20 });
     mockRect(dockBookmark, { top: 160, bottom: 180, height: 20 });
+    mockRect(dockPin, { top: 188, bottom: 196, height: 8 });
     mockRect(dockBottom!, { left: 0, right: 240, width: 240 });
     mockRect(dockGraph, { left: 20, right: 40, width: 20 });
 
@@ -66,5 +68,100 @@ describe("runtime surface snapshot", () => {
     expect(snapshot.find(item => item.title === "书签")?.surface).toBe("dock-left-bottom");
     expect(snapshot.find(item => item.title === "关系图")?.surface).toBe("dock-bottom-left");
     expect(snapshot.every(item => item.editable === false)).toBe(true);
+  });
+
+  it("keeps topbar buttons in row-major order when the toolbar wraps", () => {
+    document.body.innerHTML = `
+      <div id="toolbar">
+        <button id="barAlpha" class="toolbar__item" title="Alpha"></button>
+        <button id="barBeta" class="toolbar__item" title="Beta"></button>
+        <button id="barGamma" class="toolbar__item" title="Gamma"></button>
+        <button id="barDelta" class="toolbar__item" title="Delta"></button>
+      </div>
+    `;
+
+    const toolbar = document.getElementById("toolbar");
+    const [alpha, beta, gamma, delta] = Array.from(document.querySelectorAll("#toolbar button"));
+
+    mockRect(toolbar!, { left: 0, top: 0, width: 120, height: 80, right: 120, bottom: 80 });
+    mockRect(alpha, { left: 8, top: 8, width: 20, height: 20, right: 28, bottom: 28 });
+    mockRect(beta, { left: 40, top: 8, width: 20, height: 20, right: 60, bottom: 28 });
+    mockRect(gamma, { left: 8, top: 40, width: 20, height: 20, right: 28, bottom: 60 });
+    mockRect(delta, { left: 40, top: 40, width: 20, height: 20, right: 60, bottom: 60 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+
+    expect(snapshot.filter(item => item.surface === "topbar").map(item => item.title)).toEqual(["Alpha", "Beta", "Gamma", "Delta"]);
+  });
+
+  it("skips hidden topbar items and window controls", () => {
+    document.body.innerHTML = `
+      <div id="toolbar">
+        <div id="barWorkspace" class="toolbar__item" aria-label="工作空间"></div>
+        <div id="barSearch" class="toolbar__item fn__none" data-hide="true" aria-label="全局搜索"></div>
+        <div id="barPlugins" class="toolbar__item fn__none" data-hide="true" aria-label="插件"></div>
+        <div id="barMore" class="toolbar__item" aria-label="更多"></div>
+        <div id="windowControls">
+          <div id="minWindow" class="toolbar__item toolbar__item--win" aria-label="最小化"></div>
+          <div id="maxWindow" class="toolbar__item toolbar__item--win" aria-label="最大化"></div>
+          <div id="closeWindow" class="toolbar__item toolbar__item--close" aria-label="关闭"></div>
+        </div>
+      </div>
+    `;
+
+    const toolbar = document.getElementById("toolbar");
+    const workspace = document.getElementById("barWorkspace") as HTMLElement;
+    const hiddenSearch = document.getElementById("barSearch") as HTMLElement;
+    const hiddenPlugins = document.getElementById("barPlugins") as HTMLElement;
+    const more = document.getElementById("barMore") as HTMLElement;
+    const minWindow = document.getElementById("minWindow") as HTMLElement;
+    const maxWindow = document.getElementById("maxWindow") as HTMLElement;
+    const closeWindow = document.getElementById("closeWindow") as HTMLElement;
+
+    mockRect(toolbar!, { left: 0, top: 0, width: 280, height: 32, right: 280, bottom: 32 });
+    mockRect(workspace, { left: 8, top: 6, width: 40, height: 20, right: 48, bottom: 26 });
+    mockRect(hiddenSearch, { left: 56, top: 6, width: 40, height: 20, right: 96, bottom: 26 });
+    mockRect(hiddenPlugins, { left: 104, top: 6, width: 40, height: 20, right: 144, bottom: 26 });
+    mockRect(more, { left: 152, top: 6, width: 40, height: 20, right: 192, bottom: 26 });
+    mockRect(minWindow, { left: 200, top: 6, width: 20, height: 20, right: 220, bottom: 26 });
+    mockRect(maxWindow, { left: 228, top: 6, width: 20, height: 20, right: 248, bottom: 26 });
+    mockRect(closeWindow, { left: 256, top: 6, width: 20, height: 20, right: 276, bottom: 26 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+
+    expect(snapshot.filter(item => item.surface === "topbar").map(item => item.title)).toEqual(["工作空间", "更多"]);
+  });
+
+  it("reads editor pin controls into the canvas preview area", () => {
+    document.body.innerHTML = `
+      <div class="layout__center">
+        <div data-type="wnd" class="fn__flex">
+          <div class="layout-tab-bar--readonly">
+            <li class="item item--readonly">
+              <span data-type="new" class="block__icon" aria-label="新建文档"></span>
+            </li>
+          </div>
+        </div>
+        <div class="protyle-util">
+          <div class="block__icons">
+            <button data-type="pin" class="block__icon block__icon--show" aria-label="钉住编辑区">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const readonlyBar = document.querySelector(".layout-tab-bar--readonly") as HTMLElement;
+    const pinButton = document.querySelector('.protyle-util [data-type="pin"]') as HTMLElement;
+
+    mockRect(readonlyBar, { left: 0, top: 0, width: 120, height: 28, right: 120, bottom: 28 });
+    mockRect(pinButton, { left: 24, top: 360, width: 20, height: 20, right: 44, bottom: 380 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+
+    expect(snapshot.map(item => item.title)).toContain("钉住编辑区");
+    expect(snapshot.map(item => item.title)).not.toContain("新建文档");
+    expect(snapshot.find(item => item.title === "钉住编辑区")?.surface).toBe("canvas");
   });
 });

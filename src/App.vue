@@ -170,7 +170,25 @@
               </div>
 
               <div class="workspace-preview__canvas">
-                <div class="workspace-preview__canvas-note">编辑区</div>
+                <div class="workspace-preview__canvas-header">
+                  <div class="workspace-preview__canvas-note">编辑区</div>
+                  <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__canvas-items">
+                    <button
+                      v-for="item in previewLayout.canvas"
+                      :key="item.id"
+                      type="button"
+                      class="workspace-chip"
+                      :class="previewChipClass(item)"
+                      :draggable="item.editable"
+                      :title="previewChipTitle(item)"
+                      @click="handlePreviewChipClick(item)"
+                      @dragstart="onPreviewDragStart(item)"
+                    >
+                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                      <span class="workspace-chip__label">{{ item.title }}</span>
+                    </button>
+                  </div>
+                </div>
                 <div class="workspace-preview__bottom-dock">
                   <div
                     class="workspace-preview__stack workspace-preview__stack--row"

@@ -233,4 +233,43 @@ describe("settings app layout", () => {
 
     unmount();
   });
+
+  it("renders native canvas pin controls at the top-left of the editor preview and keeps dock sections separated", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-canvas-pin",
+          title: "钉住编辑区",
+          visible: true,
+          surface: "canvas",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+        },
+      ]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const canvasItems = target.querySelector(".workspace-preview__canvas-items");
+    const canvasText = canvasItems?.textContent || "";
+    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+
+    expect(canvasText).toContain("钉住编辑区");
+    expect(stylesheet).toContain(".workspace-preview__segment--end");
+    expect(stylesheet).toContain("border-top: 1px dashed");
+    expect(stylesheet).toContain("justify-content: flex-end");
+
+    unmount();
+  });
 });

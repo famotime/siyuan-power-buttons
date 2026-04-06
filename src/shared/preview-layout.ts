@@ -71,6 +71,9 @@ export function buildPreviewLayout<T extends Pick<PreviewButtonItem, "surface" |
       case "statusbar-right":
         layout.statusbarRight.push(item);
         break;
+      case "canvas":
+        layout.canvas.push(item);
+        break;
       default:
         layout.canvas.push(item);
         break;
