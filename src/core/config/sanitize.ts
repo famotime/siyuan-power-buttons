@@ -4,7 +4,7 @@ import {
 } from "@/core/config/defaults";
 import {
   DEFAULT_BUILTIN_ICON,
-  DEFAULT_CUSTOM_ACTION,
+  DEFAULT_PLUGIN_COMMAND,
 } from "@/shared/constants";
 import {
   ACTION_TYPES,
@@ -112,20 +112,6 @@ function readExperimentalFlag(
   return typeof value === "boolean" ? value : fallback;
 }
 
-function shouldMigrateLegacyOpenSettingsPreset(raw: Record<string, unknown>, actionType: ActionType, actionId: string): boolean {
-  if (actionType !== "builtin-global-command" || actionId !== "fileTree") {
-    return false;
-  }
-
-  const title = typeof raw.title === "string" ? raw.title.trim().toLowerCase() : "";
-  const tooltip = typeof raw.tooltip === "string" ? raw.tooltip.trim().toLowerCase() : "";
-
-  return title === "open settings"
-    || title === "插件设置"
-    || tooltip.includes("power buttons settings")
-    || tooltip.includes("快捷按钮设置");
-}
-
 function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   const fallback = createButtonItem({ order: index });
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
@@ -136,20 +122,15 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   let actionType = ensureActionType(raw.actionType);
   let actionId = typeof raw.actionId === "string" ? raw.actionId.trim() : "";
   if (!actionId) {
-    if (actionType === "custom-action") {
-      actionId = DEFAULT_CUSTOM_ACTION;
-    } else if (actionType === "experimental-shortcut") {
-      actionId = "Ctrl+B";
+    if (actionType === "experimental-shortcut") {
+      actionId = "";
+    } else if (actionType === "plugin-command") {
+      actionId = DEFAULT_PLUGIN_COMMAND;
     } else if (actionType === "experimental-click-sequence") {
       actionId = "text:设置";
     } else {
       actionId = "globalSearch";
     }
-  }
-
-  if (shouldMigrateLegacyOpenSettingsPreset(raw, actionType, actionId)) {
-    actionType = "custom-action";
-    actionId = DEFAULT_CUSTOM_ACTION;
   }
 
   const sanitizedItem: PowerButtonItem = {

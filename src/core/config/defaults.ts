@@ -1,6 +1,6 @@
 import {
   DEFAULT_BUILTIN_ICON,
-  DEFAULT_CUSTOM_ACTION,
+  DEFAULT_PLUGIN_COMMAND,
 } from "@/shared/constants";
 import {
   createId,
@@ -19,7 +19,7 @@ import type {
 
 function createExperimentalShortcutConfig(overrides: Partial<ExperimentalShortcutConfig> = {}): ExperimentalShortcutConfig {
   return {
-    shortcut: overrides.shortcut || "Ctrl+B",
+    shortcut: overrides.shortcut ?? "",
     sendEscapeBefore: overrides.sendEscapeBefore ?? false,
     dispatchTarget: overrides.dispatchTarget || "auto",
     allowDirectWindowDispatch: overrides.allowDirectWindowDispatch ?? false,
@@ -47,12 +47,15 @@ function createExperimentalClickSequenceConfig(overrides: Partial<ExperimentalCl
 
 export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): PowerButtonItem {
   const actionType = (overrides.actionType || "builtin-global-command") as ActionType;
-  const actionId = overrides.actionId
-    || (actionType === "experimental-shortcut"
-      ? "Ctrl+B"
+  const actionId = overrides.actionId ?? (
+    actionType === "experimental-shortcut"
+      ? ""
+      : actionType === "plugin-command"
+        ? DEFAULT_PLUGIN_COMMAND
       : actionType === "experimental-click-sequence"
         ? "text:设置"
-        : "globalSearch");
+        : "globalSearch"
+  );
 
   return {
     id: overrides.id || createId(),
@@ -67,7 +70,7 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
     tooltip: overrides.tooltip || "",
     experimentalShortcut: actionType === "experimental-shortcut"
       ? createExperimentalShortcutConfig({
-        shortcut: overrides.experimentalShortcut?.shortcut || actionId,
+        shortcut: overrides.experimentalShortcut?.shortcut ?? actionId,
         sendEscapeBefore: overrides.experimentalShortcut?.sendEscapeBefore,
         dispatchTarget: overrides.experimentalShortcut?.dispatchTarget,
         allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
@@ -93,8 +96,8 @@ export function createDefaultConfig(): PowerButtonsConfig {
       title: "插件设置",
       iconValue: "iconSettings",
       surface: "statusbar-right",
-      actionType: "custom-action",
-      actionId: DEFAULT_CUSTOM_ACTION,
+      actionType: "plugin-command",
+      actionId: DEFAULT_PLUGIN_COMMAND,
       tooltip: "打开快捷按钮设置",
     }),
     createButtonItem({

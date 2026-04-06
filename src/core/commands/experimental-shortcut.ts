@@ -2,6 +2,7 @@ import type {
   ExperimentalShortcutConfig,
   PowerButtonItem,
 } from "@/shared/types";
+import { normalizeShortcutToSiyuanHotkey } from "@/shared/shortcut-utils";
 
 type KeymapItem = {
   custom?: string;
@@ -36,41 +37,6 @@ function defaultExperimentalShortcut(actionId: string, input?: ExperimentalShort
     dispatchTarget: input?.dispatchTarget || "auto",
     allowDirectWindowDispatch: input?.allowDirectWindowDispatch ?? false,
   };
-}
-
-export function normalizeShortcutToSiyuanHotkey(shortcut: string): string {
-  const trimmed = shortcut.trim();
-  if (!trimmed) {
-    return "";
-  }
-
-  const tokens = trimmed.split("+").map(token => token.trim()).filter(Boolean);
-  const modifiers = new Set<string>();
-  const mainKeys: string[] = [];
-
-  for (const token of tokens) {
-    const lower = token.toLowerCase();
-    if (["ctrl", "control", "cmd", "command", "meta"].includes(lower)) {
-      modifiers.add("⌘");
-      continue;
-    }
-    if (lower === "shift") {
-      modifiers.add("⇧");
-      continue;
-    }
-    if (["alt", "option"].includes(lower)) {
-      modifiers.add("⌥");
-      continue;
-    }
-    if (lower === "physicalctrl") {
-      modifiers.add("⌃");
-      continue;
-    }
-    mainKeys.push(token.length === 1 ? token.toUpperCase() : token);
-  }
-
-  const sortedModifiers = ["⇧", "⌃", "⌥", "⌘"].filter(symbol => modifiers.has(symbol));
-  return `${sortedModifiers.join("")}${mainKeys.join("")}`.trim();
 }
 
 function findCommandInGroup(group: KeymapGroup | undefined, hotkey: string): { commandId: string; hotkey: string } | null {
@@ -294,3 +260,5 @@ export async function executeExperimentalShortcut(
 
   return false;
 }
+
+export { normalizeShortcutToSiyuanHotkey };

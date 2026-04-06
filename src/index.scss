@@ -447,6 +447,20 @@
   grid-column: 1 / -1;
 }
 
+.form-hint {
+  display: block;
+  line-height: 1.5;
+}
+
+.form-hint--error {
+  color: var(--b3-theme-error);
+}
+
+.shortcut-capture__input.is-conflict {
+  border-color: color-mix(in srgb, var(--b3-theme-error) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--b3-theme-error) 26%, transparent);
+}
+
 .form-switch {
   justify-content: flex-end;
 }

@@ -19,7 +19,6 @@ export const CONFIGURABLE_SURFACES = [
 export const ACTION_TYPES = [
   "builtin-global-command",
   "plugin-command",
-  "custom-action",
   "open-url",
   "experimental-shortcut",
   "experimental-click-sequence",

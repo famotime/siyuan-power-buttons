@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  ConfigStore,
   createDefaultConfig,
   exportConfigAsJson,
   importConfigFromJson,
@@ -18,38 +17,6 @@ describe("config import and export", () => {
 
   it("rejects invalid json documents", () => {
     expect(() => importConfigFromJson("{ broken json")).toThrow(/JSON/);
-  });
-
-  it("persists migrated legacy settings when loading from storage", async () => {
-    const saveData = vi.fn();
-    const store = new ConfigStore({
-      loadData: async () => ({
-        version: 1,
-        desktopOnly: true,
-        items: [
-          {
-            id: "legacy-open-settings",
-            title: "Open Settings",
-            tooltip: "Open Power Buttons settings",
-            visible: true,
-            iconType: "builtin",
-            iconValue: "iconInfo",
-            surface: "topbar",
-            order: 0,
-            actionType: "builtin-global-command",
-            actionId: "fileTree",
-          },
-        ],
-        experimental: null,
-      }),
-      saveData,
-    } as never);
-
-    const config = await store.load();
-
-    expect(config.items[0].actionType).toBe("custom-action");
-    expect(config.items[0].actionId).toBe("open-settings");
-    expect(saveData).toHaveBeenCalledTimes(1);
   });
 
   it("round-trips experimental shortcut settings through import/export", () => {
@@ -87,6 +54,45 @@ describe("config import and export", () => {
     const roundTripped = importConfigFromJson(serialized);
 
     expect(roundTripped).toEqual(config);
+  });
+
+  it("preserves empty experimental shortcut values when importing and exporting", () => {
+    const config = importConfigFromJson(JSON.stringify({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "exp-shortcut-empty",
+          title: "待填写快捷键",
+          visible: true,
+          iconType: "builtin",
+          iconValue: "iconKeyboard",
+          surface: "topbar",
+          order: 0,
+          actionType: "experimental-shortcut",
+          actionId: "",
+          tooltip: "实验快捷键",
+          experimentalShortcut: {
+            shortcut: "",
+            sendEscapeBefore: false,
+            dispatchTarget: "auto",
+            allowDirectWindowDispatch: false,
+          },
+        },
+      ],
+      experimental: {
+        nativeToolbarControl: false,
+        internalCommandAdapter: false,
+        shortcutAdapter: true,
+        clickSequenceAdapter: false,
+      },
+    }));
+
+    const serialized = exportConfigAsJson(config);
+    const roundTripped = importConfigFromJson(serialized);
+
+    expect(roundTripped.items[0].actionId).toBe("");
+    expect(roundTripped.items[0].experimentalShortcut?.shortcut).toBe("");
   });
 
   it("round-trips experimental click sequence settings through import/export", () => {

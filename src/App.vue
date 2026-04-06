@@ -417,21 +417,17 @@
                 </select>
               </label>
 
-              <label v-else-if="selectedItem.actionType === 'custom-action'">
-                <span>插件动作</span>
-                <select v-model="selectedItem.actionId" class="b3-select" @change="persist">
-                  <option v-for="action in customActions" :key="action.id" :value="action.id">{{ action.title }}</option>
-                </select>
-              </label>
-
               <template v-else-if="selectedItem.actionType === 'experimental-shortcut'">
                 <label>
                   <span>快捷键</span>
                   <input
-                    v-model="selectedItem.experimentalShortcut!.shortcut"
-                    class="b3-text-field"
+                    :value="selectedItem.experimentalShortcut!.shortcut"
+                    class="b3-text-field shortcut-capture__input"
+                    :class="{ 'is-conflict': Boolean(activeShortcutMessage) }"
                     placeholder="例如：Ctrl+B / Alt+5"
-                    @change="syncExperimentalShortcut"
+                    readonly
+                    @focus="shortcutCaptureError = ''"
+                    @keydown="captureSelectedShortcut"
                   />
                 </label>
                 <label>
@@ -470,6 +466,8 @@
                   </button>
                 </label>
                 <div class="form-grid__full">
+                  <small>聚焦输入框后直接按组合键；按 Backspace / Delete 可清空当前快捷键。</small>
+                  <small v-if="activeShortcutMessage" class="form-hint form-hint--error">{{ activeShortcutMessage }}</small>
                   <small v-if="!config.experimental.shortcutAdapter">实验快捷键适配当前未启用。即使保存按钮，运行时也会提示未启用或无法执行。</small>
                   <small v-else>会优先按思源 keymap 反查命令，再决定回退到稳定命令执行或模拟按键。</small>
                 </div>
@@ -633,6 +631,7 @@ import {
   onMounted,
   reactive,
   ref,
+  watch,
 } from "vue";
 import {
   createButtonItem,
@@ -651,8 +650,11 @@ import {
 } from "@/shared/icon-catalog";
 import { renderBuiltinIconMarkup as renderSharedBuiltinIconMarkup } from "@/shared/icon-renderer";
 import {
+  captureShortcutFromKeyboardEvent,
+  findExperimentalShortcutConflict,
+} from "@/shared/shortcut-utils";
+import {
   ACTION_TYPE_LABELS,
-  CUSTOM_ACTIONS,
   DEFAULT_BUILTIN_ICON,
   SURFACE_LABELS,
 } from "@/shared/constants";
@@ -710,6 +712,7 @@ const isRefreshingLayout = ref(false);
 const showPreviewLabels = ref(false);
 const importFileInput = ref<HTMLInputElement | null>(null);
 const iconKeyword = ref("");
+const shortcutCaptureError = ref("");
 
 const surfaces = CONFIGURABLE_SURFACES.map(value => ({
   value,
@@ -729,7 +732,6 @@ const commonEmojiOptions = COMMON_EMOJI_OPTIONS;
 
 const builtinCommands = computed(() => props.builtinCommands);
 const pluginCommands = computed(() => props.pluginCommands);
-const customActions = CUSTOM_ACTIONS;
 
 const selectedItem = computed<PowerButtonItem | undefined>(() => config.items.find(item => item.id === selectedId.value));
 
@@ -755,6 +757,27 @@ const filteredBuiltinIcons = computed(() => {
   const result = filterBuiltinIcons(iconKeyword.value);
   return result.length ? result : BUILTIN_ICON_OPTIONS;
 });
+
+const selectedShortcutConflictMessage = computed(() => {
+  if (!selectedItem.value || selectedItem.value.actionType !== "experimental-shortcut") {
+    return "";
+  }
+
+  const shortcut = selectedItem.value.experimentalShortcut?.shortcut?.trim()
+    || selectedItem.value.actionId.trim();
+  if (!shortcut) {
+    return "";
+  }
+
+  const conflict = findExperimentalShortcutConflict(config.items, selectedItem.value.id, shortcut);
+  if (!conflict) {
+    return "";
+  }
+
+  return `快捷键 ${shortcut} 已被按钮「${conflict.title || "未命名按钮"}」使用`;
+});
+
+const activeShortcutMessage = computed(() => shortcutCaptureError.value || selectedShortcutConflictMessage.value);
 
 function selectItem(id: string): void {
   selectedId.value = id;
@@ -852,11 +875,9 @@ function applyActionDefaults(): void {
     selectedItem.value.actionId = builtinCommands.value[0]?.id || "globalSearch";
   } else if (selectedItem.value.actionType === "plugin-command") {
     selectedItem.value.actionId = pluginCommands.value[0]?.id || "open-settings";
-  } else if (selectedItem.value.actionType === "custom-action") {
-    selectedItem.value.actionId = customActions[0]?.id || "open-settings";
   } else if (selectedItem.value.actionType === "experimental-shortcut") {
     selectedItem.value.experimentalShortcut = ensureExperimentalShortcut(selectedItem.value);
-    selectedItem.value.actionId = selectedItem.value.experimentalShortcut.shortcut || "Ctrl+B";
+    selectedItem.value.actionId = selectedItem.value.experimentalShortcut.shortcut.trim();
   } else if (selectedItem.value.actionType === "experimental-click-sequence") {
     selectedItem.value.experimentalClickSequence = ensureExperimentalClickSequence(selectedItem.value);
     selectedItem.value.actionId = summarizeClickSequence(selectedItem.value.experimentalClickSequence);
@@ -909,7 +930,7 @@ function selectEmojiIcon(value: string): void {
 function ensureExperimentalShortcut(item: PowerButtonItem): ExperimentalShortcutConfig {
   if (!item.experimentalShortcut) {
     item.experimentalShortcut = {
-      shortcut: item.actionId || "Ctrl+B",
+      shortcut: "",
       sendEscapeBefore: false,
       dispatchTarget: "auto",
       allowDirectWindowDispatch: false,
@@ -948,12 +969,39 @@ function summarizeClickSequence(sequence: ExperimentalClickSequenceConfig): stri
   return sequence.steps[0]?.selector || "text:设置";
 }
 
-function syncExperimentalShortcut(): void {
-  if (!selectedItem.value) {
+function captureSelectedShortcut(event: KeyboardEvent): void {
+  if (!selectedItem.value || selectedItem.value.actionType !== "experimental-shortcut") {
     return;
   }
-  const config = ensureExperimentalShortcut(selectedItem.value);
-  selectedItem.value.actionId = config.shortcut || "Ctrl+B";
+
+  const capture = captureShortcutFromKeyboardEvent(event);
+  if (capture.kind === "ignore") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const shortcutConfig = ensureExperimentalShortcut(selectedItem.value);
+  shortcutCaptureError.value = "";
+
+  if (capture.kind === "clear") {
+    shortcutConfig.shortcut = "";
+    selectedItem.value.actionId = "";
+    void persist();
+    return;
+  }
+
+  const conflict = findExperimentalShortcutConflict(config.items, selectedItem.value.id, capture.shortcut);
+  if (conflict) {
+    const message = `快捷键 ${capture.shortcut} 已被按钮「${conflict.title || "未命名按钮"}」使用`;
+    shortcutCaptureError.value = message;
+    props.onNotify(`${message}。`, "error");
+    return;
+  }
+
+  shortcutConfig.shortcut = capture.shortcut;
+  selectedItem.value.actionId = capture.shortcut;
   void persist();
 }
 
@@ -972,7 +1020,7 @@ function toggleSelectedShortcutOption(key: "sendEscapeBefore" | "allowDirectWind
   }
   const config = ensureExperimentalShortcut(selectedItem.value);
   config[key] = !config[key];
-  selectedItem.value.actionId = config.shortcut || "Ctrl+B";
+  selectedItem.value.actionId = config.shortcut.trim();
   void persist();
 }
 
@@ -1157,6 +1205,10 @@ function surfaceLabel(value: string): string {
 function actionTypeLabel(value: string): string {
   return ACTION_TYPE_LABELS[value];
 }
+
+watch(() => `${selectedId.value}:${selectedItem.value?.actionType || ""}`, () => {
+  shortcutCaptureError.value = "";
+});
 
 onMounted(() => {
   void refreshCurrentLayout();

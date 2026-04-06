@@ -120,6 +120,199 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("keeps the experimental shortcut input empty by default and uses placeholder guidance", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "experimental-shortcut"));
+    expect(actionTypeSelect).not.toBeNull();
+
+    actionTypeSelect!.value = "experimental-shortcut";
+    actionTypeSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
+      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
+
+    expect(shortcutInput).not.toBeUndefined();
+    expect(shortcutInput?.value).toBe("");
+    expect(shortcutInput?.placeholder).toBe("例如：Ctrl+B / Alt+5");
+    expect(shortcutInput?.readOnly).toBe(true);
+    expect(onChange).toHaveBeenCalled();
+
+    unmount();
+  });
+
+  it("captures shortcut combinations directly from keyboard input", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "capture-shortcut",
+        title: "加粗",
+        actionType: "experimental-shortcut",
+        actionId: "",
+        tooltip: "实验快捷键",
+        experimentalShortcut: {
+          shortcut: "",
+          sendEscapeBefore: false,
+          dispatchTarget: "auto",
+          allowDirectWindowDispatch: false,
+        },
+      }),
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
+      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
+
+    expect(shortcutInput).not.toBeUndefined();
+
+    shortcutInput?.dispatchEvent(new KeyboardEvent("keydown", {
+      key: "b",
+      ctrlKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    }));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(shortcutInput?.value).toBe("Ctrl+Shift+B");
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.items[0].experimentalShortcut?.shortcut).toBe("Ctrl+Shift+B");
+    expect(latestConfig?.items[0].actionId).toBe("Ctrl+Shift+B");
+
+    unmount();
+  });
+
+  it("blocks duplicate shortcut combinations and shows a conflict message", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onNotify = vi.fn();
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "editing-shortcut",
+        title: "待设置按钮",
+        actionType: "experimental-shortcut",
+        actionId: "",
+        tooltip: "实验快捷键",
+        experimentalShortcut: {
+          shortcut: "",
+          sendEscapeBefore: false,
+          dispatchTarget: "auto",
+          allowDirectWindowDispatch: false,
+        },
+      }),
+      createButtonItem({
+        id: "occupied-shortcut",
+        title: "已占用按钮",
+        actionType: "experimental-shortcut",
+        actionId: "Ctrl+B",
+        tooltip: "实验快捷键",
+        experimentalShortcut: {
+          shortcut: "Ctrl+B",
+          sendEscapeBefore: false,
+          dispatchTarget: "auto",
+          allowDirectWindowDispatch: false,
+        },
+      }),
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
+      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
+
+    shortcutInput?.dispatchEvent(new KeyboardEvent("keydown", {
+      key: "b",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    }));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(shortcutInput?.value).toBe("");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(target.textContent).toContain("快捷键 Ctrl+B 已被按钮「已占用按钮」使用");
+    expect(onNotify).toHaveBeenCalledWith("快捷键 Ctrl+B 已被按钮「已占用按钮」使用。", "error");
+
+    unmount();
+  });
+
+  it("removes the duplicate custom action menu item from the action type selector", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [
+        {
+          id: "open-settings",
+          title: "打开插件设置",
+          description: "打开设置面板",
+        },
+      ],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
+
+    expect(actionTypeSelect).not.toBeNull();
+    expect(Array.from(actionTypeSelect!.options).map(option => option.value)).not.toContain("custom-action");
+    expect(Array.from(actionTypeSelect!.options).map(option => option.textContent?.trim())).not.toContain("插件动作");
+    expect(target.textContent).toContain("插件命令");
+
+    unmount();
+  });
+
   it("removes the editor visibility switch and keeps list visibility toggles", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -227,8 +420,10 @@ describe("settings app layout", () => {
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
-    expect(onChange).toHaveBeenCalled();
-    expect(onNotify).toHaveBeenCalledWith("配置文件已导入。");
+    await vi.waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      expect(onNotify).toHaveBeenCalledWith("配置文件已导入。");
+    });
     expect(Array.from(target.querySelectorAll(".button-list__content strong")).map(node => node.textContent?.trim())).toEqual(["导入后的按钮"]);
 
     unmount();

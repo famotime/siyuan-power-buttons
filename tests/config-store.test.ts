@@ -15,6 +15,8 @@ describe("config store model", () => {
     expect(config.items.length).toBeGreaterThanOrEqual(3);
     expect(config.items.every(item => item.visible)).toBe(true);
     expect(config.items.map(item => item.title)).toEqual(["全局搜索", "插件设置", "大纲"]);
+    expect(config.items[1].actionType).toBe("plugin-command");
+    expect(config.items[1].actionId).toBe("open-settings");
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
     expect(config.experimental.shortcutAdapter).toBe(true);
     expect(config.experimental.clickSequenceAdapter).toBe(true);
@@ -83,28 +85,6 @@ describe("config store model", () => {
       "statusbar-right",
       "statusbar-left",
     ]);
-  });
-
-  it("migrates the legacy open settings preset away from fileTree", () => {
-    const config = sanitizeConfig({
-      version: 1,
-      desktopOnly: true,
-      items: [
-        createButtonItem({
-          id: "legacy-open-settings",
-          title: "Open Settings",
-          tooltip: "Open Power Buttons settings",
-          iconValue: "iconInfo",
-          surface: "topbar",
-          actionType: "builtin-global-command",
-          actionId: "fileTree",
-        }),
-      ],
-      experimental: null,
-    });
-
-    expect(config.items[0].actionType).toBe("custom-action");
-    expect(config.items[0].actionId).toBe("open-settings");
   });
 
   it("preserves experimental shortcut items and adapter flags", () => {

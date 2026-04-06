@@ -26,7 +26,6 @@ describe("surface manager", () => {
       plugin: {
         globalCommand: vi.fn(),
       },
-      openSetting: vi.fn(),
       openUrl: vi.fn(),
       pluginCommands: new Map(),
     }));
@@ -62,7 +61,6 @@ describe("surface manager", () => {
       plugin: {
         globalCommand: vi.fn(),
       },
-      openSetting: vi.fn(),
       openUrl: vi.fn(),
       pluginCommands: new Map(),
     }));

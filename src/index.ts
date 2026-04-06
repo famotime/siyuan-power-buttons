@@ -46,7 +46,6 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     openUrl: (url: string) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
-    openSetting: () => this.openSetting(),
     runBuiltinCommand: commandId => executeBuiltinCommandByDom(commandId, document),
     runExperimentalShortcut: item => {
       const support = this.getExperimentalSupport("shortcutAdapter");

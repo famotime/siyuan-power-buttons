@@ -32,7 +32,6 @@ describe("command executor", () => {
       plugin: { globalCommand } as never,
       notify: vi.fn(),
       openUrl: vi.fn(),
-      openSetting: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
     });
@@ -49,7 +48,6 @@ describe("command executor", () => {
       plugin: {} as never,
       notify,
       openUrl: vi.fn(),
-      openSetting: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand,
     });
@@ -66,7 +64,6 @@ describe("command executor", () => {
       plugin: {} as never,
       notify,
       openUrl: vi.fn(),
-      openSetting: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
     });
@@ -83,7 +80,6 @@ describe("command executor", () => {
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
       openUrl,
-      openSetting: vi.fn(),
       pluginCommands: new Map([["open-help", pluginAction]]),
       runBuiltinCommand: vi.fn(),
     });
@@ -101,32 +97,12 @@ describe("command executor", () => {
     expect(openUrl).toHaveBeenCalledWith("https://example.com");
   });
 
-  it("supports custom actions such as opening settings", async () => {
-    const openSetting = vi.fn();
-    const executor = new CommandExecutor({
-      plugin: { globalCommand: vi.fn() } as never,
-      notify: vi.fn(),
-      openUrl: vi.fn(),
-      openSetting,
-      pluginCommands: new Map(),
-      runBuiltinCommand: vi.fn(),
-    });
-
-    await executor.execute(createItem({
-      actionType: "custom-action",
-      actionId: "open-settings",
-    }));
-
-    expect(openSetting).toHaveBeenCalledTimes(1);
-  });
-
   it("dispatches experimental shortcuts through the injected runner", async () => {
     const runExperimentalShortcut = vi.fn(() => true);
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
       openUrl: vi.fn(),
-      openSetting: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalShortcut,
@@ -154,7 +130,6 @@ describe("command executor", () => {
       plugin: { globalCommand: vi.fn() } as never,
       notify,
       openUrl: vi.fn(),
-      openSetting: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalShortcut: vi.fn(() => false),
@@ -180,7 +155,6 @@ describe("command executor", () => {
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
       openUrl: vi.fn(),
-      openSetting: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalClickSequence,
@@ -214,7 +188,6 @@ describe("command executor", () => {
       plugin: { globalCommand: vi.fn() } as never,
       notify,
       openUrl: vi.fn(),
-      openSetting: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalClickSequence: vi.fn(() => false),

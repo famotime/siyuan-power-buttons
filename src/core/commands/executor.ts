@@ -13,7 +13,6 @@ export class CommandExecutor {
     notify?: Notify;
     pluginCommands: Map<string, CommandHandler>;
     openUrl: (url: string) => void | Promise<void>;
-    openSetting: () => void | Promise<void>;
     runBuiltinCommand?: (commandId: string) => boolean | Promise<boolean>;
     runExperimentalShortcut?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalShortcut">) => boolean | Promise<boolean>;
     runExperimentalClickSequence?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalClickSequence">) => boolean | Promise<boolean>;
@@ -35,11 +34,6 @@ export class CommandExecutor {
         return;
       case "plugin-command":
         await this.options.pluginCommands.get(item.actionId)?.();
-        return;
-      case "custom-action":
-        if (item.actionId === "open-settings") {
-          await this.options.openSetting();
-        }
         return;
       case "open-url":
         await this.options.openUrl(item.actionId);

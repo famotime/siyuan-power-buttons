@@ -1,7 +1,7 @@
 export const CONFIG_STORAGE_NAME = "settings.json";
 
 export const DEFAULT_BUILTIN_ICON = "iconInfo";
-export const DEFAULT_CUSTOM_ACTION = "open-settings";
+export const DEFAULT_PLUGIN_COMMAND = "open-settings";
 
 export const SURFACE_LABELS: Record<string, string> = {
   topbar: "顶栏",
@@ -18,15 +18,7 @@ export const SURFACE_LABELS: Record<string, string> = {
 export const ACTION_TYPE_LABELS: Record<string, string> = {
   "builtin-global-command": "内置命令",
   "plugin-command": "插件命令",
-  "custom-action": "插件动作",
   "open-url": "打开链接",
   "experimental-shortcut": "实验：快捷键适配",
   "experimental-click-sequence": "实验：点击序列",
 };
-
-export const CUSTOM_ACTIONS = [
-  {
-    id: "open-settings",
-    title: "打开插件设置",
-  },
-] as const;
