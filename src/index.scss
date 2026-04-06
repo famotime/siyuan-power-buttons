@@ -183,6 +183,34 @@
   gap: 10px;
 }
 
+.config-transfer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--b3-border-color) 86%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--b3-theme-background) 68%, transparent);
+}
+
+.config-transfer p {
+  margin-top: 4px;
+  opacity: 0.72;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.config-transfer__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.config-transfer__input {
+  display: none;
+}
+
 .surface-summary__header {
   display: flex;
   align-items: flex-start;
@@ -525,19 +553,6 @@
 .emoji-grid__preview {
   font-size: 26px;
   line-height: 1;
-}
-
-.json-tools {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.json-tools__textarea {
-  width: 100%;
-  min-height: 180px;
-  resize: vertical;
 }
 
 .siyuan-power-buttons__icon {

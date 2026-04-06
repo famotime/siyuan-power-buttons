@@ -5,6 +5,7 @@ import type {
 } from "siyuan";
 import { CommandExecutor } from "@/core/commands";
 import { DEFAULT_BUILTIN_ICON } from "@/shared/constants";
+import { renderBuiltinIconMarkup } from "@/shared/icon-renderer";
 import {
   isDockSurface,
   isStatusBarSurface,
@@ -37,7 +38,7 @@ function createIconSvg(icon: string): string {
   if (icon.trim().startsWith("<svg")) {
     return icon;
   }
-  return `<svg class="siyuan-power-buttons__icon" aria-hidden="true"><use xlink:href="#${escapeAttribute(icon)}"></use></svg>`;
+  return renderBuiltinIconMarkup(icon, document);
 }
 
 function createEmojiSvg(emoji: string): string {

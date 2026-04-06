@@ -321,6 +321,24 @@
             </div>
           </div>
         </div>
+
+        <section class="config-transfer">
+          <div>
+            <h3>配置文件</h3>
+            <p>导入或导出左侧所有已配置按钮，不针对单个按钮。</p>
+          </div>
+          <div class="config-transfer__actions">
+            <button class="b3-button b3-button--outline" type="button" @click="exportConfigFile">导出配置文件</button>
+            <button class="b3-button b3-button--outline" type="button" @click="openImportFilePicker">导入配置文件</button>
+          </div>
+          <input
+            ref="importFileInput"
+            class="config-transfer__input"
+            type="file"
+            accept=".json,application/json"
+            @change="handleImportFile"
+          />
+        </section>
       </aside>
 
       <main class="settings-panel settings-panel--editor">
@@ -349,19 +367,6 @@
                 <select v-model="selectedItem.surface" class="b3-select" @change="persist">
                   <option v-for="surface in surfaces" :key="surface.value" :value="surface.value">{{ surface.label }}</option>
                 </select>
-              </label>
-              <label class="form-switch">
-                <span>显示状态</span>
-                <button
-                  type="button"
-                  class="switch-button"
-                  :class="{ 'is-on': selectedItem.visible }"
-                  :title="selectedItem.visible ? '切换为隐藏' : '切换为显示'"
-                  :aria-label="selectedItem.visible ? '切换为隐藏' : '切换为显示'"
-                  @click="toggleVisible(selectedItem.id)"
-                >
-                  <span class="switch-button__dot" />
-                </button>
               </label>
             </div>
           </section>
@@ -598,22 +603,6 @@
             </template>
           </section>
 
-          <details class="editor-card editor-card--compact">
-            <summary>导入 / 导出配置</summary>
-            <div class="json-tools">
-              <div class="json-tools__actions">
-                <button class="b3-button b3-button--outline" @click="loadExportJson">导出到文本框</button>
-                <button class="b3-button b3-button--outline" @click="copyJson">复制 JSON</button>
-                <button class="b3-button b3-button--outline" @click="applyImportJson">从文本框导入</button>
-              </div>
-              <textarea
-                v-model="jsonBuffer"
-                class="b3-text-field json-tools__textarea"
-                rows="8"
-                placeholder="导出的配置会显示在这里；也可以把 JSON 粘贴到这里后点击导入。"
-              />
-            </div>
-          </details>
         </template>
       </main>
     </div>
@@ -642,6 +631,7 @@ import {
   COMMON_EMOJI_OPTIONS,
   filterBuiltinIcons,
 } from "@/shared/icon-catalog";
+import { renderBuiltinIconMarkup as renderSharedBuiltinIconMarkup } from "@/shared/icon-renderer";
 import {
   ACTION_TYPE_LABELS,
   CUSTOM_ACTIONS,
@@ -700,7 +690,7 @@ const previewDragId = ref<string>("");
 const runtimePreviewItems = ref<PreviewButtonItem[]>([]);
 const isRefreshingLayout = ref(false);
 const showPreviewLabels = ref(false);
-const jsonBuffer = ref("");
+const importFileInput = ref<HTMLInputElement | null>(null);
 const iconKeyword = ref("");
 
 const surfaces = CONFIGURABLE_SURFACES.map(value => ({
@@ -1056,37 +1046,60 @@ function handlePreviewChipClick(item: PreviewButtonItem): void {
   selectItem(item.itemId);
 }
 
-function loadExportJson(): void {
-  jsonBuffer.value = exportConfigAsJson(cloneConfig(config));
-}
-
-async function copyJson(): Promise<void> {
+function exportConfigFile(): void {
   const serialized = exportConfigAsJson(cloneConfig(config));
-  jsonBuffer.value = serialized;
-  try {
-    await navigator.clipboard.writeText(serialized);
-    props.onNotify("配置 JSON 已复制到剪贴板。");
-  } catch {
-    props.onNotify("复制失败，请从文本框手动复制。", "error");
-  }
+  const blob = new Blob([serialized], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "siyuan-power-buttons-config.json";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
-function applyImportJson(): void {
+function openImportFilePicker(): void {
+  importFileInput.value?.click();
+}
+
+async function readConfigFile(file: File): Promise<string> {
+  if (typeof file.text === "function") {
+    return file.text();
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error || new Error("读取配置文件失败。"));
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.readAsText(file, "utf-8");
+  });
+}
+
+async function handleImportFile(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement | null;
+  const file = input?.files?.[0];
+  if (!file) {
+    return;
+  }
+
   try {
-    const imported = importConfigFromJson(jsonBuffer.value);
+    const imported = importConfigFromJson(await readConfigFile(file));
     config.items = imported.items;
     config.desktopOnly = imported.desktopOnly;
     config.experimental = imported.experimental;
     selectedId.value = config.items[0]?.id || "";
-    void persist();
-    props.onNotify("配置已导入。");
+    await persist();
+    props.onNotify("配置文件已导入。");
   } catch (error) {
     props.onNotify(error instanceof Error ? error.message : String(error), "error");
+  } finally {
+    if (input) {
+      input.value = "";
+    }
   }
 }
 
 function renderNamedIcon(iconName: string): string {
-  return `<svg class="siyuan-power-buttons__icon" aria-hidden="true"><use xlink:href="#${iconName}"></use></svg>`;
+  return renderSharedBuiltinIconMarkup(iconName, document);
 }
 
 function renderBuiltinIconMarkup(item: Pick<PowerButtonItem, "iconType" | "iconValue">): string {
