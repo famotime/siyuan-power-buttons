@@ -1,10 +1,10 @@
 import {
   Dialog,
   Plugin,
+  fetchSyncPost,
   getFrontend,
   showMessage,
 } from "siyuan";
-import { version as getAppVersion } from "@/api";
 import pluginInfo from "@/../plugin.json";
 import {
   ConfigStore,
@@ -22,20 +22,16 @@ import {
   executeBuiltinCommandByDom,
   PLUGIN_COMMANDS,
 } from "@/core/commands";
+import { PowerButtonsRuntime } from "@/core/runtime/plugin-runtime";
+import { SettingsDialogController } from "@/core/runtime/settings-dialog-controller";
+import { getAppVersion } from "@/core/system/app-version";
 import { SurfaceManager } from "@/core/surfaces";
 import { mountSettingsApp } from "@/main";
 import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
-import type { PowerButtonsConfig } from "@/shared/types";
-
-type Unmount = () => void;
 
 export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
   private appVersion: string | null = null;
-  private surfaceManager: SurfaceManager | null = null;
-  private settingsDialog: Dialog | null = null;
-  private unmountSettingsApp: Unmount | null = null;
-  private unsubscribeConfig: Unmount | null = null;
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
   private executor = new CommandExecutor({
     plugin: this as Plugin & { globalCommand?: (command: string) => void },
@@ -89,80 +85,41 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       });
     },
   });
+  private runtime = new PowerButtonsRuntime({
+    plugin: this,
+    configStore: this.configStore,
+    builtinCommands: BUILTIN_COMMANDS,
+    pluginCommands: PLUGIN_COMMANDS,
+    settingsDialog: new SettingsDialogController({
+      createDialog: options => new Dialog(options),
+      mountSettingsApp,
+    }),
+    createSurfaceManager: () => new SurfaceManager(this, this.executor),
+    executor: this.executor,
+    exportConfigAsJson,
+    clipboard: navigator.clipboard,
+    getFrontend,
+    showMessage,
+    readCurrentLayout: () => readNativeSurfaceSnapshot(document),
+  });
 
   public readonly version = pluginInfo.version;
 
   async onload(): Promise<void> {
-    await this.configStore.load();
     try {
-      this.appVersion = await getAppVersion();
+      this.appVersion = await getAppVersion((url, data) => fetchSyncPost(url, data));
     } catch {
       this.appVersion = null;
     }
-    this.registerPluginCommands();
-    this.unsubscribeConfig = this.configStore.subscribe((config) => {
-      this.surfaceManager?.render(config);
-    });
+    await this.runtime.onload();
   }
 
   onLayoutReady(): void {
-    if (!this.canRenderSurfaces()) {
-      return;
-    }
-    this.surfaceManager = new SurfaceManager(this, this.executor);
-    this.surfaceManager.render(this.configStore.getConfig());
+    this.runtime.onLayoutReady();
   }
 
   onunload(): void {
-    this.unsubscribeConfig?.();
-    this.surfaceManager?.destroy();
-    this.surfaceManager = null;
-    this.destroySettingsDialog();
-  }
-
-  openSetting(): void {
-    this.destroySettingsDialog();
-
-    this.settingsDialog = new Dialog({
-      title: "思源快捷按钮设置",
-      width: "1280px",
-      height: "80vh",
-      content: `<div class="siyuan-power-buttons-settings-host"></div>`,
-      destroyCallback: () => {
-        this.unmountSettingsApp?.();
-        this.unmountSettingsApp = null;
-        this.settingsDialog = null;
-      },
-    });
-
-    const host = this.settingsDialog.element.querySelector<HTMLElement>(".siyuan-power-buttons-settings-host");
-    if (!host) {
-      return;
-    }
-
-    this.unmountSettingsApp = mountSettingsApp(host, {
-      initialConfig: this.configStore.snapshot(),
-      builtinCommands: BUILTIN_COMMANDS,
-      pluginCommands: PLUGIN_COMMANDS,
-      onChange: async (config) => {
-        await this.configStore.replace(config);
-      },
-      onNotify: (message, type = "info") => {
-        showMessage(message, 4000, type);
-      },
-      onReadCurrentLayout: () => {
-        return readNativeSurfaceSnapshot(document);
-      },
-    });
-  }
-
-  private canRenderSurfaces(): boolean {
-    const config = this.configStore.getConfig();
-    const frontend = getFrontend();
-    if (!config.desktopOnly) {
-      return true;
-    }
-    return frontend === "desktop" || frontend === "desktop-window" || frontend === "browser-desktop";
+    this.runtime.onunload();
   }
 
   private getExperimentalSupport(feature: ExperimentalFeatureKey): { supported: boolean; reason?: string } {
@@ -173,53 +130,5 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       appVersion: this.appVersion,
       minAppVersion: pluginInfo.minAppVersion,
     });
-  }
-
-  private registerPluginCommands(): void {
-    this.pluginCommandHandlers.set("open-settings", () => {
-      this.openSetting();
-    });
-    this.pluginCommandHandlers.set("copy-config-json", async () => {
-      const serialized = exportConfigAsJson(this.configStore.snapshot());
-      try {
-        await navigator.clipboard.writeText(serialized);
-        showMessage("快捷按钮配置已复制。");
-      } catch {
-        this.openSetting();
-        showMessage("复制失败，已自动打开设置界面。", 5000, "error");
-      }
-    });
-    this.pluginCommandHandlers.set("restore-defaults", async () => {
-      const config = await this.configStore.reset();
-      this.refreshSettingsDialog(config);
-      showMessage("已恢复默认按钮配置。");
-    });
-
-    for (const command of PLUGIN_COMMANDS) {
-      this.addCommand({
-        langKey: `power-buttons-${command.id}`,
-        langText: command.title,
-        hotkey: "",
-        callback: () => {
-          void this.pluginCommandHandlers.get(command.id)?.();
-        },
-      });
-    }
-  }
-
-  private refreshSettingsDialog(config: PowerButtonsConfig): void {
-    if (!this.settingsDialog) {
-      return;
-    }
-    this.destroySettingsDialog();
-    this.openSetting();
-    this.surfaceManager?.render(config);
-  }
-
-  private destroySettingsDialog(): void {
-    this.unmountSettingsApp?.();
-    this.unmountSettingsApp = null;
-    this.settingsDialog?.destroy();
-    this.settingsDialog = null;
   }
 }

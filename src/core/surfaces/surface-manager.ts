@@ -1,20 +1,21 @@
 import type {
   Dock,
   Plugin,
-  TPluginDockPosition,
 } from "siyuan";
 import { CommandExecutor } from "@/core/commands";
 import { DEFAULT_BUILTIN_ICON } from "@/shared/constants";
 import { renderBuiltinIconMarkup } from "@/shared/icon-renderer";
 import {
+  getDockPosition,
   isDockSurface,
   isStatusBarSurface,
+} from "@/shared/surface-metadata";
+import {
   sortItems,
 } from "@/shared/utils";
 import type {
   PowerButtonItem,
   PowerButtonsConfig,
-  SurfaceType,
 } from "@/shared/types";
 
 type DockRegistration = {
@@ -54,25 +55,6 @@ function getIconMarkup(item: PowerButtonItem): string {
     return item.iconValue.trim() ? createIconSvg(item.iconValue) : createIconSvg(DEFAULT_BUILTIN_ICON);
   }
   return createIconSvg(item.iconValue || DEFAULT_BUILTIN_ICON);
-}
-
-function getDockPosition(surface: SurfaceType): TPluginDockPosition {
-  switch (surface) {
-    case "dock-left-top":
-      return "LeftTop";
-    case "dock-left-bottom":
-      return "LeftBottom";
-    case "dock-right-top":
-      return "RightTop";
-    case "dock-right-bottom":
-      return "RightBottom";
-    case "dock-bottom-left":
-      return "BottomLeft";
-    case "dock-bottom-right":
-      return "BottomRight";
-    default:
-      return "LeftTop";
-  }
 }
 
 function createStatusElement(item: PowerButtonItem, executor: CommandExecutor): HTMLElement {

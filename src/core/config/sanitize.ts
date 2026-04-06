@@ -3,8 +3,14 @@ import {
   createDefaultConfig,
 } from "@/core/config/defaults";
 import {
+  createClickSequenceStep,
+  createExperimentalClickSequenceConfig,
+  createExperimentalShortcutConfig,
+  DEFAULT_CLICK_SEQUENCE_SELECTOR,
+  getDefaultActionId,
+} from "@/core/config/item-defaults";
+import {
   DEFAULT_BUILTIN_ICON,
-  DEFAULT_PLUGIN_COMMAND,
 } from "@/shared/constants";
 import {
   ACTION_TYPES,
@@ -58,45 +64,45 @@ function sanitizeExperimentalShortcut(raw: Record<string, unknown>, actionId: st
     ? raw.experimentalShortcut as Record<string, unknown>
     : {};
 
-  return {
+  return createExperimentalShortcutConfig({
     shortcut: typeof input.shortcut === "string" && input.shortcut.trim()
       ? input.shortcut.trim()
-      : actionId,
-    sendEscapeBefore: Boolean(input.sendEscapeBefore),
+      : undefined,
+    sendEscapeBefore: typeof input.sendEscapeBefore === "boolean" ? input.sendEscapeBefore : undefined,
     dispatchTarget: ["auto", "active-editor", "window", "body"].includes(String(input.dispatchTarget))
       ? input.dispatchTarget as ExperimentalShortcutConfig["dispatchTarget"]
-      : "auto",
-    allowDirectWindowDispatch: Boolean(input.allowDirectWindowDispatch),
-  };
+      : undefined,
+    allowDirectWindowDispatch: typeof input.allowDirectWindowDispatch === "boolean"
+      ? input.allowDirectWindowDispatch
+      : undefined,
+  }, actionId);
 }
 
 function sanitizeClickSequenceStep(value: unknown, fallbackSelector: string): ClickSequenceStep {
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
 
-  return {
+  return createClickSequenceStep({
     selector: typeof raw.selector === "string" && raw.selector.trim()
       ? raw.selector.trim()
-      : fallbackSelector,
-    timeoutMs: Number.isFinite(raw.timeoutMs) && Number(raw.timeoutMs) >= 0 ? Number(raw.timeoutMs) : 5000,
-    retryCount: Number.isFinite(raw.retryCount) && Number(raw.retryCount) >= 0 ? Number(raw.retryCount) : 2,
-    retryDelayMs: Number.isFinite(raw.retryDelayMs) && Number(raw.retryDelayMs) >= 0 ? Number(raw.retryDelayMs) : 300,
-    delayAfterMs: Number.isFinite(raw.delayAfterMs) && Number(raw.delayAfterMs) >= 0 ? Number(raw.delayAfterMs) : 200,
-  };
+      : undefined,
+    timeoutMs: Number.isFinite(raw.timeoutMs) && Number(raw.timeoutMs) >= 0 ? Number(raw.timeoutMs) : undefined,
+    retryCount: Number.isFinite(raw.retryCount) && Number(raw.retryCount) >= 0 ? Number(raw.retryCount) : undefined,
+    retryDelayMs: Number.isFinite(raw.retryDelayMs) && Number(raw.retryDelayMs) >= 0 ? Number(raw.retryDelayMs) : undefined,
+    delayAfterMs: Number.isFinite(raw.delayAfterMs) && Number(raw.delayAfterMs) >= 0 ? Number(raw.delayAfterMs) : undefined,
+  }, fallbackSelector);
 }
 
 function sanitizeExperimentalClickSequence(raw: Record<string, unknown>, actionId: string): ExperimentalClickSequenceConfig {
   const input = raw.experimentalClickSequence && typeof raw.experimentalClickSequence === "object"
     ? raw.experimentalClickSequence as Record<string, unknown>
     : {};
-  const fallbackSelector = actionId || "text:设置";
-  const steps = Array.isArray(input.steps) && input.steps.length
-    ? input.steps.map(step => sanitizeClickSequenceStep(step, fallbackSelector))
-    : [sanitizeClickSequenceStep(undefined, fallbackSelector)];
 
-  return {
-    steps,
-    stopOnFailure: input.stopOnFailure !== false,
-  };
+  return createExperimentalClickSequenceConfig({
+    steps: Array.isArray(input.steps)
+      ? input.steps.map(step => sanitizeClickSequenceStep(step, actionId || DEFAULT_CLICK_SEQUENCE_SELECTOR))
+      : undefined,
+    stopOnFailure: typeof input.stopOnFailure === "boolean" ? input.stopOnFailure : undefined,
+  }, actionId);
 }
 
 function readExperimentalFlag(
@@ -122,15 +128,7 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   let actionType = ensureActionType(raw.actionType);
   let actionId = typeof raw.actionId === "string" ? raw.actionId.trim() : "";
   if (!actionId) {
-    if (actionType === "experimental-shortcut") {
-      actionId = "";
-    } else if (actionType === "plugin-command") {
-      actionId = DEFAULT_PLUGIN_COMMAND;
-    } else if (actionType === "experimental-click-sequence") {
-      actionId = "text:设置";
-    } else {
-      actionId = "globalSearch";
-    }
+    actionId = getDefaultActionId(actionType);
   }
 
   const sanitizedItem: PowerButtonItem = {

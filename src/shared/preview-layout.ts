@@ -3,6 +3,7 @@ import type {
   PreviewButtonItem,
   SurfaceType,
 } from "@/shared/types";
+import { getPreviewLayoutKey } from "@/shared/surface-metadata";
 import {
   normalizeItemOrder,
   sortItems,
@@ -43,41 +44,7 @@ export function buildPreviewLayout<T extends Pick<PreviewButtonItem, "surface" |
   };
 
   for (const item of sortItems(items).filter(entry => options.includeHidden || entry.visible)) {
-    switch (item.surface) {
-      case "topbar":
-        layout.topbar.push(item);
-        break;
-      case "dock-left-top":
-        layout.leftDockTop.push(item);
-        break;
-      case "dock-left-bottom":
-        layout.leftDockBottom.push(item);
-        break;
-      case "dock-right-top":
-        layout.rightDockTop.push(item);
-        break;
-      case "dock-right-bottom":
-        layout.rightDockBottom.push(item);
-        break;
-      case "dock-bottom-left":
-        layout.bottomDockLeft.push(item);
-        break;
-      case "dock-bottom-right":
-        layout.bottomDockRight.push(item);
-        break;
-      case "statusbar-left":
-        layout.statusbarLeft.push(item);
-        break;
-      case "statusbar-right":
-        layout.statusbarRight.push(item);
-        break;
-      case "canvas":
-        layout.canvas.push(item);
-        break;
-      default:
-        layout.canvas.push(item);
-        break;
-    }
+    layout[getPreviewLayoutKey(item.surface)].push(item);
   }
 
   return layout;

@@ -1,8 +1,11 @@
 import type {
   PowerButtonItem,
   PowerButtonsConfig,
-  SurfaceType,
 } from "@/shared/types";
+export {
+  isDockSurface,
+  isStatusBarSurface,
+} from "@/shared/surface-metadata";
 
 export function createId(prefix = "pb"): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -31,12 +34,4 @@ export function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[]
   const [moved] = next.splice(fromIndex, 1);
   next.splice(toIndex, 0, moved);
   return next;
-}
-
-export function isDockSurface(surface: SurfaceType): boolean {
-  return surface.startsWith("dock-");
-}
-
-export function isStatusBarSurface(surface: SurfaceType): boolean {
-  return surface.startsWith("statusbar-");
 }

@@ -1,61 +1,26 @@
 import {
   DEFAULT_BUILTIN_ICON,
-  DEFAULT_PLUGIN_COMMAND,
 } from "@/shared/constants";
+import {
+  createExperimentalClickSequenceConfig,
+  createExperimentalShortcutConfig,
+  getDefaultActionId,
+} from "@/core/config/item-defaults";
 import {
   createId,
   normalizeItemOrder,
 } from "@/shared/utils";
 import type {
   ActionType,
-  ClickSequenceStep,
-  ExperimentalClickSequenceConfig,
-  ExperimentalShortcutConfig,
   IconType,
   PowerButtonItem,
   PowerButtonsConfig,
   SurfaceType,
 } from "@/shared/types";
 
-function createExperimentalShortcutConfig(overrides: Partial<ExperimentalShortcutConfig> = {}): ExperimentalShortcutConfig {
-  return {
-    shortcut: overrides.shortcut ?? "",
-    sendEscapeBefore: overrides.sendEscapeBefore ?? false,
-    dispatchTarget: overrides.dispatchTarget || "auto",
-    allowDirectWindowDispatch: overrides.allowDirectWindowDispatch ?? false,
-  };
-}
-
-function createClickSequenceStep(overrides: Partial<ClickSequenceStep> = {}): ClickSequenceStep {
-  return {
-    selector: overrides.selector || "text:设置",
-    timeoutMs: overrides.timeoutMs ?? 5000,
-    retryCount: overrides.retryCount ?? 2,
-    retryDelayMs: overrides.retryDelayMs ?? 300,
-    delayAfterMs: overrides.delayAfterMs ?? 200,
-  };
-}
-
-function createExperimentalClickSequenceConfig(overrides: Partial<ExperimentalClickSequenceConfig> = {}): ExperimentalClickSequenceConfig {
-  return {
-    steps: overrides.steps?.length
-      ? overrides.steps.map(step => createClickSequenceStep(step))
-      : [createClickSequenceStep()],
-    stopOnFailure: overrides.stopOnFailure ?? true,
-  };
-}
-
 export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): PowerButtonItem {
   const actionType = (overrides.actionType || "builtin-global-command") as ActionType;
-  const actionId = overrides.actionId ?? (
-    actionType === "experimental-shortcut"
-      ? ""
-      : actionType === "plugin-command"
-        ? DEFAULT_PLUGIN_COMMAND
-      : actionType === "experimental-click-sequence"
-        ? "text:设置"
-        : "globalSearch"
-  );
+  const actionId = overrides.actionId ?? getDefaultActionId(actionType);
 
   return {
     id: overrides.id || createId(),
@@ -74,10 +39,10 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
         sendEscapeBefore: overrides.experimentalShortcut?.sendEscapeBefore,
         dispatchTarget: overrides.experimentalShortcut?.dispatchTarget,
         allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
-      })
+      }, actionId)
       : overrides.experimentalShortcut,
     experimentalClickSequence: actionType === "experimental-click-sequence"
-      ? createExperimentalClickSequenceConfig(overrides.experimentalClickSequence)
+      ? createExperimentalClickSequenceConfig(overrides.experimentalClickSequence, actionId)
       : overrides.experimentalClickSequence,
   };
 }
@@ -97,7 +62,7 @@ export function createDefaultConfig(): PowerButtonsConfig {
       iconValue: "iconSettings",
       surface: "statusbar-right",
       actionType: "plugin-command",
-      actionId: DEFAULT_PLUGIN_COMMAND,
+      actionId: getDefaultActionId("plugin-command"),
       tooltip: "打开快捷按钮设置",
     }),
     createButtonItem({

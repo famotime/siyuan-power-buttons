@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ConfigStore,
   createButtonItem,
   createDefaultConfig,
   sanitizeConfig,
@@ -197,5 +198,31 @@ describe("config store model", () => {
       ],
     });
     expect(config.experimental.clickSequenceAdapter).toBe(true);
+  });
+
+  it("returns isolated snapshots when replacing and resetting store state", async () => {
+    const plugin = {
+      loadData: async () => null,
+      saveData: async () => undefined,
+    } as never;
+    const store = new ConfigStore(plugin);
+    const notified: string[] = [];
+
+    store.subscribe((config) => {
+      notified.push(config.items[0]?.title || "");
+      config.items[0].title = "listener mutation";
+    });
+
+    await store.replace(createDefaultConfig());
+    const snapshot = store.snapshot();
+    snapshot.items[0].title = "snapshot mutation";
+
+    expect(store.getConfig().items[0].title).toBe("全局搜索");
+    expect(notified).toEqual(["全局搜索"]);
+
+    const resetSnapshot = await store.reset();
+    resetSnapshot.items[0].title = "reset snapshot mutation";
+
+    expect(store.getConfig().items[0].title).toBe("全局搜索");
   });
 });
