@@ -3,7 +3,10 @@ import type {
   Plugin,
 } from "siyuan";
 import { CommandExecutor } from "@/core/commands";
-import { DEFAULT_BUILTIN_ICON } from "@/shared/constants";
+import {
+  DEFAULT_BUILTIN_ICON,
+  DEFAULT_PLUGIN_COMMAND,
+} from "@/shared/constants";
 import { renderBuiltinIconMarkup } from "@/shared/icon-renderer";
 import {
   getDockPosition,
@@ -72,6 +75,22 @@ function createStatusElement(item: PowerButtonItem, executor: CommandExecutor): 
   return button;
 }
 
+function createFixedSettingsTopbar(plugin: Plugin, executor: CommandExecutor): HTMLElement {
+  const element = plugin.addTopBar({
+    icon: "iconSettings",
+    title: "打开快捷按钮设置",
+    callback: () => {
+      void executor.execute({
+        actionType: "plugin-command",
+        actionId: DEFAULT_PLUGIN_COMMAND,
+      });
+    },
+  });
+  element.dataset.powerButtonsOwned = "true";
+  element.dataset.powerButtonsItemId = "fixed-open-settings";
+  return element;
+}
+
 function createDockPanel(item: PowerButtonItem, executor: CommandExecutor, host: HTMLElement): void {
   host.innerHTML = `
     <div class="siyuan-power-buttons__dock-panel">
@@ -102,6 +121,8 @@ export class SurfaceManager {
 
   render(config: PowerButtonsConfig): void {
     this.destroy();
+
+    this.topbarElements.push(createFixedSettingsTopbar(this.plugin, this.executor));
 
     const visibleItems = sortItems(config.items).filter(item => item.visible);
 

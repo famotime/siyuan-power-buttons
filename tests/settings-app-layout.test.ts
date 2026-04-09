@@ -79,7 +79,7 @@ describe("settings app layout", () => {
     expect(headerActions?.textContent).toContain("恢复默认");
     expect(headerActions?.textContent).not.toContain("新建");
     expect(target.textContent).not.toContain("实验功能");
-    expect(listTitles.slice(0, 3)).toEqual(["全局搜索", "插件设置", "大纲"]);
+    expect(listTitles.slice(0, 2)).toEqual(["全局搜索", "大纲"]);
 
     unmount();
   });
@@ -100,7 +100,7 @@ describe("settings app layout", () => {
     await nextTick();
 
     const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
-    expect(listButtons).toHaveLength(3);
+    expect(listButtons).toHaveLength(2);
 
     listButtons[1]?.click();
     await nextTick();
@@ -108,8 +108,8 @@ describe("settings app layout", () => {
     const activeItem = target.querySelector(".button-list__item.is-active strong");
     const editorTitle = target.querySelector(".settings-panel--editor .panel-title p");
 
-    expect(activeItem?.textContent?.trim()).toBe("插件设置");
-    expect(editorTitle?.textContent).toContain("插件设置");
+    expect(activeItem?.textContent?.trim()).toBe("大纲");
+    expect(editorTitle?.textContent).toContain("大纲");
 
     unmount();
   });
@@ -441,7 +441,7 @@ describe("settings app layout", () => {
     const sidebarToggles = target.querySelectorAll(".settings-panel--sidebar .switch-button--compact");
 
     expect(editorPanel?.textContent).not.toContain("显示状态");
-    expect(sidebarToggles).toHaveLength(3);
+    expect(sidebarToggles).toHaveLength(2);
 
     unmount();
   });

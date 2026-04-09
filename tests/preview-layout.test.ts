@@ -12,7 +12,7 @@ describe("preview layout", () => {
 
     expect(layout.topbar.length).toBe(1);
     expect(layout.statusbarLeft.length).toBe(1);
-    expect(layout.statusbarRight.length).toBe(1);
+    expect(layout.statusbarRight.length).toBe(0);
     expect(layout.canvas.length).toBe(0);
   });
 
@@ -36,6 +36,7 @@ describe("preview layout", () => {
 
   it("can include hidden buttons in preview when requested", () => {
     const config = createDefaultConfig();
+    config.items[1].surface = "statusbar-right";
     config.items[1].visible = false;
 
     const defaultLayout = buildPreviewLayout(config.items);
@@ -62,6 +63,6 @@ describe("preview layout", () => {
     const layout = buildPreviewLayout(moved, { includeHidden: true });
 
     expect(layout.topbar).toHaveLength(0);
-    expect(layout.statusbarRight.map(item => item.title)).toEqual(["插件设置", "全局搜索", "帮助"]);
+    expect(layout.statusbarRight.map(item => item.title)).toEqual(["帮助", "全局搜索"]);
   });
 });
