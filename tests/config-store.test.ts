@@ -8,16 +8,15 @@ import {
 import { CONFIGURABLE_SURFACES } from "@/shared/types";
 
 describe("config store model", () => {
-  it("creates a desktop-only default config with starter buttons and enabled experimental adapters", () => {
+  it("creates a desktop-only default config without a prebuilt settings button and keeps experimental adapters enabled", () => {
     const config = createDefaultConfig();
 
     expect(config.version).toBe(2);
     expect(config.desktopOnly).toBe(true);
-    expect(config.items.length).toBeGreaterThanOrEqual(3);
+    expect(config.items.length).toBe(2);
     expect(config.items.every(item => item.visible)).toBe(true);
-    expect(config.items.map(item => item.title)).toEqual(["全局搜索", "插件设置", "大纲"]);
-    expect(config.items[1].actionType).toBe("plugin-command");
-    expect(config.items[1].actionId).toBe("open-settings");
+    expect(config.items.map(item => item.title)).toEqual(["全局搜索", "大纲"]);
+    expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "open-settings")).toBe(false);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
     expect(config.experimental.shortcutAdapter).toBe(true);
     expect(config.experimental.clickSequenceAdapter).toBe(true);

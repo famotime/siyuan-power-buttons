@@ -58,14 +58,6 @@ export function createDefaultConfig(): PowerButtonsConfig {
       tooltip: "打开全局搜索",
     }),
     createButtonItem({
-      title: "插件设置",
-      iconValue: "iconSettings",
-      surface: "statusbar-right",
-      actionType: "plugin-command",
-      actionId: getDefaultActionId("plugin-command"),
-      tooltip: "打开快捷按钮设置",
-    }),
-    createButtonItem({
       title: "大纲",
       iconValue: "iconList",
       surface: "statusbar-left",

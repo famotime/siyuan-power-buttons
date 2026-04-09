@@ -169,6 +169,20 @@ describe("plugin runtime", () => {
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the fixed open-settings plugin command even when default config has no settings surface button", async () => {
+    const state = createRuntime();
+
+    expect(state.config.items.some(item => item.actionType === "plugin-command" && item.actionId === "open-settings")).toBe(false);
+
+    await state.runtime.onload();
+    const openSettingsCommand = state.addCommand.mock.calls.find(call => call[0].langKey === "power-buttons-open-settings")?.[0];
+
+    await openSettingsCommand?.callback();
+
+    expect(openSettingsCommand?.langText).toBe("打开快捷按钮设置");
+    expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
+  });
+
   it("creates, updates, and destroys the surface manager across lifecycle hooks", async () => {
     const state = createRuntime({ frontend: "desktop" });
 
