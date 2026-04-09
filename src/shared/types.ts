@@ -2,6 +2,7 @@ export const SURFACES = [
   "topbar",
   "statusbar-left",
   "statusbar-right",
+  "canvas",
   "dock-left-top",
   "dock-left-bottom",
   "dock-right-top",
@@ -14,6 +15,7 @@ export const CONFIGURABLE_SURFACES = [
   "topbar",
   "statusbar-left",
   "statusbar-right",
+  "canvas",
 ] as const;
 
 export const ACTION_TYPES = [
@@ -98,7 +100,7 @@ export interface PluginCommandDefinition {
 }
 
 export type PreviewSource = "config" | "native";
-export type PreviewSurfaceType = SurfaceType | "canvas";
+export type PreviewSurfaceType = SurfaceType;
 
 export interface PreviewButtonItem {
   id: string;

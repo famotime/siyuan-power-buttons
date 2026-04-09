@@ -112,6 +112,7 @@ function createDockPanel(item: PowerButtonItem, executor: CommandExecutor, host:
 export class SurfaceManager {
   private topbarElements: HTMLElement[] = [];
   private statusElements: HTMLElement[] = [];
+  private canvasElements: HTMLElement[] = [];
   private dockRegistrations: DockRegistration[] = [];
 
   constructor(
@@ -147,6 +148,17 @@ export class SurfaceManager {
           position: item.surface === "statusbar-left" ? "left" : "right",
         });
         this.statusElements.push(element);
+        continue;
+      }
+
+      if (item.surface === "canvas") {
+        const host = document.querySelector<HTMLElement>(".layout__center .protyle-util .block__icons");
+        if (!host) {
+          continue;
+        }
+        const element = createStatusElement(item, this.executor);
+        host.appendChild(element);
+        this.canvasElements.push(element);
         continue;
       }
 
@@ -189,6 +201,11 @@ export class SurfaceManager {
       element.remove();
     }
     this.statusElements = [];
+
+    for (const element of this.canvasElements) {
+      element.remove();
+    }
+    this.canvasElements = [];
 
     for (const registration of this.dockRegistrations) {
       if (hasDockRemove(registration.model)) {

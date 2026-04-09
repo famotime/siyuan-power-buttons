@@ -47,6 +47,16 @@ describe("preview layout", () => {
     expect(completeLayout.statusbarRight[0].visible).toBe(false);
   });
 
+  it("treats canvas as a configurable preview surface for user buttons", () => {
+    const config = createDefaultConfig();
+    config.items[0].surface = "canvas";
+
+    const layout = buildPreviewLayout(config.items, { includeHidden: true });
+
+    expect(layout.canvas.map(item => item.title)).toContain("全局搜索");
+    expect(layout.topbar).toHaveLength(0);
+  });
+
   it("moves buttons across preview surfaces while preserving target order", () => {
     const config = createDefaultConfig();
     config.items.push({

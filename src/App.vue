@@ -3,7 +3,7 @@
     <header class="settings-header">
       <div>
         <h1>思源快捷按钮</h1>
-        <p>左侧管理按钮清单，预览区会自动读取当前界面布局；彩色按钮仅可在顶栏和底栏状态区间拖拽改位置，灰色原生按钮仅供查看。</p>
+        <p>左侧管理按钮清单，预览区会自动读取当前界面布局；彩色按钮可拖到顶栏、状态栏和编辑区调整位置，灰色原生按钮仅供查看。</p>
       </div>
       <div class="settings-header__actions">
         <button class="b3-button b3-button--outline" @click="resetConfig">恢复默认</button>
@@ -65,11 +65,11 @@
         </div>
 
         <div class="surface-summary">
-          <div class="surface-summary__header">
-            <div>
-              <h3>位置预览</h3>
-              <p>灰色为原生按钮，半透明为隐藏态。拖拽彩色按钮图标可切换区域和顺序。</p>
-            </div>
+            <div class="surface-summary__header">
+              <div>
+                <h3>位置预览</h3>
+                <p>灰色为原生按钮，半透明为隐藏态。拖拽彩色按钮图标可切换区域和顺序；编辑区按钮会按保存位置参与运行时渲染。</p>
+              </div>
             <div class="surface-summary__controls">
               <label class="surface-summary__toggle">
                 <span>显示文字</span>
@@ -172,9 +172,13 @@
               <div class="workspace-preview__canvas">
                 <div class="workspace-preview__canvas-header">
                   <div class="workspace-preview__canvas-note">编辑区</div>
-                  <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__canvas-items">
+                  <div
+                    class="workspace-preview__stack workspace-preview__stack--row workspace-preview__canvas-items"
+                    @dragover.prevent
+                    @drop="onPreviewSurfaceDrop('canvas')"
+                  >
                     <button
-                      v-for="item in previewLayout.canvas"
+                      v-for="(item, index) in previewLayout.canvas"
                       :key="item.id"
                       type="button"
                       class="workspace-chip"
@@ -183,10 +187,13 @@
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
                       @dragstart="onPreviewDragStart(item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('canvas', previewLayout.canvas, index)"
                     >
                       <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
                       <span class="workspace-chip__label">{{ item.title }}</span>
                     </button>
+                    <span v-if="!previewLayout.canvas.length" class="surface-summary__empty">空</span>
                   </div>
                 </div>
                 <div class="workspace-preview__bottom-dock">

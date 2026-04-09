@@ -576,4 +576,38 @@ describe("settings app layout", () => {
 
     unmount();
   });
+
+  it("allows a user button to move into the editor canvas preview", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
+    const canvasDropzone = target.querySelector(".workspace-preview__canvas-items") as HTMLElement;
+
+    topbarButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    canvasDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(onChange).toHaveBeenCalled();
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.items.find((item: { title: string }) => item.title === "全局搜索")?.surface).toBe("canvas");
+
+    unmount();
+  });
 });

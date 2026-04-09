@@ -101,4 +101,44 @@ describe("surface manager", () => {
     expect(() => manager.render(createDefaultConfig())).not.toThrow();
     expect(() => manager.destroy()).not.toThrow();
   });
+
+  it("renders canvas buttons into the editor toolbar host and cleans them up", () => {
+    document.body.innerHTML = `
+      <div class="layout__center">
+        <div class="protyle-util">
+          <div class="block__icons"></div>
+        </div>
+      </div>
+    `;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.items[0].surface = "canvas";
+
+    manager.render(config);
+
+    const canvasButtons = document.querySelectorAll(".layout__center .protyle-util .block__icons .siyuan-power-buttons__button");
+    expect(canvasButtons).toHaveLength(1);
+    expect((canvasButtons[0] as HTMLElement).dataset.powerButtonsItemId).toBe(config.items[0].id);
+
+    manager.destroy();
+
+    expect(document.querySelector(".layout__center .protyle-util .block__icons .siyuan-power-buttons__button")).toBeNull();
+  });
 });

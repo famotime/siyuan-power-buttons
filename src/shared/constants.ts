@@ -7,6 +7,7 @@ export const SURFACE_LABELS: Record<string, string> = {
   topbar: "顶栏",
   "statusbar-left": "状态栏左侧",
   "statusbar-right": "状态栏右侧",
+  canvas: "编辑区",
   "dock-left-top": "左侧 Dock 上方",
   "dock-left-bottom": "左侧 Dock 下方",
   "dock-right-top": "右侧 Dock 上方",

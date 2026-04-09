@@ -10,8 +10,8 @@ const LEFT_DOCK_SELECTORS = ["#dockLeft .dock__item", ".dock#dockLeft .dock__ite
 const RIGHT_DOCK_SELECTORS = ["#dockRight .dock__item", ".dock#dockRight .dock__item"];
 const BOTTOM_DOCK_SELECTORS = ["#dockBottom .dock__item", ".dock#dockBottom .dock__item"];
 const CANVAS_SELECTORS = [
-  ".layout__center .protyle-util .block__icons [data-type='pin']",
-  ".layout__center .protyle-util [data-type='pin']",
+  ".layout__center .protyle-util .block__icons > button",
+  ".layout__center .protyle-util .block__icons [data-type]",
 ];
 const WINDOW_CONTROL_IDS = new Set(["minWindow", "maxWindow", "restoreWindow", "closeWindow", "pinWindow"]);
 

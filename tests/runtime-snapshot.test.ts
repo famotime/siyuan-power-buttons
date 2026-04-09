@@ -132,7 +132,7 @@ describe("runtime surface snapshot", () => {
     expect(snapshot.filter(item => item.surface === "topbar").map(item => item.title)).toEqual(["工作空间", "更多"]);
   });
 
-  it("reads editor pin controls into the canvas preview area", () => {
+  it("reads native editor toolbar buttons into the canvas preview area", () => {
     document.body.innerHTML = `
       <div class="layout__center">
         <div data-type="wnd" class="fn__flex">
@@ -147,6 +147,12 @@ describe("runtime surface snapshot", () => {
             <button data-type="pin" class="block__icon block__icon--show" aria-label="钉住编辑区">
               <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
             </button>
+            <button data-type="copy" class="block__icon block__icon--show" aria-label="复制">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </button>
+            <button data-type="more" class="block__icon block__icon--show" aria-label="更多">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -154,14 +160,18 @@ describe("runtime surface snapshot", () => {
 
     const readonlyBar = document.querySelector(".layout-tab-bar--readonly") as HTMLElement;
     const pinButton = document.querySelector('.protyle-util [data-type="pin"]') as HTMLElement;
+    const copyButton = document.querySelector('.protyle-util [data-type="copy"]') as HTMLElement;
+    const moreButton = document.querySelector('.protyle-util [data-type="more"]') as HTMLElement;
 
     mockRect(readonlyBar, { left: 0, top: 0, width: 120, height: 28, right: 120, bottom: 28 });
     mockRect(pinButton, { left: 24, top: 360, width: 20, height: 20, right: 44, bottom: 380 });
+    mockRect(copyButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
+    mockRect(moreButton, { left: 80, top: 360, width: 20, height: 20, right: 100, bottom: 380 });
 
     const snapshot = readNativeSurfaceSnapshot(document);
+    const canvasTitles = snapshot.filter(item => item.surface === "canvas").map(item => item.title);
 
-    expect(snapshot.map(item => item.title)).toContain("钉住编辑区");
+    expect(canvasTitles).toEqual(["钉住编辑区", "复制", "更多"]);
     expect(snapshot.map(item => item.title)).not.toContain("新建文档");
-    expect(snapshot.find(item => item.title === "钉住编辑区")?.surface).toBe("canvas");
   });
 });
