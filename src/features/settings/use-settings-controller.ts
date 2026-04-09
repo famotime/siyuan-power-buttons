@@ -232,6 +232,13 @@ export function useSettingsController(props: SettingsAppProps) {
     await persist();
   }
 
+  function selectItem(itemId: string): void {
+    if (!config.items.some(item => item.id === itemId)) {
+      return;
+    }
+    selectedId.value = itemId;
+  }
+
   async function applyActionDefaults(): Promise<void> {
     if (!selectedItem.value) {
       return;
@@ -507,6 +514,7 @@ export function useSettingsController(props: SettingsAppProps) {
     resetConfig,
     selectedId,
     selectedItem,
+    selectItem,
     selectBuiltinIcon,
     selectEmojiIcon,
     selectIconType,

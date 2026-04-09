@@ -84,6 +84,36 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("selects the clicked button list item without throwing", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
+    expect(listButtons).toHaveLength(3);
+
+    listButtons[1]?.click();
+    await nextTick();
+
+    const activeItem = target.querySelector(".button-list__item.is-active strong");
+    const editorTitle = target.querySelector(".settings-panel--editor .panel-title p");
+
+    expect(activeItem?.textContent?.trim()).toBe("插件设置");
+    expect(editorTitle?.textContent).toContain("插件设置");
+
+    unmount();
+  });
+
   it("replaces the icon source select with tabs and offers common emoji picks", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

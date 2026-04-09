@@ -682,6 +682,7 @@ const {
   resetConfig,
   selectedId,
   selectedItem,
+  selectItem,
   selectBuiltinIcon,
   selectEmojiIcon,
   selectIconType,

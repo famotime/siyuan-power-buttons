@@ -90,6 +90,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     configStore: this.configStore,
     builtinCommands: BUILTIN_COMMANDS,
     pluginCommands: PLUGIN_COMMANDS,
+    pluginCommandHandlers: this.pluginCommandHandlers,
     settingsDialog: new SettingsDialogController({
       createDialog: options => new Dialog(options),
       mountSettingsApp,
@@ -116,6 +117,10 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
 
   onLayoutReady(): void {
     this.runtime.onLayoutReady();
+  }
+
+  openSetting(): void {
+    this.runtime.openSetting();
   }
 
   onunload(): void {

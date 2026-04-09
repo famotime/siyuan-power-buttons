@@ -34,7 +34,6 @@ type SurfaceFrontend = "desktop" | "desktop-window" | "browser-desktop" | string
 export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
   private surfaceManager: SurfaceManagerLike<TConfig> | null = null;
   private unsubscribeConfig: (() => void) | null = null;
-  private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
 
   constructor(private readonly options: {
     plugin: {
@@ -48,6 +47,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     configStore: ConfigStoreLike<TConfig>;
     builtinCommands: SettingsAppProps["builtinCommands"];
     pluginCommands: PluginCommandDefinition[];
+    pluginCommandHandlers: Map<string, () => void | Promise<void>>;
     settingsDialog: SettingsDialogLike;
     createSurfaceManager: () => SurfaceManagerLike<TConfig>;
     executor: unknown;
@@ -104,15 +104,15 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     };
   }
 
-  private openSetting(): void {
+  openSetting(): void {
     this.options.settingsDialog.open(this.createSettingsAppProps());
   }
 
   private registerPluginCommands(): void {
-    this.pluginCommandHandlers.set("open-settings", () => {
+    this.options.pluginCommandHandlers.set("open-settings", () => {
       this.openSetting();
     });
-    this.pluginCommandHandlers.set("copy-config-json", async () => {
+    this.options.pluginCommandHandlers.set("copy-config-json", async () => {
       const serialized = this.options.exportConfigAsJson(this.options.configStore.snapshot());
       try {
         await this.options.clipboard.writeText(serialized);
@@ -122,7 +122,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
         this.options.showMessage("复制失败，已自动打开设置界面。", 5000, "error");
       }
     });
-    this.pluginCommandHandlers.set("restore-defaults", async () => {
+    this.options.pluginCommandHandlers.set("restore-defaults", async () => {
       const config = await this.options.configStore.reset();
       this.options.settingsDialog.refresh(this.createSettingsAppProps());
       this.surfaceManager?.render(config);
@@ -135,7 +135,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
         langText: command.title,
         hotkey: "",
         callback: () => {
-          void this.pluginCommandHandlers.get(command.id)?.();
+          void this.options.pluginCommandHandlers.get(command.id)?.();
         },
       });
     }

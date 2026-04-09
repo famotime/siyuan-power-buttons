@@ -50,6 +50,12 @@ export default defineConfig(({
       },
     },
 
+    test: {
+      alias: {
+        siyuan: resolve(__dirname, "tests/mocks/siyuan.ts"),
+      },
+    },
+
     plugins: [
       vue(),
       viteStaticCopy({

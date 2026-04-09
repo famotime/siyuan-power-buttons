@@ -97,6 +97,7 @@ describe("plugin runtime", () => {
       refresh: vi.fn(),
       destroy: vi.fn(),
     };
+    const pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
     const addCommand = vi.fn();
     const showMessage = vi.fn();
     const runtime = new PowerButtonsRuntime({
@@ -105,6 +106,7 @@ describe("plugin runtime", () => {
       },
       configStore,
       pluginCommands: PLUGIN_COMMANDS,
+      pluginCommandHandlers,
       settingsDialog,
       createSurfaceManager: vi.fn(() => surfaceManager),
       executor: {} as never,
@@ -123,6 +125,7 @@ describe("plugin runtime", () => {
       config,
       configListener: () => configListener,
       configStore,
+      pluginCommandHandlers,
       runtime,
       settingsDialog,
       showMessage,
@@ -154,6 +157,16 @@ describe("plugin runtime", () => {
 
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
     expect(state.showMessage).toHaveBeenCalledWith("复制失败，已自动打开设置界面。", 5000, "error");
+  });
+
+  it("registers plugin command handlers into the shared runtime map for surface actions", async () => {
+    const state = createRuntime();
+
+    await state.runtime.onload();
+    await state.pluginCommandHandlers.get("open-settings")?.();
+
+    expect(state.pluginCommandHandlers.has("open-settings")).toBe(true);
+    expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
   });
 
   it("creates, updates, and destroys the surface manager across lifecycle hooks", async () => {
