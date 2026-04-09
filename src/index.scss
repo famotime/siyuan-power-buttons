@@ -89,7 +89,6 @@
 .surface-summary__chip,
 .icon-grid__item,
 .emoji-grid__item,
-.icon-tabs__tab,
 .switch-button {
   border: 1px solid var(--b3-border-color);
   background: color-mix(in srgb, var(--b3-theme-background) 80%, transparent);
@@ -522,24 +521,45 @@
 
 .icon-tabs {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--b3-border-color);
 }
 
 .icon-tabs__tab {
-  min-width: 88px;
-  padding: 8px 14px;
-  border-radius: 999px;
+  position: relative;
+  padding: 10px 4px 12px;
+  margin-bottom: -1px;
+  min-width: 72px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--b3-theme-on-surface-light);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.icon-tabs__tab:hover {
+  color: var(--b3-theme-on-background);
 }
 
 .icon-tabs__tab.is-active {
-  border-color: var(--b3-theme-primary);
-  background: color-mix(in srgb, var(--b3-theme-primary) 18%, transparent);
   color: var(--b3-theme-primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--b3-theme-primary) 26%, transparent);
+  border-bottom-color: var(--b3-theme-primary);
+}
+
+.icon-tabs__tab:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--b3-theme-primary) 32%, transparent);
+  border-radius: 6px 6px 0 0;
+}
+
+.icon-tabs__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .icon-grid {

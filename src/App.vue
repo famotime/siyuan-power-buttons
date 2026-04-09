@@ -553,66 +553,77 @@
               <button
                 v-for="iconType in iconTypes"
                 :key="iconType.value"
+                :id="iconTypeTabId(iconType.value)"
                 type="button"
+                role="tab"
                 class="icon-tabs__tab"
                 :class="{ 'is-active': selectedItem.iconType === iconType.value }"
+                :tabindex="selectedItem.iconType === iconType.value ? 0 : -1"
                 :aria-selected="selectedItem.iconType === iconType.value"
+                :aria-controls="iconTypePanelId"
                 @click="selectIconType(iconType.value)"
               >
                 {{ iconType.label }}
               </button>
             </div>
 
-            <template v-if="selectedItem.iconType === 'builtin'">
-              <label class="icon-search">
-                <span>搜索内置图标</span>
-                <input v-model="iconKeyword" class="b3-text-field" placeholder="输入名称，例如：搜索 / 设置 / search" />
-              </label>
+            <div
+              :id="iconTypePanelId"
+              class="icon-tabs__panel"
+              role="tabpanel"
+              :aria-labelledby="iconTypeTabId(selectedItem.iconType)"
+            >
+              <template v-if="selectedItem.iconType === 'builtin'">
+                <label class="icon-search">
+                  <span>搜索内置图标</span>
+                  <input v-model="iconKeyword" class="b3-text-field" placeholder="输入名称，例如：搜索 / 设置 / search" />
+                </label>
 
-              <div class="icon-grid">
-                <button
-                  v-for="icon in filteredBuiltinIcons"
-                  :key="icon.value"
-                  type="button"
-                  class="icon-grid__item"
-                  :class="{ 'is-active': selectedItem.iconValue === icon.value }"
-                  :title="`${icon.label} (${icon.value})`"
-                  @click="selectBuiltinIcon(icon.value)"
-                >
-                  <span class="icon-grid__preview" v-html="renderNamedIcon(icon.value)" />
-                  <span class="icon-grid__label">{{ icon.label }}</span>
-                  <small>{{ icon.value }}</small>
-                </button>
-              </div>
-            </template>
+                <div class="icon-grid">
+                  <button
+                    v-for="icon in filteredBuiltinIcons"
+                    :key="icon.value"
+                    type="button"
+                    class="icon-grid__item"
+                    :class="{ 'is-active': selectedItem.iconValue === icon.value }"
+                    :title="`${icon.label} (${icon.value})`"
+                    @click="selectBuiltinIcon(icon.value)"
+                  >
+                    <span class="icon-grid__preview" v-html="renderNamedIcon(icon.value)" />
+                    <span class="icon-grid__label">{{ icon.label }}</span>
+                    <small>{{ icon.value }}</small>
+                  </button>
+                </div>
+              </template>
 
-            <template v-else-if="selectedItem.iconType === 'emoji'">
-              <label class="icon-editor">
-                <span>自定义 Emoji</span>
-                <input v-model="selectedItem.iconValue" class="b3-text-field" placeholder="例如：⚡" @change="persist" />
-              </label>
+              <template v-else-if="selectedItem.iconType === 'emoji'">
+                <label class="icon-editor">
+                  <span>自定义 Emoji</span>
+                  <input v-model="selectedItem.iconValue" class="b3-text-field" placeholder="例如：⚡" @change="persist" />
+                </label>
 
-              <div class="emoji-grid">
-                <button
-                  v-for="emoji in commonEmojiOptions"
-                  :key="emoji"
-                  type="button"
-                  class="emoji-grid__item"
-                  :class="{ 'is-active': selectedItem.iconValue === emoji }"
-                  :title="`使用 ${emoji}`"
-                  @click="selectEmojiIcon(emoji)"
-                >
-                  <span class="emoji-grid__preview">{{ emoji }}</span>
-                </button>
-              </div>
-            </template>
+                <div class="emoji-grid">
+                  <button
+                    v-for="emoji in commonEmojiOptions"
+                    :key="emoji"
+                    type="button"
+                    class="emoji-grid__item"
+                    :class="{ 'is-active': selectedItem.iconValue === emoji }"
+                    :title="`使用 ${emoji}`"
+                    @click="selectEmojiIcon(emoji)"
+                  >
+                    <span class="emoji-grid__preview">{{ emoji }}</span>
+                  </button>
+                </div>
+              </template>
 
-            <template v-else>
-              <label class="icon-editor">
-                <span>SVG 内容或图标 id</span>
-                <textarea v-model="selectedItem.iconValue" class="b3-text-field" rows="5" @change="persist" />
-              </label>
-            </template>
+              <template v-else>
+                <label class="icon-editor">
+                  <span>SVG 内容或图标 id</span>
+                  <textarea v-model="selectedItem.iconValue" class="b3-text-field" rows="5" @change="persist" />
+                </label>
+              </template>
+            </div>
           </section>
 
         </template>
@@ -694,6 +705,9 @@ const {
   toggleSelectedShortcutOption,
   toggleVisible,
 } = useSettingsController(props);
+
+const iconTypeTabId = (iconType: string) => `icon-type-tab-${iconType}`;
+const iconTypePanelId = "icon-type-panel";
 
 onMounted(() => {
   void initialize();

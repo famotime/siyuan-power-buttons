@@ -114,7 +114,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("replaces the icon source select with tabs and offers common emoji picks", async () => {
+  it("renders the icon source switcher as standard tabs and offers common emoji picks", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -129,15 +129,25 @@ describe("settings app layout", () => {
 
     await nextTick();
 
-    const iconTabs = Array.from(target.querySelectorAll("button"))
-      .filter(button => ["内置图标", "Emoji", "SVG"].includes(button.textContent?.trim() || ""));
+    const iconTablist = target.querySelector('[role="tablist"][aria-label="图标类型"]');
+    const iconTabs = Array.from(iconTablist?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+    const builtinTab = iconTabs.find(button => button.textContent?.trim() === "内置图标");
     const emojiTab = iconTabs.find(button => button.textContent?.trim() === "Emoji");
 
     expect(target.textContent).not.toContain("图标来源");
+    expect(iconTablist).not.toBeNull();
     expect(iconTabs).toHaveLength(3);
+    expect(builtinTab?.getAttribute("role")).toBe("tab");
+    expect(emojiTab?.getAttribute("role")).toBe("tab");
+    expect(builtinTab?.getAttribute("aria-selected")).toBe("true");
+    expect(emojiTab?.getAttribute("aria-selected")).toBe("false");
+    expect(target.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(builtinTab?.id);
 
     emojiTab?.click();
     await nextTick();
+
+    expect(emojiTab?.getAttribute("aria-selected")).toBe("true");
+    expect(target.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(emojiTab?.id);
 
     const emojiOptions = Array.from(target.querySelectorAll(".emoji-grid__item"))
       .map(button => button.textContent?.trim());
