@@ -5,3 +5,5 @@ export * from "@/core/commands/dom-query";
 export * from "@/core/commands/experimental-shortcut";
 export * from "@/core/commands/executor";
 export * from "@/core/commands/plugin-commands";
+export * from "@/core/commands/external-command-registry";
+export * from "@/core/commands/external-command-types";
