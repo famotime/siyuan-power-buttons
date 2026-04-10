@@ -60,6 +60,9 @@ export function formatExternalCommandActionId(providerId: string, commandId: str
   if (!providerId || !commandId) {
     throw new Error("External command action id parts must be non-empty.");
   }
+  if (providerId === "__external__" && commandId === "__unset__") {
+    throw new Error("External command action id cannot use the reserved placeholder.");
+  }
   if (providerId.includes(":") || commandId.includes(":")) {
     throw new Error("External command action id parts must not include colons.");
   }

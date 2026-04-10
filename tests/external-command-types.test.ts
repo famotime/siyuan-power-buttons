@@ -43,4 +43,8 @@ describe("external command action ids", () => {
     expect(() => formatExternalCommandActionId(" provider", "cmd")).toThrow();
     expect(() => formatExternalCommandActionId("provider", "cmd ")).toThrow();
   });
+
+  it("rejects formatting the reserved placeholder pair", () => {
+    expect(() => formatExternalCommandActionId("__external__", "__unset__")).toThrow();
+  });
 });
