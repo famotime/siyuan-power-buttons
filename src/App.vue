@@ -96,7 +96,7 @@
               @dragover.prevent
               @drop="onPreviewSurfaceDrop('topbar')"
             >
-              <span class="workspace-preview__tag">顶栏</span>
+              <span class="workspace-preview__tag"><b>顶栏</b></span>
               <div class="workspace-preview__stack workspace-preview__stack--row">
                 <button
                   v-for="(item, index) in previewLayout.topbar"
@@ -120,7 +120,7 @@
 
             <div class="workspace-preview__body">
               <div class="workspace-preview__dock">
-                <span class="workspace-preview__tag">左 Dock</span>
+                <span class="workspace-preview__tag"><b>左 Dock</b></span>
                 <div
                   class="workspace-preview__stack workspace-preview__segment"
                   @dragover.prevent
@@ -171,7 +171,7 @@
 
               <div class="workspace-preview__canvas">
                 <div class="workspace-preview__canvas-header">
-                  <div class="workspace-preview__canvas-note">编辑区</div>
+                  <div class="workspace-preview__canvas-note"><b>编辑区</b></div>
                   <div
                     class="workspace-preview__stack workspace-preview__stack--row workspace-preview__canvas-items"
                     @dragover.prevent
@@ -245,7 +245,7 @@
               </div>
 
               <div class="workspace-preview__dock">
-                <span class="workspace-preview__tag">右 Dock</span>
+                <span class="workspace-preview__tag"><b>右 Dock</b></span>
                 <div
                   class="workspace-preview__stack workspace-preview__segment"
                   @dragover.prevent
@@ -301,7 +301,7 @@
                 @dragover.prevent
                 @drop="onPreviewSurfaceDrop('statusbar-left')"
               >
-                <span class="workspace-preview__tag">状态栏左侧</span>
+                <span class="workspace-preview__tag"><b>状态栏</b></span>
                 <button
                   v-for="(item, index) in previewLayout.statusbarLeft"
                   :key="item.id"
@@ -351,8 +351,7 @@
               @drop="onDisabledNativeDrop"
             >
               <div class="workspace-preview__disabled-header">
-                <span class="workspace-preview__tag">禁用栏</span>
-                <small>y原生按钮拖到这里后，运行时会隐藏原入口并阻止点击。</small>
+                <span class="workspace-preview__tag"><b>禁用栏</b></span>
               </div>
               <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__disabled-items">
                 <div
@@ -381,7 +380,7 @@
                     ×
                   </button>
                 </div>
-                <span v-if="!disabledNativePreviewItems.length" class="surface-summary__empty">拖入原生按钮以隐藏入口</span>
+                <span v-if="!disabledNativePreviewItems.length" class="surface-summary__empty"><small>拖入原生按钮以隐藏入口</small></span>
               </div>
             </div>
           </div>
