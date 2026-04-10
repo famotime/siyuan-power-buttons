@@ -352,7 +352,7 @@
             >
               <div class="workspace-preview__disabled-header">
                 <span class="workspace-preview__tag">禁用栏</span>
-                <small>把原生按钮拖到这里后，运行时会隐藏原入口并阻止点击。</small>
+                <small>y原生按钮拖到这里后，运行时会隐藏原入口并阻止点击。</small>
               </div>
               <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__disabled-items">
                 <div
@@ -365,11 +365,11 @@
                     :class="previewChipClass(item)"
                     :draggable="item.draggable ?? item.editable"
                     :title="previewChipTitle(item)"
+                    :aria-label="item.title"
                     @click="handlePreviewChipClick(item)"
                     @dragstart="onPreviewDragStart($event, item)"
                   >
                     <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                    <span class="workspace-chip__label">{{ item.title }}</span>
                   </button>
                   <button
                     type="button"

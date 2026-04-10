@@ -709,7 +709,9 @@ describe("settings app layout", () => {
       },
     ]);
     expect(target.querySelector(".workspace-preview__canvas-items")?.textContent).not.toContain("钉住编辑区");
-    expect(target.querySelector(".workspace-preview__disabled-items")?.textContent).toContain("钉住编辑区");
+    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
+    expect(disabledButton).not.toBeNull();
+    expect(disabledButton.getAttribute("aria-label")).toBe("钉住编辑区");
 
     unmount();
   });
@@ -893,6 +895,43 @@ describe("settings app layout", () => {
     expect(disabledButton.innerHTML).not.toContain("<use");
     expect(fallbackIcon).not.toBeNull();
     expect(fallbackIcon?.textContent?.trim()).toBe("钉");
+    expect(disabledButton.querySelector(".workspace-chip__label")).toBeNull();
+
+    unmount();
+  });
+
+  it("does not render text labels inside disabled tray buttons", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [
+      {
+        id: "native-mail-preview",
+        title: "邮件",
+        surface: "topbar",
+        selectors: ["#barMail"],
+        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
+      },
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
+
+    expect(disabledButton.querySelector(".workspace-chip__label")).toBeNull();
+    expect(disabledButton.textContent?.trim()).toBe("");
+    expect(disabledButton.getAttribute("aria-label")).toBe("邮件");
 
     unmount();
   });

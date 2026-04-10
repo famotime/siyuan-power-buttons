@@ -297,11 +297,6 @@
   background: color-mix(in srgb, var(--b3-theme-surface) 86%, transparent);
 }
 
-.workspace-preview__disabled-items .workspace-chip__label {
-  display: inline;
-  max-width: 120px;
-}
-
 .workspace-chip__restore {
   position: absolute;
   top: -6px;
