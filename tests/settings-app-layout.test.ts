@@ -54,6 +54,17 @@ describe("settings app layout", () => {
     expect(stylesheet).not.toContain(".preview-card {");
   });
 
+  it("keeps button list items within the sidebar card width", () => {
+    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+
+    const itemRuleStart = stylesheet.indexOf(".button-list__item {");
+    const itemRuleEnd = stylesheet.indexOf("}", itemRuleStart);
+    const itemRule = stylesheet.slice(itemRuleStart, itemRuleEnd);
+
+    expect(itemRule).toContain("width: 100%");
+    expect(itemRule).toContain("box-sizing: border-box");
+  });
+
   it("keeps new and duplicate actions together in the button list panel and removes the experimental toggles card", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
