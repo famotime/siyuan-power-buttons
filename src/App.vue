@@ -107,7 +107,7 @@
                   :draggable="item.editable"
                   :title="previewChipTitle(item)"
                   @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
                   @dragover.prevent
                   @drop.stop="onPreviewItemDrop('topbar', previewLayout.topbar, index)"
                 >
@@ -135,7 +135,7 @@
                     :draggable="item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
                     @dragover.prevent
                     @drop.stop="onPreviewItemDrop('dock-left-top', previewLayout.leftDockTop, index)"
                   >
@@ -158,7 +158,7 @@
                     :draggable="item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
                     @dragover.prevent
                     @drop.stop="onPreviewItemDrop('dock-left-bottom', previewLayout.leftDockBottom, index)"
                   >
@@ -186,7 +186,7 @@
                       :draggable="item.editable"
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
-                      @dragstart="onPreviewDragStart(item)"
+                      @dragstart="onPreviewDragStart($event, item)"
                       @dragover.prevent
                       @drop.stop="onPreviewItemDrop('canvas', previewLayout.canvas, index)"
                     >
@@ -211,7 +211,7 @@
                       :draggable="item.editable"
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
-                      @dragstart="onPreviewDragStart(item)"
+                      @dragstart="onPreviewDragStart($event, item)"
                       @dragover.prevent
                       @drop.stop="onPreviewItemDrop('dock-bottom-left', previewLayout.bottomDockLeft, index)"
                     >
@@ -233,7 +233,7 @@
                       :draggable="item.editable"
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
-                      @dragstart="onPreviewDragStart(item)"
+                      @dragstart="onPreviewDragStart($event, item)"
                       @dragover.prevent
                       @drop.stop="onPreviewItemDrop('dock-bottom-right', previewLayout.bottomDockRight, index)"
                     >
@@ -260,7 +260,7 @@
                     :draggable="item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
                     @dragover.prevent
                     @drop.stop="onPreviewItemDrop('dock-right-top', previewLayout.rightDockTop, index)"
                   >
@@ -283,7 +283,7 @@
                     :draggable="item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
                     @dragover.prevent
                     @drop.stop="onPreviewItemDrop('dock-right-bottom', previewLayout.rightDockBottom, index)"
                   >
@@ -311,7 +311,7 @@
                   :draggable="item.editable"
                   :title="previewChipTitle(item)"
                   @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
                   @dragover.prevent
                   @drop.stop="onPreviewItemDrop('statusbar-left', previewLayout.statusbarLeft, index)"
                 >
@@ -334,7 +334,7 @@
                   :draggable="item.editable"
                   :title="previewChipTitle(item)"
                   @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
                   @dragover.prevent
                   @drop.stop="onPreviewItemDrop('statusbar-right', previewLayout.statusbarRight, index)"
                 >

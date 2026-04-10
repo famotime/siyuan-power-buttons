@@ -112,4 +112,5 @@ export interface PreviewButtonItem {
   source: PreviewSource;
   iconMarkup?: string;
   itemId?: string;
+  nativeSelectors?: string[];
 }

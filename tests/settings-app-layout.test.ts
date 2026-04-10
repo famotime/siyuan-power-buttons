@@ -577,6 +577,53 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("forwards native preview chip clicks to the matched native toolbar element", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const nativeButton = document.createElement("button");
+    nativeButton.id = "native-canvas-pin";
+    nativeButton.type = "button";
+    const nativeClick = vi.fn();
+    nativeButton.addEventListener("click", nativeClick);
+    document.body.appendChild(nativeButton);
+
+    const onNotify = vi.fn();
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-canvas-pin-preview",
+          title: "钉住编辑区",
+          visible: true,
+          surface: "canvas",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+          nativeSelectors: ["#native-canvas-pin"],
+        },
+      ]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const nativePreviewChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
+    nativePreviewChip.click();
+
+    expect(nativeClick).toHaveBeenCalledTimes(1);
+    expect(onNotify).not.toHaveBeenCalledWith("原生按钮当前仅支持读取预览，暂不可直接编辑。");
+
+    unmount();
+    nativeButton.remove();
+  });
+
   it("allows a user button to move into the editor canvas preview", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -607,6 +654,41 @@ describe("settings app layout", () => {
     expect(onChange).toHaveBeenCalled();
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig?.items.find((item: { title: string }) => item.title === "全局搜索")?.surface).toBe("canvas");
+
+    unmount();
+  });
+
+  it("writes drag data for preview chips so browser drag-and-drop can start reliably", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
+    const setData = vi.fn();
+    const dragStartEvent = new Event("dragstart", { bubbles: true });
+
+    Object.defineProperty(dragStartEvent, "dataTransfer", {
+      configurable: true,
+      value: {
+        effectAllowed: "all",
+        setData,
+      },
+    });
+
+    topbarButton.dispatchEvent(dragStartEvent);
+
+    expect(setData).toHaveBeenCalledWith("text/plain", expect.any(String));
 
     unmount();
   });

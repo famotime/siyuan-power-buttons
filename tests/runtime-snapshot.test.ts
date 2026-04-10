@@ -174,4 +174,68 @@ describe("runtime surface snapshot", () => {
     expect(canvasTitles).toEqual(["钉住编辑区", "复制", "更多"]);
     expect(snapshot.map(item => item.title)).not.toContain("新建文档");
   });
+
+  it("reads native editor breadcrumb buttons into the canvas preview area", () => {
+    document.body.innerHTML = `
+      <div class="layout__center">
+        <div class="protyle">
+          <div class="protyle-breadcrumb__bar">
+            <button data-type="exit-focus" class="protyle-breadcrumb__icon" aria-label="退出聚焦">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </button>
+            <span class="protyle-breadcrumb__space"></span>
+            <button data-type="readonly" class="protyle-breadcrumb__icon" aria-label="只读">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </button>
+            <button data-type="more" class="protyle-breadcrumb__icon" aria-label="更多">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const exitFocusButton = document.querySelector('.protyle-breadcrumb__bar [data-type="exit-focus"]') as HTMLElement;
+    const readonlyButton = document.querySelector('.protyle-breadcrumb__bar [data-type="readonly"]') as HTMLElement;
+    const moreButton = document.querySelector('.protyle-breadcrumb__bar [data-type="more"]') as HTMLElement;
+
+    mockRect(exitFocusButton, { left: 24, top: 360, width: 20, height: 20, right: 44, bottom: 380 });
+    mockRect(readonlyButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
+    mockRect(moreButton, { left: 80, top: 360, width: 20, height: 20, right: 100, bottom: 380 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+    const canvasTitles = snapshot.filter(item => item.surface === "canvas").map(item => item.title);
+    const readonlyItem = snapshot.find(item => item.title === "只读");
+
+    expect(canvasTitles).toEqual(["退出聚焦", "只读", "更多"]);
+    expect(readonlyItem?.nativeSelectors).toContain(".protyle-breadcrumb__bar [data-type=\"readonly\"]");
+  });
+
+  it("reads editor utility actions when Siyuan renders them as block icons with data-action", () => {
+    document.body.innerHTML = `
+      <div class="layout__center">
+        <div class="protyle-util">
+          <div class="block__icons">
+            <span data-action="copy" class="block__icon block__icon--show" aria-label="复制">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </span>
+            <span data-action="more" class="block__icon block__icon--show" aria-label="更多">
+              <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const copyButton = document.querySelector('.protyle-util [data-action="copy"]') as HTMLElement;
+    const moreButton = document.querySelector('.protyle-util [data-action="more"]') as HTMLElement;
+
+    mockRect(copyButton, { left: 24, top: 360, width: 20, height: 20, right: 44, bottom: 380 });
+    mockRect(moreButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+    const canvasTitles = snapshot.filter(item => item.surface === "canvas").map(item => item.title);
+
+    expect(canvasTitles).toEqual(["复制", "更多"]);
+  });
 });

@@ -75,6 +75,71 @@ function createStatusElement(item: PowerButtonItem, executor: CommandExecutor): 
   return button;
 }
 
+function isHiddenElement(element: HTMLElement): boolean {
+  return element.classList.contains("fn__hidden")
+    || element.classList.contains("fn__none")
+    || element.closest(".fn__hidden, .fn__none") !== null;
+}
+
+type CanvasMountTarget = {
+  container: HTMLElement;
+  anchor: HTMLElement | null;
+  kind: "breadcrumb" | "util";
+};
+
+function findCanvasMountTarget(root: ParentNode = document): CanvasMountTarget | null {
+  const editors = Array.from(root.querySelectorAll<HTMLElement>(".layout__center .protyle"));
+  const orderedEditors = [
+    ...editors.filter(editor => !isHiddenElement(editor)),
+    ...editors.filter(editor => isHiddenElement(editor)),
+  ];
+
+  for (const editor of orderedEditors) {
+    const anchor = editor.querySelector<HTMLElement>(".protyle-breadcrumb__bar [data-type='readonly'], .protyle-breadcrumb [data-type='readonly']");
+    if (anchor?.parentElement && !isHiddenElement(anchor)) {
+      return {
+        container: anchor.parentElement,
+        anchor,
+        kind: "breadcrumb",
+      };
+    }
+
+    const utilHost = editor.querySelector<HTMLElement>(".protyle-util .block__icons");
+    if (utilHost && !isHiddenElement(utilHost)) {
+      return {
+        container: utilHost,
+        anchor: null,
+        kind: "util",
+      };
+    }
+  }
+
+  const fallbackUtilHost = root.querySelector<HTMLElement>(".layout__center .protyle-util .block__icons");
+  if (!fallbackUtilHost || isHiddenElement(fallbackUtilHost)) {
+    return null;
+  }
+
+  return {
+    container: fallbackUtilHost,
+    anchor: null,
+    kind: "util",
+  };
+}
+
+function createCanvasElement(
+  item: PowerButtonItem,
+  executor: CommandExecutor,
+  kind: CanvasMountTarget["kind"],
+): HTMLElement {
+  const element = createStatusElement(item, executor);
+  if (kind === "breadcrumb") {
+    element.classList.add("protyle-breadcrumb__icon");
+  } else {
+    element.classList.add("block__icon", "block__icon--show");
+  }
+  return element;
+}
+
 function createFixedSettingsTopbar(plugin: Plugin, executor: CommandExecutor): HTMLElement {
   const element = plugin.addTopBar({
     icon: "iconSettings",
@@ -152,12 +217,16 @@ export class SurfaceManager {
       }
 
       if (item.surface === "canvas") {
-        const host = document.querySelector<HTMLElement>(".layout__center .protyle-util .block__icons");
-        if (!host) {
+        const target = findCanvasMountTarget(document);
+        if (!target) {
           continue;
         }
-        const element = createStatusElement(item, this.executor);
-        host.appendChild(element);
+        const element = createCanvasElement(item, this.executor, target.kind);
+        if (target.anchor) {
+          target.container.insertBefore(element, target.anchor);
+        } else {
+          target.container.appendChild(element);
+        }
         this.canvasElements.push(element);
         continue;
       }

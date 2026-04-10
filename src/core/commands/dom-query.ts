@@ -45,6 +45,7 @@ function queryByIdentifier(identifier: string, root: ParentNode): HTMLElement | 
     || toClickableElement(queryRoot.querySelector(`[data-id="${escaped}"]`))
     || toClickableElement(queryRoot.querySelector(`[data-menu-id="${escaped}"]`))
     || toClickableElement(queryRoot.querySelector(`[data-type="${escaped}"]`))
+    || toClickableElement(queryRoot.querySelector(`[data-action="${escaped}"]`))
     || toClickableElement(queryRoot.querySelector(`.${escapeClassName(identifier)}`))
     || toClickableElement(queryRoot.querySelector(`use[href="#${escaped}"], use[xlink\\:href="#${escaped}"]`))
     || null;
@@ -73,4 +74,34 @@ export function findElementBySmartSelector(selector: string, root: ParentNode = 
   }
 
   return queryByIdentifier(trimmed, root);
+}
+
+function clickElement(element: HTMLElement): boolean {
+  try {
+    element.click();
+    return true;
+  } catch {
+    const view = element.ownerDocument?.defaultView;
+    if (!view) {
+      return false;
+    }
+    return element.dispatchEvent(new view.MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    }));
+  }
+}
+
+export function triggerElementBySmartSelectors(selectors: string[], root: ParentNode = document): boolean {
+  for (const selector of selectors) {
+    const element = findElementBySmartSelector(selector, root);
+    if (!element) {
+      continue;
+    }
+    if (clickElement(element)) {
+      return true;
+    }
+  }
+
+  return false;
 }

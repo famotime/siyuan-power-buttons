@@ -24,6 +24,9 @@ import {
   movePreviewItem,
 } from "@/shared/preview-layout";
 import {
+  triggerElementBySmartSelectors,
+} from "@/core/commands";
+import {
   ACTION_TYPES,
   CONFIGURABLE_SURFACES,
   ICON_TYPES,
@@ -375,11 +378,15 @@ export function useSettingsController(props: SettingsAppProps) {
     await persist();
   }
 
-  function onPreviewDragStart(item: PreviewButtonItem): void {
+  function onPreviewDragStart(event: DragEvent, item: PreviewButtonItem): void {
     if (!item.editable || !item.itemId) {
       return;
     }
     previewDragId.value = item.itemId;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", item.itemId);
+    }
   }
 
   async function moveFromPreview(surface: SurfaceType, targetIndex: number): Promise<void> {
@@ -411,6 +418,9 @@ export function useSettingsController(props: SettingsAppProps) {
 
   function handlePreviewChipClick(item: PreviewButtonItem): void {
     if (!item.editable || !item.itemId) {
+      if (item.nativeSelectors?.length && triggerElementBySmartSelectors(item.nativeSelectors, document)) {
+        return;
+      }
       props.onNotify("原生按钮当前仅支持读取预览，暂不可直接编辑。");
       return;
     }

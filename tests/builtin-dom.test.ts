@@ -31,4 +31,49 @@ describe("builtin dom command runner", () => {
     expect(executeBuiltinCommandByDom("globalSearch", document)).toBe(false);
     expect(executeBuiltinCommandByDom("not-supported", document)).toBe(false);
   });
+
+  it("falls back to built-in alias ids across id, data-id, data-menu-id and data-type", () => {
+    document.body.innerHTML = `
+      <button data-id="barSettings" type="button"></button>
+      <button data-menu-id="menuRecent" type="button"></button>
+      <button data-type="toolbarMore" type="button"></button>
+    `;
+
+    const configButton = document.querySelector('[data-id="barSettings"]') as HTMLButtonElement;
+    const recentButton = document.querySelector('[data-menu-id="menuRecent"]') as HTMLButtonElement;
+    const menuButton = document.querySelector('[data-type="toolbarMore"]') as HTMLButtonElement;
+    const configClick = vi.fn();
+    const recentClick = vi.fn();
+    const menuClick = vi.fn();
+
+    configButton.addEventListener("click", configClick);
+    recentButton.addEventListener("click", recentClick);
+    menuButton.addEventListener("click", menuClick);
+
+    expect(executeBuiltinCommandByDom("config", document)).toBe(true);
+    expect(executeBuiltinCommandByDom("recentDocs", document)).toBe(true);
+    expect(executeBuiltinCommandByDom("mainMenu", document)).toBe(true);
+    expect(configClick).toHaveBeenCalledTimes(1);
+    expect(recentClick).toHaveBeenCalledTimes(1);
+    expect(menuClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("finds toolbar buttons by svg icon alias and dispatches a mouse event when click throws", () => {
+    document.body.innerHTML = `
+      <button type="button">
+        <svg><use href="#iconMore"></use></svg>
+      </button>
+    `;
+
+    const button = document.querySelector("button") as HTMLButtonElement;
+    const nativeClick = vi.spyOn(button, "click").mockImplementation(() => {
+      throw new Error("click not supported");
+    });
+    const dispatchedClick = vi.fn();
+    button.addEventListener("click", dispatchedClick);
+
+    expect(executeBuiltinCommandByDom("mainMenu", document)).toBe(true);
+    expect(nativeClick).toHaveBeenCalledTimes(1);
+    expect(dispatchedClick).toHaveBeenCalledTimes(1);
+  });
 });

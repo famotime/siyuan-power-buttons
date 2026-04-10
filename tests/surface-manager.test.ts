@@ -141,4 +141,52 @@ describe("surface manager", () => {
 
     expect(document.querySelector(".layout__center .protyle-util .block__icons .siyuan-power-buttons__button")).toBeNull();
   });
+
+  it("renders canvas buttons before the readonly breadcrumb anchor and cleans them up", () => {
+    document.body.innerHTML = `
+      <div class="layout__center">
+        <div class="protyle">
+          <div class="protyle-breadcrumb__bar">
+            <button data-type="exit-focus" class="protyle-breadcrumb__icon" type="button">退出聚焦</button>
+            <button data-type="readonly" class="protyle-breadcrumb__icon" type="button">只读</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.items[0].surface = "canvas";
+
+    manager.render(config);
+
+    const toolbar = document.querySelector(".layout__center .protyle-breadcrumb__bar") as HTMLElement;
+    const readonlyButton = toolbar.querySelector('[data-type="readonly"]') as HTMLElement;
+    const insertedButton = toolbar.querySelector(".siyuan-power-buttons__button") as HTMLElement;
+
+    expect(insertedButton).not.toBeNull();
+    expect(insertedButton.dataset.powerButtonsItemId).toBe(config.items[0].id);
+    expect(insertedButton.nextElementSibling).toBe(readonlyButton);
+
+    manager.destroy();
+
+    expect(toolbar.querySelector(".siyuan-power-buttons__button")).toBeNull();
+    expect(toolbar.querySelector('[data-type="readonly"]')).toBe(readonlyButton);
+  });
 });

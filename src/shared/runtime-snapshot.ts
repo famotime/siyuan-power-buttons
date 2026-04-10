@@ -9,9 +9,12 @@ const STATUS_SELECTORS = ["#status button", "#status .status__item", "#status .t
 const LEFT_DOCK_SELECTORS = ["#dockLeft .dock__item", ".dock#dockLeft .dock__item"];
 const RIGHT_DOCK_SELECTORS = ["#dockRight .dock__item", ".dock#dockRight .dock__item"];
 const BOTTOM_DOCK_SELECTORS = ["#dockBottom .dock__item", ".dock#dockBottom .dock__item"];
-const CANVAS_SELECTORS = [
-  ".layout__center .protyle-util .block__icons > button",
-  ".layout__center .protyle-util .block__icons [data-type]",
+const CANVAS_TOOLBAR_SELECTORS = [
+  ".layout__center .protyle:not(.fn__hidden):not(.fn__none) .protyle-breadcrumb__bar",
+  ".layout__center .protyle:not(.fn__hidden):not(.fn__none) .protyle-breadcrumb:not(.protyle-breadcrumb__bar)",
+  ".layout__center .protyle .protyle-breadcrumb__bar",
+  ".layout__center .protyle .protyle-breadcrumb:not(.protyle-breadcrumb__bar)",
+  ".layout__center .protyle-util .block__icons",
 ];
 const WINDOW_CONTROL_IDS = new Set(["minWindow", "maxWindow", "restoreWindow", "closeWindow", "pinWindow"]);
 
@@ -71,6 +74,26 @@ function isIgnoredDockElement(element: HTMLElement): boolean {
   return element.matches(".dock__item--pin");
 }
 
+function isCanvasToolbarItem(element: HTMLElement): boolean {
+  if (isPreviewHidden(element) || isPluginOwned(element)) {
+    return false;
+  }
+  if (element.matches(".protyle-breadcrumb__space, [data-toolbar-divider]")) {
+    return false;
+  }
+
+  const isButtonLike = element.matches("button, [role='button'], .protyle-breadcrumb__icon, .block__icon, .toolbar__item");
+  const hasBuiltinMarker = element.hasAttribute("data-type") || element.hasAttribute("data-action");
+  const hasLabelOrIcon = Boolean(
+    element.getAttribute("aria-label")
+    || element.getAttribute("title")
+    || element.querySelector("svg")
+    || element.textContent?.trim(),
+  );
+
+  return (isButtonLike || hasBuiltinMarker) && hasLabelOrIcon;
+}
+
 function getElementLabel(element: HTMLElement, index: number): string {
   return element.getAttribute("aria-label")
     || element.getAttribute("title")
@@ -90,6 +113,59 @@ function getElementIconMarkup(element: HTMLElement): string | undefined {
     return undefined;
   }
   return `<span class="siyuan-power-buttons__native-fallback-icon">${iconText}</span>`;
+}
+
+function getElementSelectors(element: HTMLElement): string[] {
+  const selectors = new Set<string>();
+  const id = element.id.trim();
+  const dataId = (element.getAttribute("data-id") || "").trim();
+  const dataMenuId = (element.getAttribute("data-menu-id") || "").trim();
+  const dataType = (element.getAttribute("data-type") || "").trim();
+  const dataAction = (element.getAttribute("data-action") || "").trim();
+  const svgUse = element.querySelector("use");
+  const iconRef = (svgUse?.getAttribute("href") || svgUse?.getAttribute("xlink:href") || "").replace(/^#/, "").trim();
+  const label = getElementLabel(element, 0);
+
+  if (id) {
+    selectors.add(`#${id}`);
+    selectors.add(id);
+  }
+  if (dataId) {
+    selectors.add(`[data-id="${dataId}"]`);
+    selectors.add(dataId);
+  }
+  if (dataMenuId) {
+    selectors.add(`[data-menu-id="${dataMenuId}"]`);
+    selectors.add(dataMenuId);
+  }
+  if (dataType) {
+    if (element.closest(".protyle-breadcrumb__bar")) {
+      selectors.add(`.protyle-breadcrumb__bar [data-type="${dataType}"]`);
+    }
+    if (element.closest(".protyle-breadcrumb:not(.protyle-breadcrumb__bar)")) {
+      selectors.add(`.protyle-breadcrumb [data-type="${dataType}"]`);
+    }
+    if (element.closest(".protyle-util .block__icons")) {
+      selectors.add(`.protyle-util .block__icons [data-type="${dataType}"]`);
+    }
+    selectors.add(`[data-type="${dataType}"]`);
+    selectors.add(dataType);
+  }
+  if (dataAction) {
+    if (element.closest(".protyle-util .block__icons")) {
+      selectors.add(`.protyle-util .block__icons [data-action="${dataAction}"]`);
+    }
+    selectors.add(`[data-action="${dataAction}"]`);
+    selectors.add(dataAction);
+  }
+  if (iconRef) {
+    selectors.add(iconRef);
+  }
+  if (label) {
+    selectors.add(`text:${label}`);
+  }
+
+  return [...selectors];
 }
 
 function getMidpoint(element: HTMLElement, axis: "x" | "y"): number {
@@ -125,7 +201,7 @@ function mapElementsToPreview(
   sortMode: SortMode,
 ): PreviewButtonItem[] {
   return sortElements(elements, sortMode).map((element, index) => ({
-    id: `native:${surfaceFactory(element)}:${element.id || element.getAttribute("data-type") || index}`,
+    id: `native:${surfaceFactory(element)}:${element.id || element.getAttribute("data-type") || element.getAttribute("data-action") || index}`,
     itemId: undefined,
     title: getElementLabel(element, index),
     visible: true,
@@ -134,6 +210,7 @@ function mapElementsToPreview(
     editable: false,
     source: "native",
     iconMarkup: getElementIconMarkup(element),
+    nativeSelectors: getElementSelectors(element),
   }));
 }
 
@@ -153,6 +230,25 @@ function splitSurfaceByContainer(
   return mapElementsToPreview(elements, element => {
     return getMidpoint(element, axis) < threshold ? startSurface : endSurface;
   }, sortMode);
+}
+
+function getCanvasToolbarElements(root: ParentNode): HTMLElement[] {
+  for (const selector of CANVAS_TOOLBAR_SELECTORS) {
+    const toolbar = root.querySelector<HTMLElement>(selector);
+    if (!toolbar || isPreviewHidden(toolbar)) {
+      continue;
+    }
+
+    const elements = Array.from(toolbar.children)
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .filter(isCanvasToolbarItem);
+
+    if (elements.length > 0) {
+      return elements;
+    }
+  }
+
+  return [];
 }
 
 export function readNativeSurfaceSnapshot(root: ParentNode = document): PreviewButtonItem[] {
@@ -191,7 +287,7 @@ export function readNativeSurfaceSnapshot(root: ParentNode = document): PreviewB
     "x",
   );
   const canvas = mapElementsToPreview(
-    queryUniqueElements(root, CANVAS_SELECTORS, element => !isPreviewHidden(element)),
+    getCanvasToolbarElements(root),
     () => "canvas",
     "flow-horizontal",
   );
