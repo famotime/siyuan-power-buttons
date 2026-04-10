@@ -658,6 +658,62 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("moves a native preview button into the disabled tray and persists the suppression rule", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-canvas-pin-preview",
+          title: "钉住编辑区",
+          visible: true,
+          surface: "canvas",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+          nativeSelectors: ["#native-canvas-pin", "[data-type='readonly']"],
+        },
+      ]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
+    const disabledDropzone = target.querySelector(".workspace-preview__disabled-items") as HTMLElement;
+
+    nativeButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    disabledDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(onChange).toHaveBeenCalled();
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.disabledNativeButtons).toEqual([
+      {
+        id: "native-canvas-pin-preview",
+        title: "钉住编辑区",
+        surface: "canvas",
+        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+        selectors: ["#native-canvas-pin", "[data-type='readonly']"],
+      },
+    ]);
+    expect(target.querySelector(".workspace-preview__canvas-items")?.textContent).not.toContain("钉住编辑区");
+    expect(target.querySelector(".workspace-preview__disabled-items")?.textContent).toContain("钉住编辑区");
+
+    unmount();
+  });
+
   it("writes drag data for preview chips so browser drag-and-drop can start reliably", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

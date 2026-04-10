@@ -189,4 +189,63 @@ describe("surface manager", () => {
     expect(toolbar.querySelector(".siyuan-power-buttons__button")).toBeNull();
     expect(toolbar.querySelector('[data-type="readonly"]')).toBe(readonlyButton);
   });
+
+  it("suppresses configured native buttons by hiding them and intercepting click events", () => {
+    document.body.innerHTML = `
+      <div class="layout__center">
+        <div class="protyle">
+          <div class="protyle-breadcrumb__bar">
+            <button id="native-canvas-pin" data-type="readonly" class="protyle-breadcrumb__icon" type="button">只读</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const nativeButton = document.querySelector("#native-canvas-pin") as HTMLButtonElement;
+    const nativeClick = vi.fn();
+    nativeButton.addEventListener("click", nativeClick);
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.disabledNativeButtons = [
+      {
+        id: "native:canvas:readonly",
+        title: "只读",
+        surface: "canvas",
+        selectors: ["#native-canvas-pin", "[data-type='readonly']"],
+      },
+    ];
+
+    manager.render(config);
+
+    expect(nativeButton.hidden).toBe(true);
+    expect(nativeButton.style.pointerEvents).toBe("none");
+
+    const clickEvent = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    nativeButton.dispatchEvent(clickEvent);
+
+    expect(clickEvent.defaultPrevented).toBe(true);
+    expect(nativeClick).not.toHaveBeenCalled();
+
+    manager.destroy();
+  });
 });

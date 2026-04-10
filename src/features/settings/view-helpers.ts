@@ -27,14 +27,18 @@ export function buildPreviewChipClass(item: PreviewButtonItem, selectedId: strin
   return {
     "is-active": item.itemId === selectedId,
     "is-native": !item.editable,
+    "is-suppressed": Boolean(item.suppressed),
     "is-hidden": item.editable && !item.visible,
-    "is-draggable": item.editable,
+    "is-draggable": Boolean(item.draggable ?? item.editable),
   };
 }
 
 export function getPreviewChipTitle(item: PreviewButtonItem): string {
+  if (item.suppressed) {
+    return `${item.title} · 已禁用，拖回原区域可恢复`;
+  }
   if (!item.editable) {
-    return `${item.title} · 原生按钮，仅预览`;
+    return `${item.title} · 原生按钮，可拖到禁用栏隐藏`;
   }
   return `${item.title} · ${item.visible ? "显示中" : "隐藏中"} · 可拖拽调整`;
 }

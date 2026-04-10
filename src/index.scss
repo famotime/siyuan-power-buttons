@@ -252,6 +252,37 @@
   border: 1px solid color-mix(in srgb, var(--b3-border-color) 84%, transparent);
 }
 
+.workspace-preview__disabled {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 68px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--b3-theme-error) 40%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--b3-theme-error) 8%, transparent), transparent 55%),
+    color-mix(in srgb, var(--b3-theme-background) 72%, transparent);
+}
+
+.workspace-preview__disabled-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workspace-preview__disabled-header small {
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.72;
+}
+
+.workspace-preview__disabled-items {
+  min-height: 34px;
+  align-content: flex-start;
+}
+
 .workspace-preview__topbar,
 .workspace-preview__statusbar {
   display: flex;
@@ -385,6 +416,11 @@
 .workspace-chip.is-hidden {
   opacity: 0.55;
   border-style: dashed;
+}
+
+.workspace-chip.is-suppressed {
+  border-color: color-mix(in srgb, var(--b3-theme-error) 34%, transparent);
+  background: color-mix(in srgb, var(--b3-theme-error) 8%, transparent);
 }
 
 .workspace-chip__icon {

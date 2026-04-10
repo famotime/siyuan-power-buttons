@@ -20,6 +20,7 @@ import type {
   PowerButtonItem,
   PowerButtonsConfig,
 } from "@/shared/types";
+import { NativeElementSuppressor } from "@/core/surfaces/native-element-suppressor";
 
 type DockRegistration = {
   type: string;
@@ -179,6 +180,7 @@ export class SurfaceManager {
   private statusElements: HTMLElement[] = [];
   private canvasElements: HTMLElement[] = [];
   private dockRegistrations: DockRegistration[] = [];
+  private nativeSuppressor = new NativeElementSuppressor();
 
   constructor(
     private readonly plugin: Plugin,
@@ -258,9 +260,13 @@ export class SurfaceManager {
         });
       }
     }
+
+    this.nativeSuppressor.apply(config.disabledNativeButtons, document);
   }
 
   destroy(): void {
+    this.nativeSuppressor.clear();
+
     for (const element of this.topbarElements) {
       element.remove();
     }

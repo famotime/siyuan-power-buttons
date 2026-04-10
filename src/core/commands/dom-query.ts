@@ -25,30 +25,56 @@ function toClickableElement(element: Element | null): HTMLElement | null {
   return HTMLElementCtor && element.parentElement instanceof HTMLElementCtor ? element.parentElement : null;
 }
 
-function queryByText(text: string, root: ParentNode): HTMLElement | null {
+function queryAllByText(text: string, root: ParentNode): HTMLElement[] {
+  const elements: HTMLElement[] = [];
+  const seen = new Set<HTMLElement>();
+
   for (const element of root.querySelectorAll("*")) {
     if (normalizeText(element.textContent) === text) {
-      return toClickableElement(element);
+      const clickable = toClickableElement(element);
+      if (clickable && !seen.has(clickable)) {
+        seen.add(clickable);
+        elements.push(clickable);
+      }
     }
   }
-  return null;
+
+  return elements;
 }
 
-function queryByIdentifier(identifier: string, root: ParentNode): HTMLElement | null {
+function queryAllByIdentifier(identifier: string, root: ParentNode): HTMLElement[] {
   const escaped = escapeAttributeValue(identifier);
   const queryRoot = root as ParentNode & {
     getElementById?: (id: string) => HTMLElement | null;
     querySelector: (selector: string) => Element | null;
+    querySelectorAll: (selector: string) => NodeListOf<Element>;
+  };
+  const matches: HTMLElement[] = [];
+  const seen = new Set<HTMLElement>();
+
+  const addMatch = (element: Element | null): void => {
+    const clickable = toClickableElement(element);
+    if (clickable && !seen.has(clickable)) {
+      seen.add(clickable);
+      matches.push(clickable);
+    }
   };
 
-  return queryRoot.getElementById?.(identifier)
-    || toClickableElement(queryRoot.querySelector(`[data-id="${escaped}"]`))
-    || toClickableElement(queryRoot.querySelector(`[data-menu-id="${escaped}"]`))
-    || toClickableElement(queryRoot.querySelector(`[data-type="${escaped}"]`))
-    || toClickableElement(queryRoot.querySelector(`[data-action="${escaped}"]`))
-    || toClickableElement(queryRoot.querySelector(`.${escapeClassName(identifier)}`))
-    || toClickableElement(queryRoot.querySelector(`use[href="#${escaped}"], use[xlink\\:href="#${escaped}"]`))
-    || null;
+  const addMatches = (selector: string): void => {
+    for (const element of queryRoot.querySelectorAll(selector)) {
+      addMatch(element);
+    }
+  };
+
+  addMatch(queryRoot.getElementById?.(identifier) || null);
+  addMatches(`[data-id="${escaped}"]`);
+  addMatches(`[data-menu-id="${escaped}"]`);
+  addMatches(`[data-type="${escaped}"]`);
+  addMatches(`[data-action="${escaped}"]`);
+  addMatches(`.${escapeClassName(identifier)}`);
+  addMatches(`use[href="#${escaped}"], use[xlink\\:href="#${escaped}"]`);
+
+  return matches;
 }
 
 function looksLikeCssSelector(selector: string): boolean {
@@ -60,20 +86,33 @@ function looksLikeCssSelector(selector: string): boolean {
 }
 
 export function findElementBySmartSelector(selector: string, root: ParentNode = document): HTMLElement | null {
+  return findElementsBySmartSelector(selector, root)[0] || null;
+}
+
+export function findElementsBySmartSelector(selector: string, root: ParentNode = document): HTMLElement[] {
   const trimmed = selector.trim();
   if (!trimmed) {
-    return null;
+    return [];
   }
 
   if (trimmed.startsWith("text:")) {
-    return queryByText(normalizeText(trimmed.slice(5)), root);
+    return queryAllByText(normalizeText(trimmed.slice(5)), root);
   }
 
   if (looksLikeCssSelector(trimmed)) {
-    return toClickableElement(root.querySelector(trimmed));
+    const matches: HTMLElement[] = [];
+    const seen = new Set<HTMLElement>();
+    for (const element of root.querySelectorAll(trimmed)) {
+      const clickable = toClickableElement(element);
+      if (clickable && !seen.has(clickable)) {
+        seen.add(clickable);
+        matches.push(clickable);
+      }
+    }
+    return matches;
   }
 
-  return queryByIdentifier(trimmed, root);
+  return queryAllByIdentifier(trimmed, root);
 }
 
 function clickElement(element: HTMLElement): boolean {

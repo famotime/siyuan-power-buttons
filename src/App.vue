@@ -68,7 +68,7 @@
             <div class="surface-summary__header">
               <div>
                 <h3>位置预览</h3>
-                <p>灰色为原生按钮，半透明为隐藏态。拖拽彩色按钮图标可切换区域和顺序；编辑区按钮会按保存位置参与运行时渲染。</p>
+                <p>灰色为原生按钮，半透明为隐藏态。彩色按钮可拖动调整区域和顺序；原生按钮可拖到禁用栏后直接隐藏并禁用入口。</p>
               </div>
             <div class="surface-summary__controls">
               <label class="surface-summary__toggle">
@@ -104,7 +104,7 @@
                   type="button"
                   class="workspace-chip"
                   :class="previewChipClass(item)"
-                  :draggable="item.editable"
+                  :draggable="item.draggable ?? item.editable"
                   :title="previewChipTitle(item)"
                   @click="handlePreviewChipClick(item)"
                   @dragstart="onPreviewDragStart($event, item)"
@@ -132,7 +132,7 @@
                     type="button"
                     class="workspace-chip"
                     :class="previewChipClass(item)"
-                    :draggable="item.editable"
+                    :draggable="item.draggable ?? item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
                     @dragstart="onPreviewDragStart($event, item)"
@@ -155,7 +155,7 @@
                     type="button"
                     class="workspace-chip"
                     :class="previewChipClass(item)"
-                    :draggable="item.editable"
+                    :draggable="item.draggable ?? item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
                     @dragstart="onPreviewDragStart($event, item)"
@@ -183,7 +183,7 @@
                       type="button"
                       class="workspace-chip"
                       :class="previewChipClass(item)"
-                      :draggable="item.editable"
+                      :draggable="item.draggable ?? item.editable"
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
                       @dragstart="onPreviewDragStart($event, item)"
@@ -208,7 +208,7 @@
                       type="button"
                       class="workspace-chip"
                       :class="previewChipClass(item)"
-                      :draggable="item.editable"
+                      :draggable="item.draggable ?? item.editable"
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
                       @dragstart="onPreviewDragStart($event, item)"
@@ -230,7 +230,7 @@
                       type="button"
                       class="workspace-chip"
                       :class="previewChipClass(item)"
-                      :draggable="item.editable"
+                      :draggable="item.draggable ?? item.editable"
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
                       @dragstart="onPreviewDragStart($event, item)"
@@ -257,7 +257,7 @@
                     type="button"
                     class="workspace-chip"
                     :class="previewChipClass(item)"
-                    :draggable="item.editable"
+                    :draggable="item.draggable ?? item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
                     @dragstart="onPreviewDragStart($event, item)"
@@ -280,7 +280,7 @@
                     type="button"
                     class="workspace-chip"
                     :class="previewChipClass(item)"
-                    :draggable="item.editable"
+                    :draggable="item.draggable ?? item.editable"
                     :title="previewChipTitle(item)"
                     @click="handlePreviewChipClick(item)"
                     @dragstart="onPreviewDragStart($event, item)"
@@ -308,7 +308,7 @@
                   type="button"
                   class="workspace-chip"
                   :class="previewChipClass(item)"
-                  :draggable="item.editable"
+                  :draggable="item.draggable ?? item.editable"
                   :title="previewChipTitle(item)"
                   @click="handlePreviewChipClick(item)"
                   @dragstart="onPreviewDragStart($event, item)"
@@ -331,7 +331,7 @@
                   type="button"
                   class="workspace-chip"
                   :class="previewChipClass(item)"
-                  :draggable="item.editable"
+                  :draggable="item.draggable ?? item.editable"
                   :title="previewChipTitle(item)"
                   @click="handlePreviewChipClick(item)"
                   @dragstart="onPreviewDragStart($event, item)"
@@ -342,6 +342,34 @@
                   <span class="workspace-chip__label">{{ item.title }}</span>
                 </button>
                 <span v-if="!previewLayout.statusbarRight.length" class="surface-summary__empty">空</span>
+              </div>
+            </div>
+
+            <div
+              class="workspace-preview__disabled"
+              @dragover.prevent
+              @drop="onDisabledNativeDrop"
+            >
+              <div class="workspace-preview__disabled-header">
+                <span class="workspace-preview__tag">禁用栏</span>
+                <small>把原生按钮拖到这里后，运行时会隐藏原入口并阻止点击。</small>
+              </div>
+              <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__disabled-items">
+                <button
+                  v-for="item in disabledNativePreviewItems"
+                  :key="`disabled-${item.id}`"
+                  type="button"
+                  class="workspace-chip"
+                  :class="previewChipClass(item)"
+                  :draggable="item.draggable ?? item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
+                >
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+                <span v-if="!disabledNativePreviewItems.length" class="surface-summary__empty">拖入原生按钮以隐藏入口</span>
               </div>
             </div>
           </div>
@@ -672,6 +700,7 @@ const {
   captureSelectedShortcut,
   commonEmojiOptions,
   config,
+  disabledNativePreviewItems,
   duplicateItem,
   exportConfigFile,
   filteredBuiltinIcons,
@@ -684,6 +713,7 @@ const {
   isRefreshingLayout,
   onListDragStart,
   onListDrop,
+  onDisabledNativeDrop,
   onPreviewDragStart,
   onPreviewItemDrop,
   onPreviewSurfaceDrop,

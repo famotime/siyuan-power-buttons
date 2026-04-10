@@ -72,10 +72,19 @@ export interface PowerButtonItem {
   experimentalClickSequence?: ExperimentalClickSequenceConfig;
 }
 
+export interface DisabledNativeButton {
+  id: string;
+  title: string;
+  surface: SurfaceType;
+  selectors: string[];
+  iconMarkup?: string;
+}
+
 export interface PowerButtonsConfig {
   version: 2;
   desktopOnly: boolean;
   items: PowerButtonItem[];
+  disabledNativeButtons: DisabledNativeButton[];
   experimental: {
     nativeToolbarControl: boolean;
     internalCommandAdapter: boolean;
@@ -99,7 +108,7 @@ export interface PluginCommandDefinition {
   description: string;
 }
 
-export type PreviewSource = "config" | "native";
+export type PreviewSource = "config" | "native" | "disabled-native";
 export type PreviewSurfaceType = SurfaceType;
 
 export interface PreviewButtonItem {
@@ -113,4 +122,6 @@ export interface PreviewButtonItem {
   iconMarkup?: string;
   itemId?: string;
   nativeSelectors?: string[];
+  draggable?: boolean;
+  suppressed?: boolean;
 }

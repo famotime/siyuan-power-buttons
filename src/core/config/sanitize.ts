@@ -13,6 +13,7 @@ import {
   DEFAULT_BUILTIN_ICON,
 } from "@/shared/constants";
 import {
+  SURFACES,
   ACTION_TYPES,
   CONFIGURABLE_SURFACES,
   ICON_TYPES,
@@ -23,6 +24,7 @@ import {
 } from "@/shared/utils";
 import type {
   ActionType,
+  DisabledNativeButton,
   ClickSequenceStep,
   ExperimentalClickSequenceConfig,
   ExperimentalShortcutConfig,
@@ -43,6 +45,16 @@ const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
 
 function ensureSurface(value: unknown): SurfaceType {
   if (CONFIGURABLE_SURFACES.includes(value as typeof CONFIGURABLE_SURFACES[number])) {
+    return value as SurfaceType;
+  }
+  if (typeof value === "string" && LEGACY_SURFACE_MIGRATIONS[value]) {
+    return LEGACY_SURFACE_MIGRATIONS[value];
+  }
+  return "topbar";
+}
+
+function ensureRuntimeSurface(value: unknown): SurfaceType {
+  if (SURFACES.includes(value as SurfaceType)) {
     return value as SurfaceType;
   }
   if (typeof value === "string" && LEGACY_SURFACE_MIGRATIONS[value]) {
@@ -118,6 +130,31 @@ function readExperimentalFlag(
   return typeof value === "boolean" ? value : fallback;
 }
 
+function sanitizeDisabledNativeButton(value: unknown): DisabledNativeButton | null {
+  const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
+  const id = typeof raw.id === "string" ? raw.id.trim() : "";
+  const title = typeof raw.title === "string" ? raw.title.trim() : "";
+  const surface = ensureRuntimeSurface(raw.surface);
+  const selectors = Array.isArray(raw.selectors)
+    ? Array.from(new Set(raw.selectors
+      .filter((selector): selector is string => typeof selector === "string")
+      .map(selector => selector.trim())
+      .filter(Boolean)))
+    : [];
+
+  if (!id || !title || selectors.length === 0) {
+    return null;
+  }
+
+  return {
+    id,
+    title,
+    surface,
+    selectors,
+    iconMarkup: typeof raw.iconMarkup === "string" && raw.iconMarkup.trim() ? raw.iconMarkup : undefined,
+  };
+}
+
 function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   const fallback = createButtonItem({ order: index });
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
@@ -161,11 +198,17 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
   const items = Array.isArray(raw.items)
     ? normalizeItemOrder(sortItems(raw.items.map((item, index) => sanitizeItem(item, index))))
     : defaults.items;
+  const disabledNativeButtons = Array.isArray(raw.disabledNativeButtons)
+    ? raw.disabledNativeButtons
+      .map(sanitizeDisabledNativeButton)
+      .filter((item): item is DisabledNativeButton => Boolean(item))
+    : defaults.disabledNativeButtons;
 
   return {
     version: 2,
     desktopOnly: typeof raw.desktopOnly === "boolean" ? raw.desktopOnly : true,
     items,
+    disabledNativeButtons,
     experimental: {
       nativeToolbarControl: readExperimentalFlag(raw.experimental, "nativeToolbarControl", false),
       internalCommandAdapter: readExperimentalFlag(raw.experimental, "internalCommandAdapter", false),

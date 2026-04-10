@@ -211,6 +211,7 @@ function mapElementsToPreview(
     source: "native",
     iconMarkup: getElementIconMarkup(element),
     nativeSelectors: getElementSelectors(element),
+    draggable: true,
   }));
 }
 

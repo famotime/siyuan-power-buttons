@@ -224,4 +224,43 @@ describe("config store model", () => {
 
     expect(store.getConfig().items[0].title).toBe("全局搜索");
   });
+
+  it("preserves native suppression rules when sanitizing config", () => {
+    const config = sanitizeConfig({
+      version: 2,
+      desktopOnly: true,
+      items: [],
+      disabledNativeButtons: [
+        {
+          id: "native:canvas:readonly",
+          title: "只读",
+          surface: "canvas",
+          selectors: ["#toolbarReadonly", "[data-type='readonly']"],
+          iconMarkup: "<svg viewBox='0 0 24 24'></svg>",
+        },
+        {
+          id: "",
+          title: "",
+          surface: "broken-surface",
+          selectors: [],
+        },
+      ],
+      experimental: {
+        nativeToolbarControl: false,
+        internalCommandAdapter: false,
+        shortcutAdapter: true,
+        clickSequenceAdapter: true,
+      },
+    });
+
+    expect(config.disabledNativeButtons).toEqual([
+      {
+        id: "native:canvas:readonly",
+        title: "只读",
+        surface: "canvas",
+        selectors: ["#toolbarReadonly", "[data-type='readonly']"],
+        iconMarkup: "<svg viewBox='0 0 24 24'></svg>",
+      },
+    ]);
+  });
 });
