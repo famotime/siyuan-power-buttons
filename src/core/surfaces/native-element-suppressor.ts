@@ -23,6 +23,14 @@ function createBlockHandler(): (event: Event) => void {
   };
 }
 
+function isSuppressionCandidate(element: HTMLElement): boolean {
+  if (element.dataset.powerButtonsOwned === "true") {
+    return false;
+  }
+
+  return element.closest(".power-buttons-settings, .siyuan-power-buttons-settings-host") === null;
+}
+
 export class NativeElementSuppressor {
   private observer: MutationObserver | null = null;
   private scheduled = false;
@@ -93,6 +101,9 @@ export class NativeElementSuppressor {
     for (const rule of this.rules) {
       for (const selector of rule.selectors) {
         for (const element of findElementsBySmartSelector(selector, root)) {
+          if (!isSuppressionCandidate(element)) {
+            continue;
+          }
           this.suppressElement(element);
         }
       }

@@ -248,4 +248,59 @@ describe("surface manager", () => {
 
     manager.destroy();
   });
+
+  it("does not suppress matching buttons inside the settings preview UI", () => {
+    document.body.innerHTML = `
+      <div class="layout__center">
+        <div class="protyle">
+          <div class="protyle-breadcrumb__bar">
+            <button id="native-canvas-pin" data-type="readonly" class="protyle-breadcrumb__icon" type="button">只读</button>
+          </div>
+        </div>
+      </div>
+      <div class="power-buttons-settings">
+        <div class="workspace-preview__disabled-items">
+          <button class="workspace-chip" type="button">只读</button>
+        </div>
+      </div>
+    `;
+
+    const nativeButton = document.querySelector("#native-canvas-pin") as HTMLButtonElement;
+    const settingsPreviewButton = document.querySelector(".power-buttons-settings .workspace-chip") as HTMLButtonElement;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.disabledNativeButtons = [
+      {
+        id: "native:canvas:readonly",
+        title: "只读",
+        surface: "canvas",
+        selectors: ["text:只读"],
+      },
+    ];
+
+    manager.render(config);
+
+    expect(nativeButton.hidden).toBe(true);
+    expect(settingsPreviewButton.hidden).toBe(false);
+    expect(settingsPreviewButton.style.display).not.toBe("none");
+
+    manager.destroy();
+  });
 });
