@@ -896,4 +896,58 @@ describe("settings app layout", () => {
 
     unmount();
   });
+
+  it("restores a disabled native button when the restore x action is clicked", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [
+      {
+        id: "native-canvas-pin-preview",
+        title: "钉住编辑区",
+        surface: "canvas",
+        selectors: ["#native-canvas-pin"],
+        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
+      },
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-canvas-pin-preview",
+          title: "钉住编辑区",
+          visible: true,
+          surface: "canvas",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
+          nativeSelectors: ["#native-canvas-pin"],
+        },
+      ]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const restoreButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip__restore") as HTMLButtonElement;
+    restoreButton.click();
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.disabledNativeButtons).toEqual([]);
+    expect(target.querySelector(".workspace-preview__disabled-items")?.textContent).not.toContain("钉住编辑区");
+    expect(target.querySelector(".workspace-preview__canvas-items")?.textContent).toContain("钉住编辑区");
+
+    unmount();
+  });
 });

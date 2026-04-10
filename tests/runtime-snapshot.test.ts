@@ -238,4 +238,32 @@ describe("runtime surface snapshot", () => {
 
     expect(canvasTitles).toEqual(["复制", "更多"]);
   });
+
+  it("inlines symbol-based native svg icons so they remain renderable outside the original toolbar", () => {
+    document.body.innerHTML = `
+      <svg aria-hidden="true" style="display:none">
+        <symbol id="iconPin" viewBox="0 0 24 24">
+          <path d="M12 2 20 10 14 10 14 22 10 22 10 10 4 10Z"></path>
+        </symbol>
+      </svg>
+      <div class="layout__center">
+        <div class="protyle">
+          <div class="protyle-breadcrumb__bar">
+            <button data-type="readonly" class="protyle-breadcrumb__icon" aria-label="只读">
+              <svg viewBox="0 0 24 24"><use href="#iconPin"></use></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const readonlyButton = document.querySelector('.protyle-breadcrumb__bar [data-type="readonly"]') as HTMLElement;
+    mockRect(readonlyButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+    const readonlyItem = snapshot.find(item => item.title === "只读");
+
+    expect(readonlyItem?.iconMarkup).toContain("<path");
+    expect(readonlyItem?.iconMarkup).not.toContain("<use");
+  });
 });

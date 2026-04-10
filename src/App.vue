@@ -355,20 +355,32 @@
                 <small>把原生按钮拖到这里后，运行时会隐藏原入口并阻止点击。</small>
               </div>
               <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__disabled-items">
-                <button
+                <div
                   v-for="item in disabledNativePreviewItems"
                   :key="`disabled-${item.id}`"
-                  type="button"
-                  class="workspace-chip"
-                  :class="previewChipClass(item)"
-                  :draggable="item.draggable ?? item.editable"
-                  :title="previewChipTitle(item)"
-                  @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart($event, item)"
                 >
-                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                  <span class="workspace-chip__label">{{ item.title }}</span>
-                </button>
+                  <button
+                    type="button"
+                    class="workspace-chip workspace-preview__disabled-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.draggable ?? item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
+                  >
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="workspace-chip__restore"
+                    title="恢复显示"
+                    aria-label="恢复显示"
+                    @click.stop="restoreDisabledNativeItem(item)"
+                  >
+                    ×
+                  </button>
+                </div>
                 <span v-if="!disabledNativePreviewItems.length" class="surface-summary__empty">拖入原生按钮以隐藏入口</span>
               </div>
             </div>
@@ -728,6 +740,7 @@ const {
   renderNamedIcon,
   renderBuiltinIconMarkup,
   resetConfig,
+  restoreDisabledNativeItem,
   selectedId,
   selectedItem,
   selectItem,

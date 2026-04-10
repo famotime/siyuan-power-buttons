@@ -3,6 +3,10 @@ import type {
   PreviewSurfaceType,
   SurfaceType,
 } from "@/shared/types";
+import {
+  createNativeFallbackIconMarkup,
+  resolveNativeIconMarkup,
+} from "@/shared/native-icon";
 
 const TOPBAR_SELECTORS = ["#toolbar > .toolbar__item"];
 const STATUS_SELECTORS = ["#status button", "#status .status__item", "#status .toolbar__item", "#status [id^='status']", "#status [id^='bar']"];
@@ -105,14 +109,11 @@ function getElementLabel(element: HTMLElement, index: number): string {
 function getElementIconMarkup(element: HTMLElement): string | undefined {
   const svg = element.querySelector("svg");
   if (svg) {
-    return svg.outerHTML;
+    return resolveNativeIconMarkup(svg.outerHTML, element.ownerDocument)
+      || createNativeFallbackIconMarkup(getElementLabel(element, 0));
   }
 
-  const iconText = getElementLabel(element, 0).trim().slice(0, 1);
-  if (!iconText) {
-    return undefined;
-  }
-  return `<span class="siyuan-power-buttons__native-fallback-icon">${iconText}</span>`;
+  return createNativeFallbackIconMarkup(getElementLabel(element, 0));
 }
 
 function getElementSelectors(element: HTMLElement): string[] {

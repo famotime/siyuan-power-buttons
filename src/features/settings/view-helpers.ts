@@ -1,5 +1,9 @@
 import { DEFAULT_BUILTIN_ICON, SURFACE_LABELS } from "@/shared/constants";
 import { renderBuiltinIconMarkup as renderSharedBuiltinIconMarkup } from "@/shared/icon-renderer";
+import {
+  createNativeFallbackIconMarkup,
+  resolveNativeIconMarkup,
+} from "@/shared/native-icon";
 import type { PowerButtonItem, PreviewButtonItem } from "@/shared/types";
 
 export function renderNamedIcon(iconName: string, ownerDocument: Document = document): string {
@@ -19,14 +23,10 @@ export function renderSettingsIconMarkup(
   return renderNamedIcon(item.iconValue || DEFAULT_BUILTIN_ICON, ownerDocument);
 }
 
-function renderNativeFallbackIcon(title: string): string {
-  const iconText = title.trim().slice(0, 1) || "?";
-  return `<span class="siyuan-power-buttons__native-fallback-icon">${iconText}</span>`;
-}
-
 export function renderPreviewIconMarkup(item: PreviewButtonItem, ownerDocument: Document = document): string {
   if (item.source === "disabled-native") {
-    return renderNativeFallbackIcon(item.title);
+    return resolveNativeIconMarkup(item.iconMarkup, ownerDocument)
+      || createNativeFallbackIconMarkup(item.title);
   }
   return item.iconMarkup || renderNamedIcon(DEFAULT_BUILTIN_ICON, ownerDocument);
 }

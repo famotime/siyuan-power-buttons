@@ -586,6 +586,11 @@ export function useSettingsController(props: SettingsAppProps) {
     await persist();
   }
 
+  async function restoreDisabledNativeItem(item: PreviewButtonItem): Promise<void> {
+    config.disabledNativeButtons = config.disabledNativeButtons.filter(entry => !isSameNativeButton(item, entry));
+    await persist();
+  }
+
   function handlePreviewChipClick(item: PreviewButtonItem): void {
     if (!item.editable || !item.itemId) {
       if (item.suppressed) {
@@ -688,6 +693,7 @@ export function useSettingsController(props: SettingsAppProps) {
     onDisabledNativeDrop,
     openImportFilePicker: triggerImportFilePicker,
     pluginCommands,
+    restoreDisabledNativeItem,
     disabledNativePreviewItems,
     previewChipClass,
     previewChipTitle,
