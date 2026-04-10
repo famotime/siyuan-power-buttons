@@ -714,6 +714,62 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("restores a disabled native button when it is dragged back to its original preview surface", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-canvas-pin-preview",
+          title: "钉住编辑区",
+          visible: true,
+          surface: "canvas",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+          nativeSelectors: ["#native-canvas-pin", "[data-type='readonly']"],
+        },
+      ]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
+    const disabledDropzone = target.querySelector(".workspace-preview__disabled") as HTMLElement;
+
+    nativeButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    disabledDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
+    const canvasDropzone = target.querySelector(".workspace-preview__canvas-items") as HTMLElement;
+
+    disabledButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    canvasDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.disabledNativeButtons).toEqual([]);
+    expect(target.querySelector(".workspace-preview__canvas-items")?.textContent).toContain("钉住编辑区");
+    expect(target.querySelector(".workspace-preview__disabled-items")?.textContent).not.toContain("钉住编辑区");
+
+    unmount();
+  });
+
   it("writes drag data for preview chips so browser drag-and-drop can start reliably", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -745,6 +801,61 @@ describe("settings app layout", () => {
     topbarButton.dispatchEvent(dragStartEvent);
 
     expect(setData).toHaveBeenCalledWith("text/plain", expect.any(String));
+
+    unmount();
+  });
+
+  it("uses a single preview chip as the drag image for native buttons", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-canvas-pin-preview",
+          title: "钉住编辑区",
+          visible: true,
+          surface: "canvas",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+          nativeSelectors: ["#native-canvas-pin"],
+        },
+      ]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
+    const setData = vi.fn();
+    const setDragImage = vi.fn();
+    const dragStartEvent = new Event("dragstart", { bubbles: true });
+
+    Object.defineProperty(dragStartEvent, "dataTransfer", {
+      configurable: true,
+      value: {
+        effectAllowed: "all",
+        setData,
+        setDragImage,
+      },
+    });
+
+    nativeButton.dispatchEvent(dragStartEvent);
+
+    expect(setData).toHaveBeenCalledWith("text/plain", "native-canvas-pin-preview");
+    expect(setDragImage).toHaveBeenCalledTimes(1);
+    const [dragImage] = setDragImage.mock.calls[0] as [HTMLElement, number, number];
+    expect(dragImage).toBeInstanceOf(HTMLElement);
+    expect(dragImage.classList.contains("workspace-chip")).toBe(true);
+    expect(dragImage.textContent?.replace(/\s+/g, " ").trim()).toBe("钉住编辑区");
+    expect(dragImage.querySelectorAll(".workspace-chip").length).toBe(0);
 
     unmount();
   });

@@ -106,6 +106,7 @@ export function useSettingsController(props: SettingsAppProps) {
   const selectedId = ref(config.items[0]?.id || "");
   const listDragIndex = ref<number | null>(null);
   const previewDragItem = ref<PreviewButtonItem | null>(null);
+  const previewDragCleanup = ref<(() => void) | null>(null);
   const runtimePreviewItems = ref<PreviewButtonItem[]>([]);
   const isRefreshingLayout = ref(false);
   const showPreviewLabels = ref(false);
@@ -434,6 +435,56 @@ export function useSettingsController(props: SettingsAppProps) {
     await persist();
   }
 
+  function clearPreviewDragImage(): void {
+    previewDragCleanup.value?.();
+    previewDragCleanup.value = null;
+  }
+
+  function configurePreviewDragImage(event: DragEvent): void {
+    if (!event.dataTransfer || typeof event.dataTransfer.setDragImage !== "function") {
+      return;
+    }
+
+    const source = event.currentTarget;
+    if (!(source instanceof HTMLElement)) {
+      return;
+    }
+
+    clearPreviewDragImage();
+
+    const dragImage = source.cloneNode(true);
+    if (!(dragImage instanceof HTMLElement)) {
+      return;
+    }
+
+    dragImage.style.position = "fixed";
+    dragImage.style.top = "-10000px";
+    dragImage.style.left = "-10000px";
+    dragImage.style.pointerEvents = "none";
+    dragImage.style.margin = "0";
+    dragImage.style.transform = "none";
+    dragImage.style.width = `${Math.ceil(source.getBoundingClientRect().width || source.offsetWidth || 32)}px`;
+    dragImage.classList.add("workspace-chip--drag-image");
+    document.body.appendChild(dragImage);
+
+    const cleanup = () => {
+      dragImage.remove();
+    };
+    previewDragCleanup.value = cleanup;
+    window.setTimeout(() => {
+      if (previewDragCleanup.value === cleanup) {
+        clearPreviewDragImage();
+      }
+    }, 0);
+
+    const rect = source.getBoundingClientRect();
+    event.dataTransfer.setDragImage(
+      dragImage,
+      Math.max(0, Math.round(rect.width / 2)),
+      Math.max(0, Math.round(rect.height / 2)),
+    );
+  }
+
   function onPreviewDragStart(event: DragEvent, item: PreviewButtonItem): void {
     if (!item.draggable && !item.editable) {
       return;
@@ -443,6 +494,7 @@ export function useSettingsController(props: SettingsAppProps) {
       event.dataTransfer.effectAllowed = "move";
       event.dataTransfer.setData("text/plain", item.itemId || item.id);
     }
+    configurePreviewDragImage(event);
   }
 
   async function moveFromPreview(surface: SurfaceType, targetIndex: number): Promise<void> {
@@ -456,27 +508,32 @@ export function useSettingsController(props: SettingsAppProps) {
         if (dragItem.surface !== surface) {
           props.onNotify("原生按钮只能拖回原来的区域以恢复显示。");
           previewDragItem.value = null;
+          clearPreviewDragImage();
           return;
         }
         config.disabledNativeButtons = config.disabledNativeButtons.filter(item => !isSameNativeButton(dragItem, item));
         previewDragItem.value = null;
+        clearPreviewDragImage();
         await persist();
         return;
       }
 
       props.onNotify("原生按钮只能拖到禁用栏。");
       previewDragItem.value = null;
+      clearPreviewDragImage();
       return;
     }
 
     if (!CONFIGURABLE_SURFACES.includes(surface as typeof CONFIGURABLE_SURFACES[number])) {
       props.onNotify("Dock 区域当前仅保留预览，不能放置快捷按钮。", "error");
       previewDragItem.value = null;
+      clearPreviewDragImage();
       return;
     }
     config.items = movePreviewItem(config.items, dragItem.itemId, surface, targetIndex);
     selectedId.value = dragItem.itemId;
     previewDragItem.value = null;
+    clearPreviewDragImage();
     await persist();
   }
 
@@ -501,11 +558,13 @@ export function useSettingsController(props: SettingsAppProps) {
     if (dragItem.editable) {
       props.onNotify("禁用栏仅用于隐藏原生按钮；自定义按钮请使用显示开关。");
       previewDragItem.value = null;
+      clearPreviewDragImage();
       return;
     }
 
     if (dragItem.suppressed || !dragItem.nativeSelectors?.length) {
       previewDragItem.value = null;
+      clearPreviewDragImage();
       return;
     }
 
@@ -523,6 +582,7 @@ export function useSettingsController(props: SettingsAppProps) {
       nextRule,
     ];
     previewDragItem.value = null;
+    clearPreviewDragImage();
     await persist();
   }
 
