@@ -19,7 +19,15 @@ export function renderSettingsIconMarkup(
   return renderNamedIcon(item.iconValue || DEFAULT_BUILTIN_ICON, ownerDocument);
 }
 
+function renderNativeFallbackIcon(title: string): string {
+  const iconText = title.trim().slice(0, 1) || "?";
+  return `<span class="siyuan-power-buttons__native-fallback-icon">${iconText}</span>`;
+}
+
 export function renderPreviewIconMarkup(item: PreviewButtonItem, ownerDocument: Document = document): string {
+  if (item.source === "disabled-native") {
+    return renderNativeFallbackIcon(item.title);
+  }
   return item.iconMarkup || renderNamedIcon(DEFAULT_BUILTIN_ICON, ownerDocument);
 }
 

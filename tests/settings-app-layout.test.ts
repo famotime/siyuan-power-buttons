@@ -859,4 +859,41 @@ describe("settings app layout", () => {
 
     unmount();
   });
+
+  it("renders a stable fallback icon for disabled native buttons instead of copied native svg markup", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [
+      {
+        id: "native-canvas-pin-preview",
+        title: "钉住编辑区",
+        surface: "canvas",
+        selectors: ["#native-canvas-pin"],
+        iconMarkup: "<svg viewBox='0 0 24 24'><use href='#iconPin'></use></svg>",
+      },
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
+    const fallbackIcon = disabledButton.querySelector(".siyuan-power-buttons__native-fallback-icon");
+
+    expect(disabledButton.innerHTML).not.toContain("<use");
+    expect(fallbackIcon).not.toBeNull();
+    expect(fallbackIcon?.textContent?.trim()).toBe("钉");
+
+    unmount();
+  });
 });
