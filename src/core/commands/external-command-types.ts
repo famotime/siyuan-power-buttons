@@ -23,17 +23,25 @@ export interface ExternalCommandInvokeContext {
   buttonId?: string;
 }
 
-export interface ExternalCommandInvokeResult {
-  ok: boolean;
-  message?: string;
-  alreadyNotified?: boolean;
-  errorCode?:
-    | "command-not-found"
-    | "provider-unavailable"
-    | "context-unavailable"
-    | "not-supported"
-    | "execution-failed";
-}
+type ExternalCommandInvokeErrorCode =
+  | "command-not-found"
+  | "provider-unavailable"
+  | "context-unavailable"
+  | "not-supported"
+  | "execution-failed";
+
+export type ExternalCommandInvokeResult =
+  | {
+      ok: true;
+      message?: string;
+      alreadyNotified?: boolean;
+    }
+  | {
+      ok: false;
+      message?: string;
+      alreadyNotified?: boolean;
+      errorCode: ExternalCommandInvokeErrorCode;
+    };
 
 export interface ExternalCommandProvider extends ExternalCommandProviderSummary {
   protocol: "power-buttons-command-provider";
@@ -46,20 +54,46 @@ export interface ExternalCommandProvider extends ExternalCommandProviderSummary 
 }
 
 export function formatExternalCommandActionId(providerId: string, commandId: string): string {
-  return `${providerId.trim()}:${commandId.trim()}`;
+  if (providerId.trim() !== providerId || commandId.trim() !== commandId) {
+    throw new Error("External command action id parts must not include padding whitespace.");
+  }
+  if (!providerId || !commandId) {
+    throw new Error("External command action id parts must be non-empty.");
+  }
+  if (providerId.includes(":") || commandId.includes(":")) {
+    throw new Error("External command action id parts must not include colons.");
+  }
+  return `${providerId}:${commandId}`;
 }
 
 export function parseExternalCommandActionId(
   actionId: string,
 ): { providerId: string; commandId: string } | null {
   const trimmed = actionId.trim();
+  if (!trimmed || trimmed !== actionId) {
+    return null;
+  }
+  if (trimmed === "__external__:__unset__") {
+    return null;
+  }
   const separator = trimmed.indexOf(":");
-  if (separator <= 0 || separator === trimmed.length - 1) {
+  if (separator <= 0 || separator === trimmed.length - 1 || separator !== trimmed.lastIndexOf(":")) {
+    return null;
+  }
+  const providerId = trimmed.slice(0, separator);
+  const commandId = trimmed.slice(separator + 1);
+  if (!providerId || !commandId) {
+    return null;
+  }
+  if (providerId.trim() !== providerId || commandId.trim() !== commandId) {
+    return null;
+  }
+  if (providerId.includes(":") || commandId.includes(":")) {
     return null;
   }
   return {
-    providerId: trimmed.slice(0, separator),
-    commandId: trimmed.slice(separator + 1),
+    providerId,
+    commandId,
   };
 }
 

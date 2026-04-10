@@ -20,6 +20,27 @@ describe("external command action ids", () => {
   it("rejects malformed external command ids", () => {
     expect(parseExternalCommandActionId("missing-separator")).toBeNull();
     expect(parseExternalCommandActionId(":insert-doc-summary")).toBeNull();
+    expect(parseExternalCommandActionId("siyuan-doc-assist:")).toBeNull();
+    expect(parseExternalCommandActionId("siyuan-doc-assist:insert:doc-summary")).toBeNull();
+    expect(parseExternalCommandActionId(" siyuan-doc-assist:insert-doc-summary")).toBeNull();
+    expect(parseExternalCommandActionId("siyuan-doc-assist:insert-doc-summary ")).toBeNull();
+    expect(parseExternalCommandActionId("siyuan-doc-assist: insert-doc-summary")).toBeNull();
+    expect(parseExternalCommandActionId("siyuan-doc-assist :insert-doc-summary")).toBeNull();
     expect(isExternalCommandActionId("")).toBe(false);
+  });
+
+  it("treats placeholder action ids as unset", () => {
+    expect(parseExternalCommandActionId("__external__:__unset__")).toBeNull();
+    expect(isExternalCommandActionId("__external__:__unset__")).toBe(false);
+  });
+
+  it("refuses to format invalid action id parts", () => {
+    expect(() => formatExternalCommandActionId("", "cmd")).toThrow();
+    expect(() => formatExternalCommandActionId(" ", "cmd")).toThrow();
+    expect(() => formatExternalCommandActionId("a:b", "cmd")).toThrow();
+    expect(() => formatExternalCommandActionId("provider", "")).toThrow();
+    expect(() => formatExternalCommandActionId("provider", "cmd:extra")).toThrow();
+    expect(() => formatExternalCommandActionId(" provider", "cmd")).toThrow();
+    expect(() => formatExternalCommandActionId("provider", "cmd ")).toThrow();
   });
 });
