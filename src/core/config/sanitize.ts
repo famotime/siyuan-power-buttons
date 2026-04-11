@@ -1,3 +1,4 @@
+import { isExternalCommandActionId } from "@/core/commands/external-command-types";
 import {
   createButtonItem,
   createDefaultConfig,
@@ -164,6 +165,9 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
 
   let actionType = ensureActionType(raw.actionType);
   let actionId = typeof raw.actionId === "string" ? raw.actionId.trim() : "";
+  if (actionType === "external-plugin-command" && actionId && !isExternalCommandActionId(actionId)) {
+    actionId = getDefaultActionId(actionType);
+  }
   if (!actionId) {
     actionId = getDefaultActionId(actionType);
   }

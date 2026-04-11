@@ -1,3 +1,4 @@
+import { formatExternalCommandActionId } from "@/core/commands";
 import {
   createClickSequenceStep,
   createExperimentalClickSequenceConfig,
@@ -11,6 +12,7 @@ import type {
   PluginCommandDefinition,
   PowerButtonItem,
 } from "@/shared/types";
+import type { SettingsExternalCommandProvider } from "@/features/settings/types";
 
 export function ensureExperimentalShortcutConfig(item: PowerButtonItem) {
   if (!item.experimentalShortcut) {
@@ -51,6 +53,7 @@ export function applyActionTypeDefaults(
   item: PowerButtonItem,
   builtinCommands: BuiltinCommandDefinition[],
   pluginCommands: PluginCommandDefinition[],
+  externalCommandProviders: SettingsExternalCommandProvider[] = [],
 ): void {
   if (item.actionType === "builtin-global-command") {
     item.actionId = builtinCommands[0]?.id || getDefaultActionId("builtin-global-command");
@@ -59,6 +62,16 @@ export function applyActionTypeDefaults(
 
   if (item.actionType === "plugin-command") {
     item.actionId = pluginCommands[0]?.id || getDefaultActionId("plugin-command");
+    return;
+  }
+
+  if (item.actionType === "external-plugin-command") {
+    const provider = externalCommandProviders[0];
+    const command = provider?.commands[0];
+
+    item.actionId = provider && command
+      ? formatExternalCommandActionId(provider.providerId, command.id)
+      : getDefaultActionId("external-plugin-command");
     return;
   }
 
