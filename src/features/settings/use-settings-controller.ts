@@ -134,6 +134,7 @@ export function useSettingsController(props: SettingsAppProps) {
 
   const builtinCommands = computed(() => props.builtinCommands);
   const pluginCommands = computed(() => props.pluginCommands);
+  const externalCommandProviders = computed(() => props.externalCommandProviders);
   const selectedItem = computed<PowerButtonItem | undefined>(() => config.items.find(item => item.id === selectedId.value));
 
   const configPreviewItems = computed<PreviewButtonItem[]>(() => {
@@ -303,7 +304,12 @@ export function useSettingsController(props: SettingsAppProps) {
     if (!selectedItem.value) {
       return;
     }
-    applyActionTypeDefaults(selectedItem.value, builtinCommands.value, pluginCommands.value);
+    applyActionTypeDefaults(
+      selectedItem.value,
+      builtinCommands.value,
+      pluginCommands.value,
+      externalCommandProviders.value,
+    );
     await persist();
   }
 

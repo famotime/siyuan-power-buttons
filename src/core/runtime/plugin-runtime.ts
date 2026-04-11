@@ -96,10 +96,12 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       initialConfig: this.options.configStore.snapshot(),
       builtinCommands: this.options.builtinCommands,
       pluginCommands: this.options.pluginCommands,
+      externalCommandProviders: [],
       onChange: async config => this.options.configStore.replace(config as TConfig),
       onNotify: (message, type = "info") => {
         this.options.showMessage(message, 4000, type);
       },
+      onRefreshExternalCommands: undefined,
       onReadCurrentLayout: this.options.readCurrentLayout,
     };
   }
