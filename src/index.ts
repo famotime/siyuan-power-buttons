@@ -30,12 +30,17 @@ import { SurfaceManager } from "@/core/surfaces";
 import { mountSettingsApp } from "@/main";
 import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
 
+type IntegratablePlugin = {
+  name?: string;
+  getPowerButtonsIntegration?: () => unknown;
+};
+
 export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
   private appVersion: string | null = null;
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
   private readonly externalCommands = new ExternalCommandRegistry({
-    getPlugins: () => this.app?.plugins as Array<{ name?: string; getPowerButtonsIntegration?: () => unknown }> | undefined,
+    getPlugins: () => this.getInstalledPlugins(),
   });
   private executor = new CommandExecutor({
     plugin: this as Plugin & { globalCommand?: (command: string) => void },
@@ -132,6 +137,44 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
 
   onunload(): void {
     this.runtime.onunload();
+  }
+
+  private getInstalledPlugins(): IntegratablePlugin[] | undefined {
+    const appPlugins = Array.isArray(this.app?.plugins)
+      ? this.app.plugins as IntegratablePlugin[]
+      : [];
+    const globalPlugins = Array.isArray((window as Window & {
+      siyuan?: {
+        ws?: {
+          app?: {
+            plugins?: unknown[];
+          };
+        };
+      };
+    }).siyuan?.ws?.app?.plugins)
+      ? (window as Window & {
+          siyuan?: {
+            ws?: {
+              app?: {
+                plugins?: unknown[];
+              };
+            };
+          };
+        }).siyuan!.ws!.app!.plugins as IntegratablePlugin[]
+      : [];
+
+    if (!appPlugins.length && !globalPlugins.length) {
+      return undefined;
+    }
+
+    const seen = new Set<IntegratablePlugin>();
+    return [...appPlugins, ...globalPlugins].filter((plugin) => {
+      if (!plugin || seen.has(plugin)) {
+        return false;
+      }
+      seen.add(plugin);
+      return true;
+    });
   }
 
   private getExperimentalSupport(feature: ExperimentalFeatureKey): { supported: boolean; reason?: string } {

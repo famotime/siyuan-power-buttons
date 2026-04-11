@@ -510,6 +510,57 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("auto-refreshes external command providers when switching to external plugin commands with an empty initial list", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onRefreshExternalCommands = vi.fn().mockResolvedValue([
+      {
+        providerId: "siyuan-doc-assist",
+        providerName: "文档助手 / Doc Assist",
+        commands: [
+          {
+            id: "insert-doc-summary",
+            title: "插入文档摘要",
+            description: "在当前文档插入摘要",
+          },
+        ],
+      },
+    ]);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      externalCommandProviders: [],
+      onChange,
+      onNotify: vi.fn(),
+      onRefreshExternalCommands,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "external-plugin-command"));
+
+    expect(actionTypeSelect).not.toBeNull();
+
+    actionTypeSelect!.value = "external-plugin-command";
+    actionTypeSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1);
+    expect(target.textContent).toContain("文档助手 / Doc Assist");
+    expect(target.textContent).toContain("插入文档摘要");
+    expect(target.textContent).toContain("在当前文档插入摘要");
+    expect(onChange).toHaveBeenCalled();
+
+    unmount();
+  });
+
   it("refreshes external command options from the provider callback", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

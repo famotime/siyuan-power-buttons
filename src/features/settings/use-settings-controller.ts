@@ -337,6 +337,29 @@ export function useSettingsController(props: SettingsAppProps) {
       pluginCommands.value,
       externalCommandProviders.value,
     );
+
+    if (selectedItem.value.actionType === "external-plugin-command") {
+      const hasProviders = externalCommandProviders.value.length > 0;
+      if (!hasProviders && props.onRefreshExternalCommands) {
+        externalCommandProviders.value = await props.onRefreshExternalCommands();
+      }
+
+      const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
+      const hasValidSelection = Boolean(parsed && externalCommandProviders.value.some(
+        provider => provider.providerId === parsed.providerId
+          && provider.commands.some(command => command.id === parsed.commandId),
+      ));
+
+      if (!hasValidSelection) {
+        applyActionTypeDefaults(
+          selectedItem.value,
+          builtinCommands.value,
+          pluginCommands.value,
+          externalCommandProviders.value,
+        );
+      }
+    }
+
     await persist();
   }
 
@@ -346,6 +369,28 @@ export function useSettingsController(props: SettingsAppProps) {
     }
 
     externalCommandProviders.value = await props.onRefreshExternalCommands();
+
+    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+      return;
+    }
+
+    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
+    const hasValidSelection = Boolean(parsed && externalCommandProviders.value.some(
+      provider => provider.providerId === parsed.providerId
+        && provider.commands.some(command => command.id === parsed.commandId),
+    ));
+
+    if (hasValidSelection) {
+      return;
+    }
+
+    applyActionTypeDefaults(
+      selectedItem.value,
+      builtinCommands.value,
+      pluginCommands.value,
+      externalCommandProviders.value,
+    );
+    await persist();
   }
 
   async function setSelectedExternalProvider(providerId: string): Promise<void> {

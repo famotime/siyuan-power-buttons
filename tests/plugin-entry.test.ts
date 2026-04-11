@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const runtimeOpenSetting = vi.fn();
+let externalRegistryOptions: { getPlugins?: () => unknown } | undefined;
 
 vi.mock('@/core/config', () => ({
   ConfigStore: class MockConfigStore {
@@ -23,7 +24,11 @@ vi.mock('@/core/compatibility/version-guard', () => ({
 vi.mock('@/core/commands', () => ({
   BUILTIN_COMMANDS: [],
   CommandExecutor: class MockCommandExecutor {},
-  ExternalCommandRegistry: class MockExternalCommandRegistry {},
+  ExternalCommandRegistry: class MockExternalCommandRegistry {
+    constructor(options: { getPlugins: () => unknown }) {
+      externalRegistryOptions = options;
+    }
+  },
   executeExperimentalClickSequence: vi.fn(),
   executeExperimentalShortcut: vi.fn(),
   executeBuiltinCommandByDom: vi.fn(),
@@ -62,6 +67,8 @@ vi.mock('@/shared/runtime-snapshot', () => ({
 describe('plugin fixed settings entry', () => {
   beforeEach(() => {
     runtimeOpenSetting.mockReset();
+    externalRegistryOptions = undefined;
+    delete (window as typeof window & { siyuan?: unknown }).siyuan;
   });
 
   it('delegates plugin openSetting to the runtime settings dialog', async () => {
@@ -71,5 +78,30 @@ describe('plugin fixed settings entry', () => {
     plugin.openSetting();
 
     expect(runtimeOpenSetting).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to window.siyuan.ws.app.plugins for external plugin discovery', async () => {
+    const externalPlugin = {
+      name: 'siyuan-doc-assist',
+      getPowerButtonsIntegration: vi.fn(),
+    };
+    (window as typeof window & {
+      siyuan?: { ws?: { app?: { plugins?: unknown[] } } };
+    }).siyuan = {
+      ws: {
+        app: {
+          plugins: [externalPlugin],
+        },
+      },
+    };
+
+    const { default: SiyuanPowerButtonsPlugin } = await import('@/index');
+    const plugin = new SiyuanPowerButtonsPlugin();
+    plugin.app = { plugins: [] } as never;
+
+    const discoveredPlugins = externalRegistryOptions?.getPlugins?.();
+
+    expect(Array.isArray(discoveredPlugins)).toBe(true);
+    expect(discoveredPlugins).toContain(externalPlugin);
   });
 });
