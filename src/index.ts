@@ -17,6 +17,7 @@ import {
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
+  ExternalCommandRegistry,
   executeExperimentalClickSequence,
   executeExperimentalShortcut,
   executeBuiltinCommandByDom,
@@ -33,6 +34,9 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
   private appVersion: string | null = null;
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
+  private readonly externalCommands = new ExternalCommandRegistry({
+    getPlugins: () => this.app?.plugins as Array<{ name?: string; getPowerButtonsIntegration?: () => unknown }> | undefined,
+  });
   private executor = new CommandExecutor({
     plugin: this as Plugin & { globalCommand?: (command: string) => void },
     notify: (message, type = "info") => {
@@ -91,6 +95,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     builtinCommands: BUILTIN_COMMANDS,
     pluginCommands: PLUGIN_COMMANDS,
     pluginCommandHandlers: this.pluginCommandHandlers,
+    externalCommands: this.externalCommands,
     settingsDialog: new SettingsDialogController({
       createDialog: options => new Dialog(options),
       mountSettingsApp,

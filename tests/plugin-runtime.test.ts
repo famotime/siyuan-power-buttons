@@ -42,6 +42,7 @@ describe("settings dialog controller", () => {
       initialConfig: createDefaultConfig(),
       builtinCommands: [],
       pluginCommands: [],
+      externalCommandProviders: [],
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn(),
@@ -50,6 +51,7 @@ describe("settings dialog controller", () => {
       initialConfig: createDefaultConfig(),
       builtinCommands: [],
       pluginCommands: [],
+      externalCommandProviders: [],
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn(),
@@ -69,6 +71,11 @@ describe("plugin runtime", () => {
     clipboardShouldFail?: boolean;
     frontend?: string;
     desktopOnly?: boolean;
+    externalCommands?: {
+      refresh: () => Promise<void>;
+      listProviders: () => Array<{ providerId: string; providerName: string; providerVersion?: string }>;
+      listCommands: (providerId: string) => Promise<Array<{ id: string; title: string; description?: string; category?: string }>>;
+    };
   } = {}) {
     const config = createDefaultConfig();
     config.desktopOnly = options.desktopOnly ?? true;
@@ -105,8 +112,10 @@ describe("plugin runtime", () => {
         addCommand,
       },
       configStore,
+      builtinCommands: [],
       pluginCommands: PLUGIN_COMMANDS,
       pluginCommandHandlers,
+      externalCommands: options.externalCommands,
       settingsDialog,
       createSurfaceManager: vi.fn(() => surfaceManager),
       executor: {} as never,
@@ -118,6 +127,7 @@ describe("plugin runtime", () => {
       },
       getFrontend: () => options.frontend ?? "desktop",
       showMessage,
+      readCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
     return {
@@ -167,6 +177,44 @@ describe("plugin runtime", () => {
 
     expect(state.pluginCommandHandlers.has("open-settings")).toBe(true);
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes discovered external providers into the settings app props", async () => {
+    const state = createRuntime({
+      externalCommands: {
+        refresh: vi.fn().mockResolvedValue(undefined),
+        listProviders: () => [
+          {
+            providerId: "siyuan-doc-assist",
+            providerName: "文档助手 / Doc Assist",
+          },
+        ],
+        listCommands: vi.fn().mockResolvedValue([
+          {
+            id: "insert-doc-summary",
+            title: "插入文档摘要",
+          },
+        ]),
+      },
+    });
+
+    await state.runtime.onload();
+    state.runtime.openSetting();
+
+    expect(state.settingsDialog.open).toHaveBeenCalledWith(expect.objectContaining({
+      externalCommandProviders: [
+        {
+          providerId: "siyuan-doc-assist",
+          providerName: "文档助手 / Doc Assist",
+          commands: [
+            {
+              id: "insert-doc-summary",
+              title: "插入文档摘要",
+            },
+          ],
+        },
+      ],
+    }));
   });
 
   it("keeps the fixed open-settings plugin command even when default config has no settings surface button", async () => {
