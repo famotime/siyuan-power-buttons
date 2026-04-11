@@ -97,6 +97,92 @@ describe("command executor", () => {
     expect(openUrl).toHaveBeenCalledWith("https://example.com");
   });
 
+  it("dispatches external plugin commands through the discovered provider", async () => {
+    const invokeCommand = vi.fn().mockResolvedValue({ ok: true, alreadyNotified: true });
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      externalCommands: {
+        refresh: vi.fn().mockResolvedValue(undefined),
+        getProvider: vi.fn(() => ({
+          protocol: "power-buttons-command-provider" as const,
+          protocolVersion: 1 as const,
+          providerId: "siyuan-doc-assist",
+          providerName: "文档助手 / Doc Assist",
+          listCommands: vi.fn(),
+          invokeCommand,
+        })),
+      },
+    });
+
+    await executor.execute(createItem({
+      id: "doc-summary",
+      surface: "topbar",
+      actionType: "external-plugin-command" as never,
+      actionId: "siyuan-doc-assist:insert-doc-summary",
+    }));
+
+    expect(invokeCommand).toHaveBeenCalledWith("insert-doc-summary", {
+      trigger: "button-click",
+      sourcePlugin: "siyuan-power-buttons",
+      surface: "topbar",
+      buttonId: "doc-summary",
+    });
+  });
+
+  it("refreshes external providers once before reporting a missing provider", async () => {
+    const notify = vi.fn();
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const getProvider = vi.fn()
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce(null);
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      externalCommands: {
+        refresh,
+        getProvider,
+      },
+    });
+
+    await executor.execute(createItem({
+      actionType: "external-plugin-command" as never,
+      actionId: "siyuan-doc-assist:insert-doc-summary",
+    }));
+
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith("未检测到外部插件：siyuan-doc-assist", "error");
+  });
+
+  it("notifies when external provider refresh itself fails", async () => {
+    const notify = vi.fn();
+    const refresh = vi.fn().mockRejectedValue(new Error("registry offline"));
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      externalCommands: {
+        refresh,
+        getProvider: vi.fn(() => null),
+      },
+    });
+
+    await expect(executor.execute(createItem({
+      actionType: "external-plugin-command" as never,
+      actionId: "siyuan-doc-assist:insert-doc-summary",
+    }))).resolves.toBeUndefined();
+
+    expect(notify).toHaveBeenCalledWith("读取外部插件命令失败：registry offline", "error");
+  });
+
   it("dispatches experimental shortcuts through the injected runner", async () => {
     const runExperimentalShortcut = vi.fn(() => true);
     const executor = new CommandExecutor({

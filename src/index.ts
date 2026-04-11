@@ -17,6 +17,7 @@ import {
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
+  ExternalCommandRegistry,
   executeExperimentalClickSequence,
   executeExperimentalShortcut,
   executeBuiltinCommandByDom,
@@ -33,12 +34,16 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
   private appVersion: string | null = null;
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
+  private readonly externalCommands = new ExternalCommandRegistry({
+    getPlugins: () => this.app?.plugins as Array<{ name?: string; getPowerButtonsIntegration?: () => unknown }> | undefined,
+  });
   private executor = new CommandExecutor({
     plugin: this as Plugin & { globalCommand?: (command: string) => void },
     notify: (message, type = "info") => {
       showMessage(message, 5000, type);
     },
     pluginCommands: this.pluginCommandHandlers,
+    externalCommands: this.externalCommands,
     openUrl: (url: string) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
@@ -84,6 +89,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
         },
       });
     },
+    sourcePluginVersion: pluginInfo.version,
   });
   private runtime = new PowerButtonsRuntime({
     plugin: this,
@@ -91,6 +97,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     builtinCommands: BUILTIN_COMMANDS,
     pluginCommands: PLUGIN_COMMANDS,
     pluginCommandHandlers: this.pluginCommandHandlers,
+    externalCommands: this.externalCommands,
     settingsDialog: new SettingsDialogController({
       createDialog: options => new Dialog(options),
       mountSettingsApp,
@@ -120,7 +127,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   }
 
   openSetting(): void {
-    this.runtime.openSetting();
+    void this.runtime.openSetting();
   }
 
   onunload(): void {

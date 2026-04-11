@@ -23,6 +23,7 @@ vi.mock('@/core/compatibility/version-guard', () => ({
 vi.mock('@/core/commands', () => ({
   BUILTIN_COMMANDS: [],
   CommandExecutor: class MockCommandExecutor {},
+  ExternalCommandRegistry: class MockExternalCommandRegistry {},
   executeExperimentalClickSequence: vi.fn(),
   executeExperimentalShortcut: vi.fn(),
   executeBuiltinCommandByDom: vi.fn(),

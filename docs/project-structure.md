@@ -11,7 +11,7 @@
 | `src/index.ts` | 插件入口；组装 `ConfigStore`、`CommandExecutor`、运行时编排与版本保护 |
 | `src/main.ts` | Vue 设置页挂载入口 |
 | `src/App.vue` | 设置页模板；脚本层已下沉到 settings controller |
-| `src/core/commands/` | 按钮动作执行：内置命令、插件命令、实验快捷键、实验点击序列、DOM 查询 |
+| `src/core/commands/` | 按钮动作执行：内置命令、插件命令、外部插件命令 provider 协议/发现、实验快捷键、实验点击序列、DOM 查询 |
 | `src/core/compatibility/version-guard.ts` | 实验能力的版本与前端环境保护 |
 | `src/core/config/` | 默认配置、清洗迁移、共享默认值、导入导出、持久化存储 |
 | `src/core/runtime/` | 插件运行时编排与设置对话框控制器 |
@@ -29,8 +29,14 @@
 ### 1. Plugin Runtime
 
 1. `src/index.ts` 创建 `ConfigStore`、`CommandExecutor`。
-2. `src/core/runtime/plugin-runtime.ts` 注册插件命令，处理 `onload` / `onLayoutReady` / `onunload`。
+2. `src/core/runtime/plugin-runtime.ts` 注册插件命令，刷新外部 provider 列表，处理 `onload` / `onLayoutReady` / `onunload`。
 3. `src/core/runtime/settings-dialog-controller.ts` 负责打开、刷新、销毁设置对话框。
+
+### 1.1 External Provider Integration
+
+1. `src/core/commands/external-command-types.ts` 定义跨插件 command provider 协议与 `providerId:commandId` 编解码规则。
+2. `src/core/commands/external-command-registry.ts` 扫描已安装插件实例，缓存公开 provider 与命令目录。
+3. `src/core/commands/executor.ts` 负责把 `external-plugin-command` 绑定解析后转发给目标 provider。
 
 ### 2. Settings UI
 
@@ -62,7 +68,7 @@
 | `tests/config-store.test.ts` | 配置模型、迁移与 `ConfigStore` 快照隔离 |
 | `tests/config-item-defaults.test.ts` | 共享配置默认值规则 |
 | `tests/preview-layout.test.ts` / `tests/runtime-snapshot.test.ts` / `tests/surface-metadata.test.ts` | 预览与 Surface 拓扑一致性 |
-| `tests/command-executor.test.ts` / `tests/experimental-shortcut.test.ts` / `tests/click-sequence.test.ts` | 命令执行与实验动作行为 |
+| `tests/command-executor.test.ts` / `tests/external-command-registry.test.ts` / `tests/external-command-types.test.ts` / `tests/experimental-shortcut.test.ts` / `tests/click-sequence.test.ts` | 命令执行、外部 provider 协议/发现与实验动作行为 |
 | `tests/app-version.test.ts` | 最小化版本查询适配层 |
 
 ## Non-Goals / Notes

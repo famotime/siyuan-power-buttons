@@ -31,9 +31,25 @@ type PowerButtonsConfigLike = {
 
 type SurfaceFrontend = "desktop" | "desktop-window" | "browser-desktop" | string;
 
+type ExternalCommandRegistryLike = {
+  refresh: () => Promise<void>;
+  listProviders: () => Array<{
+    providerId: string;
+    providerName: string;
+    providerVersion?: string;
+  }>;
+  listCommands: (providerId: string) => Promise<Array<{
+    id: string;
+    title: string;
+    description?: string;
+    category?: string;
+  }>>;
+};
+
 export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
   private surfaceManager: SurfaceManagerLike<TConfig> | null = null;
   private unsubscribeConfig: (() => void) | null = null;
+  private externalCommandProviders: SettingsAppProps["externalCommandProviders"] = [];
 
   constructor(private readonly options: {
     plugin: {
@@ -48,6 +64,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     builtinCommands: SettingsAppProps["builtinCommands"];
     pluginCommands: PluginCommandDefinition[];
     pluginCommandHandlers: Map<string, () => void | Promise<void>>;
+    externalCommands?: ExternalCommandRegistryLike;
     settingsDialog: SettingsDialogLike;
     createSurfaceManager: () => SurfaceManagerLike<TConfig>;
     executor: unknown;
@@ -60,6 +77,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
 
   async onload(): Promise<void> {
     await this.options.configStore.load();
+    await this.refreshExternalCommandProviders();
     this.registerPluginCommands();
     this.unsubscribeConfig = this.options.configStore.subscribe((config) => {
       this.surfaceManager?.render(config);
@@ -91,26 +109,53 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     return frontend === "desktop" || frontend === "desktop-window" || frontend === "browser-desktop";
   }
 
+  private async refreshExternalCommandProviders(): Promise<SettingsAppProps["externalCommandProviders"]> {
+    if (!this.options.externalCommands) {
+      this.externalCommandProviders = [];
+      return this.externalCommandProviders;
+    }
+
+    try {
+      await this.options.externalCommands.refresh();
+      this.externalCommandProviders = await Promise.all(
+        this.options.externalCommands.listProviders().map(async provider => ({
+          ...provider,
+          commands: await this.options.externalCommands!.listCommands(provider.providerId),
+        })),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.options.showMessage(`读取外部插件命令失败：${message}`, 5000, "error");
+    }
+
+    return this.externalCommandProviders;
+  }
+
   private createSettingsAppProps(): SettingsAppProps {
     return {
       initialConfig: this.options.configStore.snapshot(),
       builtinCommands: this.options.builtinCommands,
       pluginCommands: this.options.pluginCommands,
+      externalCommandProviders: this.externalCommandProviders,
       onChange: async config => this.options.configStore.replace(config as TConfig),
       onNotify: (message, type = "info") => {
         this.options.showMessage(message, 4000, type);
       },
+      onRefreshExternalCommands: this.options.externalCommands
+        ? () => this.refreshExternalCommandProviders()
+        : undefined,
       onReadCurrentLayout: this.options.readCurrentLayout,
     };
   }
 
-  openSetting(): void {
+  async openSetting(): Promise<void> {
+    await this.refreshExternalCommandProviders();
     this.options.settingsDialog.open(this.createSettingsAppProps());
   }
 
   private registerPluginCommands(): void {
     this.options.pluginCommandHandlers.set("open-settings", () => {
-      this.openSetting();
+      return this.openSetting();
     });
     this.options.pluginCommandHandlers.set("copy-config-json", async () => {
       const serialized = this.options.exportConfigAsJson(this.options.configStore.snapshot());
@@ -118,7 +163,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
         await this.options.clipboard.writeText(serialized);
         this.options.showMessage("快捷按钮配置已复制。");
       } catch {
-        this.openSetting();
+        await this.openSetting();
         this.options.showMessage("复制失败，已自动打开设置界面。", 5000, "error");
       }
     });
@@ -135,7 +180,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
         langText: command.title,
         hotkey: "",
         callback: () => {
-          void this.options.pluginCommandHandlers.get(command.id)?.();
+          return this.options.pluginCommandHandlers.get(command.id)?.();
         },
       });
     }

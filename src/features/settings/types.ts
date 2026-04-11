@@ -1,15 +1,25 @@
 import type {
+  ExternalCommandProviderSummary,
+  ExternalPluginCommandDefinition,
+} from "@/core/commands";
+import type {
   BuiltinCommandDefinition,
   PluginCommandDefinition,
   PowerButtonsConfig,
   PreviewButtonItem,
 } from "@/shared/types";
 
+export interface SettingsExternalCommandProvider extends ExternalCommandProviderSummary {
+  commands: ExternalPluginCommandDefinition[];
+}
+
 export interface SettingsAppProps {
   initialConfig: PowerButtonsConfig;
   builtinCommands: BuiltinCommandDefinition[];
   pluginCommands: PluginCommandDefinition[];
+  externalCommandProviders: SettingsExternalCommandProvider[];
   onChange: (config: PowerButtonsConfig) => void | Promise<void>;
   onNotify: (message: string, type?: "info" | "error") => void;
+  onRefreshExternalCommands?: () => SettingsExternalCommandProvider[] | Promise<SettingsExternalCommandProvider[]>;
   onReadCurrentLayout?: () => PreviewButtonItem[] | Promise<PreviewButtonItem[]>;
 }

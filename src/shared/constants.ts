@@ -19,6 +19,7 @@ export const SURFACE_LABELS: Record<string, string> = {
 export const ACTION_TYPE_LABELS: Record<string, string> = {
   "builtin-global-command": "内置命令",
   "plugin-command": "插件命令",
+  "external-plugin-command": "外部插件命令",
   "open-url": "打开链接",
   "experimental-shortcut": "实验：快捷键适配",
   "experimental-click-sequence": "实验：点击序列",

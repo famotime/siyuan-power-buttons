@@ -457,6 +457,189 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("renders provider and command selectors for external plugin commands", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      externalCommandProviders: [
+        {
+          providerId: "siyuan-doc-assist",
+          providerName: "文档助手 / Doc Assist",
+          commands: [
+            {
+              id: "insert-doc-summary",
+              title: "插入文档摘要",
+              description: "在当前文档插入摘要",
+            },
+          ],
+        },
+      ],
+      onChange,
+      onNotify: vi.fn(),
+      onRefreshExternalCommands: vi.fn().mockResolvedValue([]),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "external-plugin-command"));
+
+    expect(actionTypeSelect).not.toBeNull();
+
+    actionTypeSelect!.value = "external-plugin-command";
+    actionTypeSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const labels = Array.from(target.querySelectorAll(".settings-panel--editor label"))
+      .map(node => node.textContent?.trim());
+
+    expect(labels.some(text => text?.includes("外部插件"))).toBe(true);
+    expect(labels.some(text => text?.includes("外部命令"))).toBe(true);
+    expect(target.textContent).toContain("插入文档摘要");
+    expect(target.textContent).toContain("在当前文档插入摘要");
+    expect(onChange).toHaveBeenCalled();
+
+    unmount();
+  });
+
+  it("refreshes external command options from the provider callback", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "external-command",
+        title: "文档摘要",
+        actionType: "external-plugin-command" as never,
+        actionId: "siyuan-doc-assist:insert-doc-summary",
+      }),
+    ];
+
+    const onRefreshExternalCommands = vi.fn().mockResolvedValue([
+      {
+        providerId: "siyuan-doc-assist",
+        providerName: "文档助手 / Doc Assist",
+        commands: [
+          {
+            id: "insert-doc-summary",
+            title: "插入最新文档摘要",
+            description: "刷新后的命令描述",
+          },
+        ],
+      },
+    ]);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      externalCommandProviders: [
+        {
+          providerId: "siyuan-doc-assist",
+          providerName: "文档助手 / Doc Assist",
+          commands: [
+            {
+              id: "insert-doc-summary",
+              title: "旧摘要命令",
+              description: "旧描述",
+            },
+          ],
+        },
+      ],
+      onChange: vi.fn().mockResolvedValue(undefined),
+      onNotify: vi.fn(),
+      onRefreshExternalCommands,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const refreshButton = Array.from(target.querySelectorAll<HTMLButtonElement>(".settings-panel--editor button"))
+      .find(button => button.textContent?.trim() === "刷新外部命令");
+
+    expect(target.textContent).toContain("旧摘要命令");
+    expect(refreshButton).not.toBeUndefined();
+
+    refreshButton?.click();
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1);
+    expect(target.textContent).toContain("插入最新文档摘要");
+    expect(target.textContent).toContain("刷新后的命令描述");
+    expect(target.textContent).not.toContain("旧摘要命令");
+
+    unmount();
+  });
+
+  it("keeps the reserved external placeholder when selecting a provider without public commands", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "external-empty-provider",
+        title: "空命令提供者",
+        actionType: "external-plugin-command" as never,
+        actionId: "siyuan-doc-assist:insert-doc-summary",
+      }),
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      externalCommandProviders: [
+        {
+          providerId: "siyuan-doc-assist",
+          providerName: "文档助手 / Doc Assist",
+          commands: [
+            {
+              id: "insert-doc-summary",
+              title: "插入文档摘要",
+            },
+          ],
+        },
+        {
+          providerId: "empty-provider",
+          providerName: "空提供者",
+          commands: [],
+        },
+      ],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const providerSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "empty-provider"));
+
+    expect(providerSelect).not.toBeNull();
+
+    providerSelect!.value = "empty-provider";
+    providerSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.items[0].actionId).toBe("__external__:__unset__");
+
+    unmount();
+  });
+
   it("moves config import and export to the sidebar and removes json textarea tools", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

@@ -11,6 +11,7 @@ describe("config item defaults", () => {
   it("returns stable action id defaults for supported action types", () => {
     expect(getDefaultActionId("builtin-global-command")).toBe("globalSearch");
     expect(getDefaultActionId("plugin-command")).toBe("open-settings");
+    expect(getDefaultActionId("external-plugin-command")).toBe("__external__:__unset__");
     expect(getDefaultActionId("experimental-shortcut")).toBe("");
     expect(getDefaultActionId("experimental-click-sequence")).toBe("text:设置");
   });

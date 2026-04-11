@@ -463,6 +463,49 @@
                 </select>
               </label>
 
+              <template v-else-if="selectedItem.actionType === 'external-plugin-command'">
+                <label>
+                  <span>外部插件</span>
+                  <select
+                    class="b3-select"
+                    :value="selectedExternalProvider?.providerId || ''"
+                    @change="setSelectedExternalProvider(($event.target as HTMLSelectElement).value)"
+                  >
+                    <option v-for="provider in externalCommandProviders" :key="provider.providerId" :value="provider.providerId">
+                      {{ provider.providerName }}
+                    </option>
+                  </select>
+                </label>
+                <label>
+                  <span>外部命令</span>
+                  <select
+                    class="b3-select"
+                    :value="selectedExternalCommand?.id || ''"
+                    @change="setSelectedExternalCommand(($event.target as HTMLSelectElement).value)"
+                  >
+                    <option
+                      v-for="command in selectedExternalProvider?.commands || []"
+                      :key="command.id"
+                      :value="command.id"
+                    >
+                      {{ command.title }}
+                    </option>
+                  </select>
+                </label>
+                <div class="form-grid__full">
+                  <small>{{ selectedExternalCommand?.description || '由外部插件负责解析当前上下文并执行。' }}</small>
+                </div>
+                <div class="form-grid__full">
+                  <button
+                    class="b3-button b3-button--outline"
+                    type="button"
+                    @click="refreshExternalProviders"
+                  >
+                    刷新外部命令
+                  </button>
+                </div>
+              </template>
+
               <template v-else-if="selectedItem.actionType === 'experimental-shortcut'">
                 <label>
                   <span>快捷键</span>
@@ -714,6 +757,7 @@ const {
   disabledNativePreviewItems,
   duplicateItem,
   exportConfigFile,
+  externalCommandProviders,
   filteredBuiltinIcons,
   handleImportFile,
   handlePreviewChipClick,
@@ -739,10 +783,15 @@ const {
   renderNamedIcon,
   renderBuiltinIconMarkup,
   resetConfig,
+  refreshExternalProviders,
   restoreDisabledNativeItem,
   selectedId,
+  selectedExternalCommand,
+  selectedExternalProvider,
   selectedItem,
   selectItem,
+  setSelectedExternalCommand,
+  setSelectedExternalProvider,
   selectBuiltinIcon,
   selectEmojiIcon,
   selectIconType,
