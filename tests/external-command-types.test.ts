@@ -29,9 +29,12 @@ describe("external command action ids", () => {
     expect(isExternalCommandActionId("")).toBe(false);
   });
 
-  it("treats placeholder action ids as unset", () => {
-    expect(parseExternalCommandActionId("__external__:__unset__")).toBeNull();
-    expect(isExternalCommandActionId("__external__:__unset__")).toBe(false);
+  it("preserves provider-specific unset placeholders", () => {
+    expect(parseExternalCommandActionId("empty-provider:__unset__")).toEqual({
+      providerId: "empty-provider",
+      commandId: "__unset__",
+    });
+    expect(isExternalCommandActionId("empty-provider:__unset__")).toBe(true);
   });
 
   it("refuses to format invalid action id parts", () => {
@@ -44,7 +47,7 @@ describe("external command action ids", () => {
     expect(() => formatExternalCommandActionId("provider", "cmd ")).toThrow();
   });
 
-  it("rejects formatting the reserved placeholder pair", () => {
-    expect(() => formatExternalCommandActionId("__external__", "__unset__")).toThrow();
+  it("allows provider-specific unset placeholders", () => {
+    expect(formatExternalCommandActionId("empty-provider", "__unset__")).toBe("empty-provider:__unset__");
   });
 });

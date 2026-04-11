@@ -454,37 +454,28 @@
                 </select>
               </label>
 
-              <label v-else-if="selectedItem.actionType === 'plugin-command'">
-                <span>插件命令</span>
-                <select v-model="selectedItem.actionId" class="b3-select" @change="persist">
-                  <option v-for="command in pluginCommands" :key="command.id" :value="command.id">
-                    {{ command.title }}
-                  </option>
-                </select>
-              </label>
-
-              <template v-else-if="selectedItem.actionType === 'external-plugin-command'">
+              <template v-else-if="selectedItem.actionType === 'plugin-command'">
                 <label>
-                  <span>外部插件</span>
+                  <span>插件名称</span>
                   <select
                     class="b3-select"
-                    :value="selectedExternalProvider?.providerId || ''"
-                    @change="setSelectedExternalProvider(($event.target as HTMLSelectElement).value)"
+                    :value="selectedPluginProvider?.providerId || ''"
+                    @change="setSelectedPluginProvider(($event.target as HTMLSelectElement).value)"
                   >
-                    <option v-for="provider in externalCommandProviders" :key="provider.providerId" :value="provider.providerId">
+                    <option v-for="provider in pluginCommandProviders" :key="provider.providerId" :value="provider.providerId">
                       {{ provider.providerName }}
                     </option>
                   </select>
                 </label>
                 <label>
-                  <span>外部命令</span>
+                  <span>插件命令</span>
                   <select
                     class="b3-select"
-                    :value="selectedExternalCommand?.id || ''"
-                    @change="setSelectedExternalCommand(($event.target as HTMLSelectElement).value)"
+                    :value="selectedPluginCommand?.id || ''"
+                    @change="setSelectedPluginCommand(($event.target as HTMLSelectElement).value)"
                   >
                     <option
-                      v-for="command in selectedExternalProvider?.commands || []"
+                      v-for="command in selectedPluginProvider?.commands || []"
                       :key="command.id"
                       :value="command.id"
                     >
@@ -493,7 +484,7 @@
                   </select>
                 </label>
                 <div class="form-grid__full">
-                  <small>{{ selectedExternalCommand?.description || '由外部插件负责解析当前上下文并执行。' }}</small>
+                  <small>{{ selectedPluginCommand?.description || (selectedPluginProvider?.internal ? '由当前插件内置命令执行。' : '由目标插件负责解析当前上下文并执行。') }}</small>
                 </div>
                 <div class="form-grid__full">
                   <button
@@ -501,7 +492,7 @@
                     type="button"
                     @click="refreshExternalProviders"
                   >
-                    刷新外部命令
+                    刷新插件命令
                   </button>
                 </div>
               </template>
@@ -757,7 +748,7 @@ const {
   disabledNativePreviewItems,
   duplicateItem,
   exportConfigFile,
-  externalCommandProviders,
+  pluginCommandProviders,
   filteredBuiltinIcons,
   handleImportFile,
   handlePreviewChipClick,
@@ -786,12 +777,12 @@ const {
   refreshExternalProviders,
   restoreDisabledNativeItem,
   selectedId,
-  selectedExternalCommand,
-  selectedExternalProvider,
+  selectedPluginCommand,
+  selectedPluginProvider,
   selectedItem,
   selectItem,
-  setSelectedExternalCommand,
-  setSelectedExternalProvider,
+  setSelectedPluginCommand,
+  setSelectedPluginProvider,
   selectBuiltinIcon,
   selectEmojiIcon,
   selectIconType,

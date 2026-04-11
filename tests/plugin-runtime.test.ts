@@ -284,20 +284,20 @@ describe("plugin runtime", () => {
     expect(state.settingsDialog.open).toHaveBeenCalledWith(expect.objectContaining({
       externalCommandProviders: [],
     }));
-    expect(state.showMessage).toHaveBeenCalledWith("读取外部插件命令失败：registry offline", 5000, "error");
+    expect(state.showMessage).toHaveBeenCalledWith("读取插件命令失败：registry offline", 5000, "error");
   });
 
   it("keeps the fixed open-settings plugin command even when default config has no settings surface button", async () => {
     const state = createRuntime();
 
-    expect(state.config.items.some(item => item.actionType === "plugin-command" && item.actionId === "open-settings")).toBe(false);
+    expect(state.config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(false);
 
     await state.runtime.onload();
     const openSettingsCommand = state.addCommand.mock.calls.find(call => call[0].langKey === "power-buttons-open-settings")?.[0];
 
     await openSettingsCommand?.callback();
 
-    expect(openSettingsCommand?.langText).toBe("打开快捷按钮设置");
+    expect(openSettingsCommand?.langText).toBe("动作类型（插件命令）-思源快捷按钮-打开快捷按钮设置");
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
   });
 

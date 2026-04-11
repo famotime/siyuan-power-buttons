@@ -1,3 +1,6 @@
+import {
+  formatPluginCommandMenuTitle,
+} from "@/core/commands";
 import type { PluginCommandDefinition } from "@/shared/types";
 import type { SettingsAppProps } from "@/features/settings/types";
 
@@ -125,7 +128,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.options.showMessage(`读取外部插件命令失败：${message}`, 5000, "error");
+      this.options.showMessage(`读取插件命令失败：${message}`, 5000, "error");
     }
 
     return this.externalCommandProviders;
@@ -177,7 +180,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     for (const command of this.options.pluginCommands) {
       this.options.plugin.addCommand({
         langKey: `power-buttons-${command.id}`,
-        langText: command.title,
+        langText: formatPluginCommandMenuTitle(command.title),
         hotkey: "",
         callback: () => {
           return this.options.pluginCommandHandlers.get(command.id)?.();

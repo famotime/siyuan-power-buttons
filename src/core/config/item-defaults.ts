@@ -7,7 +7,6 @@ import type {
 } from "@/shared/types";
 
 export const DEFAULT_CLICK_SEQUENCE_SELECTOR = "text:设置";
-export const DEFAULT_EXTERNAL_PLUGIN_COMMAND = "__external__:__unset__";
 
 export function getDefaultActionId(actionType: ActionType): string {
   if (actionType === "experimental-shortcut") {
@@ -15,9 +14,6 @@ export function getDefaultActionId(actionType: ActionType): string {
   }
   if (actionType === "plugin-command") {
     return DEFAULT_PLUGIN_COMMAND;
-  }
-  if (actionType === "external-plugin-command") {
-    return DEFAULT_EXTERNAL_PLUGIN_COMMAND;
   }
   if (actionType === "experimental-click-sequence") {
     return DEFAULT_CLICK_SEQUENCE_SELECTOR;

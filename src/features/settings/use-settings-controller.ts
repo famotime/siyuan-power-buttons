@@ -6,10 +6,8 @@ import {
 } from "vue";
 import {
   createButtonItem,
-  createDefaultConfig,
   importConfigFromJson,
 } from "@/core/config";
-import { getDefaultActionId } from "@/core/config/item-defaults";
 import {
   BUILTIN_ICON_OPTIONS,
   COMMON_EMOJI_OPTIONS,
@@ -19,7 +17,12 @@ import {
   captureShortcutFromKeyboardEvent,
   findExperimentalShortcutConflict,
 } from "@/shared/shortcut-utils";
-import { ACTION_TYPE_LABELS, SURFACE_LABELS } from "@/shared/constants";
+import {
+  ACTION_TYPE_LABELS,
+  INTERNAL_PLUGIN_PROVIDER_ID,
+  INTERNAL_PLUGIN_PROVIDER_NAME,
+  SURFACE_LABELS,
+} from "@/shared/constants";
 import {
   buildPreviewLayout,
   movePreviewItem,
@@ -61,6 +64,7 @@ import {
   readConfigFile,
 } from "@/features/settings/file-transfer";
 import type { SettingsAppProps } from "@/features/settings/types";
+import type { SettingsPluginCommandProvider } from "@/features/settings/types";
 import {
   buildPreviewChipClass,
   getPreviewChipTitle,
@@ -138,21 +142,28 @@ export function useSettingsController(props: SettingsAppProps) {
 
   const builtinCommands = computed(() => props.builtinCommands);
   const pluginCommands = computed(() => props.pluginCommands);
-  const selectedItem = computed<PowerButtonItem | undefined>(() => config.items.find(item => item.id === selectedId.value));
-  const selectedExternalProvider = computed(() => {
-    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
-      return null;
+  const pluginCommandProviders = computed<SettingsPluginCommandProvider[]>(() => {
+    const providers: SettingsPluginCommandProvider[] = [];
+
+    if (pluginCommands.value.length > 0) {
+      providers.push({
+        providerId: INTERNAL_PLUGIN_PROVIDER_ID,
+        providerName: INTERNAL_PLUGIN_PROVIDER_NAME,
+        commands: pluginCommands.value.map(command => ({
+          id: command.id,
+          title: command.title,
+          description: command.description,
+        })),
+        internal: true,
+      });
     }
 
-    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
-    if (!parsed) {
-      return null;
-    }
-
-    return externalCommandProviders.value.find(provider => provider.providerId === parsed.providerId) || null;
+    providers.push(...externalCommandProviders.value);
+    return providers;
   });
-  const selectedExternalCommand = computed(() => {
-    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+  const selectedItem = computed<PowerButtonItem | undefined>(() => config.items.find(item => item.id === selectedId.value));
+  const selectedPluginProvider = computed(() => {
+    if (!selectedItem.value || selectedItem.value.actionType !== "plugin-command") {
       return null;
     }
 
@@ -161,7 +172,19 @@ export function useSettingsController(props: SettingsAppProps) {
       return null;
     }
 
-    return selectedExternalProvider.value?.commands.find(command => command.id === parsed.commandId) || null;
+    return pluginCommandProviders.value.find(provider => provider.providerId === parsed.providerId) || null;
+  });
+  const selectedPluginCommand = computed(() => {
+    if (!selectedItem.value || selectedItem.value.actionType !== "plugin-command") {
+      return null;
+    }
+
+    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
+    if (!parsed) {
+      return null;
+    }
+
+    return selectedPluginProvider.value?.commands.find(command => command.id === parsed.commandId) || null;
   });
 
   const configPreviewItems = computed<PreviewButtonItem[]>(() => {
@@ -338,16 +361,15 @@ export function useSettingsController(props: SettingsAppProps) {
       externalCommandProviders.value,
     );
 
-    if (selectedItem.value.actionType === "external-plugin-command") {
-      const hasProviders = externalCommandProviders.value.length > 0;
-      if (!hasProviders && props.onRefreshExternalCommands) {
+    if (selectedItem.value.actionType === "plugin-command") {
+      if (externalCommandProviders.value.length === 0 && props.onRefreshExternalCommands) {
         externalCommandProviders.value = await props.onRefreshExternalCommands();
       }
 
       const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
-      const hasValidSelection = Boolean(parsed && externalCommandProviders.value.some(
+      const hasValidSelection = Boolean(parsed && pluginCommandProviders.value.some(
         provider => provider.providerId === parsed.providerId
-          && provider.commands.some(command => command.id === parsed.commandId),
+          && (parsed.commandId === "__unset__" || provider.commands.some(command => command.id === parsed.commandId)),
       ));
 
       if (!hasValidSelection) {
@@ -370,14 +392,14 @@ export function useSettingsController(props: SettingsAppProps) {
 
     externalCommandProviders.value = await props.onRefreshExternalCommands();
 
-    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+    if (!selectedItem.value || selectedItem.value.actionType !== "plugin-command") {
       return;
     }
 
     const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
-    const hasValidSelection = Boolean(parsed && externalCommandProviders.value.some(
+    const hasValidSelection = Boolean(parsed && pluginCommandProviders.value.some(
       provider => provider.providerId === parsed.providerId
-        && provider.commands.some(command => command.id === parsed.commandId),
+        && (parsed.commandId === "__unset__" || provider.commands.some(command => command.id === parsed.commandId)),
     ));
 
     if (hasValidSelection) {
@@ -393,21 +415,21 @@ export function useSettingsController(props: SettingsAppProps) {
     await persist();
   }
 
-  async function setSelectedExternalProvider(providerId: string): Promise<void> {
-    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+  async function setSelectedPluginProvider(providerId: string): Promise<void> {
+    if (!selectedItem.value || selectedItem.value.actionType !== "plugin-command") {
       return;
     }
 
-    const provider = externalCommandProviders.value.find(item => item.providerId === providerId);
+    const provider = pluginCommandProviders.value.find(item => item.providerId === providerId);
     const commandId = provider?.commands[0]?.id;
     selectedItem.value.actionId = provider && commandId
       ? formatExternalCommandActionId(provider.providerId, commandId)
-      : getDefaultActionId("external-plugin-command");
+      : formatExternalCommandActionId(providerId, "__unset__");
     await persist();
   }
 
-  async function setSelectedExternalCommand(commandId: string): Promise<void> {
-    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+  async function setSelectedPluginCommand(commandId: string): Promise<void> {
+    if (!selectedItem.value || selectedItem.value.actionType !== "plugin-command") {
       return;
     }
 
@@ -809,6 +831,7 @@ export function useSettingsController(props: SettingsAppProps) {
     restoreDisabledNativeItem,
     disabledNativePreviewItems,
     externalCommandProviders,
+    pluginCommandProviders,
     previewChipClass,
     previewChipTitle,
     previewIconMarkup,
@@ -820,12 +843,12 @@ export function useSettingsController(props: SettingsAppProps) {
     resetConfig,
     refreshExternalProviders,
     selectedId,
-    selectedExternalCommand,
-    selectedExternalProvider,
+    selectedPluginCommand,
+    selectedPluginProvider,
     selectedItem,
     selectItem,
-    setSelectedExternalCommand,
-    setSelectedExternalProvider,
+    setSelectedPluginCommand,
+    setSelectedPluginProvider,
     selectBuiltinIcon,
     selectEmojiIcon,
     selectIconType,

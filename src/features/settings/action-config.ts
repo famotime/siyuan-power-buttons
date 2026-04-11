@@ -12,6 +12,7 @@ import type {
   PluginCommandDefinition,
   PowerButtonItem,
 } from "@/shared/types";
+import { INTERNAL_PLUGIN_PROVIDER_ID } from "@/shared/constants";
 import type { SettingsExternalCommandProvider } from "@/features/settings/types";
 
 export function ensureExperimentalShortcutConfig(item: PowerButtonItem) {
@@ -61,17 +62,16 @@ export function applyActionTypeDefaults(
   }
 
   if (item.actionType === "plugin-command") {
-    item.actionId = pluginCommands[0]?.id || getDefaultActionId("plugin-command");
-    return;
-  }
+    if (pluginCommands[0]) {
+      item.actionId = formatExternalCommandActionId(INTERNAL_PLUGIN_PROVIDER_ID, pluginCommands[0].id);
+      return;
+    }
 
-  if (item.actionType === "external-plugin-command") {
     const provider = externalCommandProviders[0];
     const command = provider?.commands[0];
-
     item.actionId = provider && command
       ? formatExternalCommandActionId(provider.providerId, command.id)
-      : getDefaultActionId("external-plugin-command");
+      : getDefaultActionId("plugin-command");
     return;
   }
 

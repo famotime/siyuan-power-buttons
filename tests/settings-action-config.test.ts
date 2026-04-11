@@ -101,14 +101,14 @@ describe("settings action config helpers", () => {
     applyActionTypeDefaults(shortcutItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS);
 
     expect(builtinItem.actionId).toBe(BUILTIN_COMMANDS[0].id);
-    expect(pluginItem.actionId).toBe(PLUGIN_COMMANDS[0].id);
+    expect(pluginItem.actionId).toBe("siyuan-power-buttons:open-settings");
     expect(shortcutItem.actionId).toBe("");
     expect(shortcutItem.experimentalShortcut?.shortcut).toBe("");
   });
 
-  it("applies external command defaults from the first discovered provider command", () => {
+  it("applies plugin command defaults from the first discovered provider command", () => {
     const externalItem = createButtonItem({
-      actionType: "external-plugin-command",
+      actionType: "plugin-command",
       actionId: "",
     });
     const externalProviders: SettingsExternalCommandProvider[] = [
@@ -124,7 +124,7 @@ describe("settings action config helpers", () => {
       },
     ];
 
-    applyActionTypeDefaults(externalItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS, externalProviders);
+    applyActionTypeDefaults(externalItem, BUILTIN_COMMANDS, [], externalProviders);
 
     expect(externalItem.actionId).toBe(
       formatExternalCommandActionId("siyuan-doc-assist", "insert-doc-summary"),

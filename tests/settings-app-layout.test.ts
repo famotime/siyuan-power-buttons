@@ -457,7 +457,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("renders provider and command selectors for external plugin commands", async () => {
+  it("renders plugin name and command selectors for unified plugin commands", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -489,11 +489,11 @@ describe("settings app layout", () => {
     await nextTick();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "external-plugin-command"));
+      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
 
     expect(actionTypeSelect).not.toBeNull();
 
-    actionTypeSelect!.value = "external-plugin-command";
+    actionTypeSelect!.value = "plugin-command";
     actionTypeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
@@ -501,8 +501,8 @@ describe("settings app layout", () => {
     const labels = Array.from(target.querySelectorAll(".settings-panel--editor label"))
       .map(node => node.textContent?.trim());
 
-    expect(labels.some(text => text?.includes("外部插件"))).toBe(true);
-    expect(labels.some(text => text?.includes("外部命令"))).toBe(true);
+    expect(labels.some(text => text?.includes("插件名称"))).toBe(true);
+    expect(labels.some(text => text?.includes("插件命令"))).toBe(true);
     expect(target.textContent).toContain("插入文档摘要");
     expect(target.textContent).toContain("在当前文档插入摘要");
     expect(onChange).toHaveBeenCalled();
@@ -510,7 +510,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("auto-refreshes external command providers when switching to external plugin commands with an empty initial list", async () => {
+  it("auto-refreshes external command providers when switching to unified plugin commands with an empty external list", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -543,11 +543,11 @@ describe("settings app layout", () => {
     await nextTick();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "external-plugin-command"));
+      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
 
     expect(actionTypeSelect).not.toBeNull();
 
-    actionTypeSelect!.value = "external-plugin-command";
+    actionTypeSelect!.value = "plugin-command";
     actionTypeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
@@ -561,7 +561,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("refreshes external command options from the provider callback", async () => {
+  it("refreshes plugin command options from the provider callback", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -570,7 +570,7 @@ describe("settings app layout", () => {
       createButtonItem({
         id: "external-command",
         title: "文档摘要",
-        actionType: "external-plugin-command" as never,
+        actionType: "plugin-command",
         actionId: "siyuan-doc-assist:insert-doc-summary",
       }),
     ];
@@ -615,7 +615,7 @@ describe("settings app layout", () => {
     await nextTick();
 
     const refreshButton = Array.from(target.querySelectorAll<HTMLButtonElement>(".settings-panel--editor button"))
-      .find(button => button.textContent?.trim() === "刷新外部命令");
+      .find(button => button.textContent?.trim() === "刷新插件命令");
 
     expect(target.textContent).toContain("旧摘要命令");
     expect(refreshButton).not.toBeUndefined();
@@ -632,7 +632,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("keeps the reserved external placeholder when selecting a provider without public commands", async () => {
+  it("keeps the reserved plugin placeholder when selecting a provider without public commands", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -642,7 +642,7 @@ describe("settings app layout", () => {
       createButtonItem({
         id: "external-empty-provider",
         title: "空命令提供者",
-        actionType: "external-plugin-command" as never,
+        actionType: "plugin-command",
         actionId: "siyuan-doc-assist:insert-doc-summary",
       }),
     ];
@@ -686,7 +686,7 @@ describe("settings app layout", () => {
     await nextTick();
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items[0].actionId).toBe("__external__:__unset__");
+    expect(latestConfig?.items[0].actionId).toBe("empty-provider:__unset__");
 
     unmount();
   });

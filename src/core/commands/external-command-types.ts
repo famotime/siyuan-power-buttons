@@ -60,9 +60,6 @@ export function formatExternalCommandActionId(providerId: string, commandId: str
   if (!providerId || !commandId) {
     throw new Error("External command action id parts must be non-empty.");
   }
-  if (providerId === "__external__" && commandId === "__unset__") {
-    throw new Error("External command action id cannot use the reserved placeholder.");
-  }
   if (providerId.includes(":") || commandId.includes(":")) {
     throw new Error("External command action id parts must not include colons.");
   }
@@ -74,9 +71,6 @@ export function parseExternalCommandActionId(
 ): { providerId: string; commandId: string } | null {
   const trimmed = actionId.trim();
   if (!trimmed || trimmed !== actionId) {
-    return null;
-  }
-  if (trimmed === "__external__:__unset__") {
     return null;
   }
   const separator = trimmed.indexOf(":");

@@ -86,7 +86,7 @@ describe("command executor", () => {
 
     await executor.execute(createItem({
       actionType: "plugin-command",
-      actionId: "open-help",
+      actionId: "siyuan-power-buttons:open-help",
     }));
     await executor.execute(createItem({
       actionType: "open-url",
@@ -97,7 +97,7 @@ describe("command executor", () => {
     expect(openUrl).toHaveBeenCalledWith("https://example.com");
   });
 
-  it("dispatches external plugin commands through the discovered provider", async () => {
+  it("dispatches external plugin commands through the unified plugin-command action type", async () => {
     const invokeCommand = vi.fn().mockResolvedValue({ ok: true, alreadyNotified: true });
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
@@ -121,7 +121,7 @@ describe("command executor", () => {
     await executor.execute(createItem({
       id: "doc-summary",
       surface: "topbar",
-      actionType: "external-plugin-command" as never,
+      actionType: "plugin-command",
       actionId: "siyuan-doc-assist:insert-doc-summary",
     }));
 
@@ -152,15 +152,15 @@ describe("command executor", () => {
     });
 
     await executor.execute(createItem({
-      actionType: "external-plugin-command" as never,
+      actionType: "plugin-command",
       actionId: "siyuan-doc-assist:insert-doc-summary",
     }));
 
     expect(refresh).toHaveBeenCalledTimes(1);
-    expect(notify).toHaveBeenCalledWith("未检测到外部插件：siyuan-doc-assist", "error");
+    expect(notify).toHaveBeenCalledWith("未检测到插件：siyuan-doc-assist", "error");
   });
 
-  it("notifies when external provider refresh itself fails", async () => {
+  it("notifies when plugin command provider refresh itself fails", async () => {
     const notify = vi.fn();
     const refresh = vi.fn().mockRejectedValue(new Error("registry offline"));
     const executor = new CommandExecutor({
@@ -176,11 +176,11 @@ describe("command executor", () => {
     });
 
     await expect(executor.execute(createItem({
-      actionType: "external-plugin-command" as never,
+      actionType: "plugin-command",
       actionId: "siyuan-doc-assist:insert-doc-summary",
     }))).resolves.toBeUndefined();
 
-    expect(notify).toHaveBeenCalledWith("读取外部插件命令失败：registry offline", "error");
+    expect(notify).toHaveBeenCalledWith("读取插件命令失败：registry offline", "error");
   });
 
   it("dispatches experimental shortcuts through the injected runner", async () => {

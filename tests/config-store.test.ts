@@ -16,7 +16,7 @@ describe("config store model", () => {
     expect(config.items.length).toBe(2);
     expect(config.items.every(item => item.visible)).toBe(true);
     expect(config.items.map(item => item.title)).toEqual(["全局搜索", "大纲"]);
-    expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "open-settings")).toBe(false);
+    expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(false);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
     expect(config.experimental.shortcutAdapter).toBe(true);
     expect(config.experimental.clickSequenceAdapter).toBe(true);
@@ -199,7 +199,7 @@ describe("config store model", () => {
     expect(config.experimental.clickSequenceAdapter).toBe(true);
   });
 
-  it("preserves valid external plugin command bindings and resets invalid ones", () => {
+  it("preserves valid plugin command bindings and resets invalid ones", () => {
     const config = sanitizeConfig({
       version: 2,
       desktopOnly: true,
@@ -212,7 +212,7 @@ describe("config store model", () => {
           iconValue: "iconInfo",
           surface: "topbar",
           order: 0,
-          actionType: "external-plugin-command",
+          actionType: "plugin-command",
           actionId: "siyuan-doc-assist:insert-doc-summary",
         },
         {
@@ -223,17 +223,17 @@ describe("config store model", () => {
           iconValue: "iconInfo",
           surface: "topbar",
           order: 1,
-          actionType: "external-plugin-command",
+          actionType: "plugin-command",
           actionId: "broken-format",
         },
       ],
       experimental: null,
     });
 
-    expect(config.items[0].actionType).toBe("external-plugin-command");
+    expect(config.items[0].actionType).toBe("plugin-command");
     expect(config.items[0].actionId).toBe("siyuan-doc-assist:insert-doc-summary");
-    expect(config.items[1].actionType).toBe("external-plugin-command");
-    expect(config.items[1].actionId).toBe("__external__:__unset__");
+    expect(config.items[1].actionType).toBe("plugin-command");
+    expect(config.items[1].actionId).toBe("siyuan-power-buttons:open-settings");
   });
 
   it("returns isolated snapshots when replacing and resetting store state", async () => {

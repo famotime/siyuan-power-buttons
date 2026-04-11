@@ -13,6 +13,10 @@ export interface SettingsExternalCommandProvider extends ExternalCommandProvider
   commands: ExternalPluginCommandDefinition[];
 }
 
+export interface SettingsPluginCommandProvider extends SettingsExternalCommandProvider {
+  internal?: boolean;
+}
+
 export interface SettingsAppProps {
   initialConfig: PowerButtonsConfig;
   builtinCommands: BuiltinCommandDefinition[];

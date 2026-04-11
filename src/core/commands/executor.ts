@@ -1,6 +1,7 @@
 import type { PowerButtonItem } from "@/shared/types";
 import type { ExternalCommandProvider } from "@/core/commands/external-command-types";
 import { parseExternalCommandActionId } from "@/core/commands/external-command-types";
+import { INTERNAL_PLUGIN_PROVIDER_ID } from "@/shared/constants";
 
 type PluginLike = {
   globalCommand?: (command: string) => unknown;
@@ -40,13 +41,20 @@ export class CommandExecutor {
         }
         await this.options.notify?.(`内置命令当前无法执行：${item.actionId}`, "error");
         return;
-      case "plugin-command":
-        await this.options.pluginCommands.get(item.actionId)?.();
-        return;
-      case "external-plugin-command": {
+      case "plugin-command": {
         const parsed = parseExternalCommandActionId(item.actionId);
         if (!parsed) {
-          await this.options.notify?.(`外部命令配置无效：${item.actionId}`, "error");
+          await this.options.notify?.(`插件命令配置无效：${item.actionId}`, "error");
+          return;
+        }
+
+        if (parsed.commandId === "__unset__") {
+          await this.options.notify?.(`插件命令配置无效：${item.actionId}`, "error");
+          return;
+        }
+
+        if (parsed.providerId === INTERNAL_PLUGIN_PROVIDER_ID) {
+          await this.options.pluginCommands.get(parsed.commandId)?.();
           return;
         }
 
@@ -56,14 +64,14 @@ export class CommandExecutor {
             await this.options.externalCommands?.refresh?.();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            await this.options.notify?.(`读取外部插件命令失败：${message}`, "error");
+            await this.options.notify?.(`读取插件命令失败：${message}`, "error");
             return;
           }
           provider = this.options.externalCommands?.getProvider(parsed.providerId) || null;
         }
 
         if (!provider) {
-          await this.options.notify?.(`未检测到外部插件：${parsed.providerId}`, "error");
+          await this.options.notify?.(`未检测到插件：${parsed.providerId}`, "error");
           return;
         }
 
@@ -77,7 +85,7 @@ export class CommandExecutor {
           });
 
           if (!result.ok && !result.alreadyNotified) {
-            await this.options.notify?.(result.message || `外部命令执行失败：${parsed.commandId}`, "error");
+            await this.options.notify?.(result.message || `插件命令执行失败：${parsed.commandId}`, "error");
             return;
           }
 
@@ -86,7 +94,7 @@ export class CommandExecutor {
           }
           return;
         } catch {
-          await this.options.notify?.(`外部命令执行失败：${parsed.commandId}`, "error");
+          await this.options.notify?.(`插件命令执行失败：${parsed.commandId}`, "error");
           return;
         }
       }
