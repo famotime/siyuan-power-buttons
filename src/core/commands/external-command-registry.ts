@@ -6,11 +6,36 @@ import type {
 
 type IntegratablePlugin = {
   name?: string;
-  getPowerButtonsIntegration?: () => ExternalCommandProvider | null;
+  getPowerButtonsIntegration?: () => unknown;
 };
 
 interface ExternalCommandRegistryOptions {
   getPlugins: () => IntegratablePlugin[] | undefined;
+}
+
+function isValidProvider(provider: unknown): provider is ExternalCommandProvider {
+  if (!provider || typeof provider !== "object") {
+    return false;
+  }
+
+  const candidate = provider as Partial<ExternalCommandProvider>;
+  if (candidate.protocol !== "power-buttons-command-provider" || candidate.protocolVersion !== 1) {
+    return false;
+  }
+
+  if (typeof candidate.providerId !== "string" || !candidate.providerId.trim()) {
+    return false;
+  }
+
+  if (candidate.providerId.trim() !== candidate.providerId) {
+    return false;
+  }
+
+  if (typeof candidate.providerName !== "string" || !candidate.providerName.trim()) {
+    return false;
+  }
+
+  return typeof candidate.listCommands === "function" && typeof candidate.invokeCommand === "function";
 }
 
 export class ExternalCommandRegistry {
@@ -20,25 +45,50 @@ export class ExternalCommandRegistry {
   constructor(private readonly options: ExternalCommandRegistryOptions) {}
 
   async refresh(): Promise<void> {
-    this.providers.clear();
-    this.commandCache.clear();
-
     const plugins = this.options.getPlugins() ?? [];
+    const nextProviders = new Map<string, ExternalCommandProvider>();
+    const nextCommandCache = new Map<string, ExternalPluginCommandDefinition[]>();
 
     for (const plugin of plugins) {
-      const provider = plugin.getPowerButtonsIntegration?.();
-      if (
-        !provider ||
-        provider.protocol !== "power-buttons-command-provider" ||
-        provider.protocolVersion !== 1
-      ) {
+      let provider: unknown;
+
+      try {
+        provider = plugin.getPowerButtonsIntegration?.();
+      } catch {
         continue;
       }
 
-      this.providers.set(provider.providerId, provider);
-      const commands = await provider.listCommands();
-      this.commandCache.set(provider.providerId, commands ?? []);
+      if (!isValidProvider(provider)) {
+        continue;
+      }
+
+      if (nextProviders.has(provider.providerId)) {
+        continue;
+      }
+
+      let commands: ExternalPluginCommandDefinition[];
+      try {
+        const result = await provider.listCommands();
+        if (!Array.isArray(result)) {
+          continue;
+        }
+        commands = result;
+      } catch {
+        continue;
+      }
+
+      nextProviders.set(provider.providerId, provider);
+      nextCommandCache.set(provider.providerId, commands);
     }
+
+    this.providers.clear();
+    this.commandCache.clear();
+    nextProviders.forEach((provider, providerId) => {
+      this.providers.set(providerId, provider);
+    });
+    nextCommandCache.forEach((commands, providerId) => {
+      this.commandCache.set(providerId, commands);
+    });
   }
 
   listProviders(): ExternalCommandProviderSummary[] {
