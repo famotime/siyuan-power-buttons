@@ -199,6 +199,43 @@ describe("config store model", () => {
     expect(config.experimental.clickSequenceAdapter).toBe(true);
   });
 
+  it("preserves valid external plugin command bindings and resets invalid ones", () => {
+    const config = sanitizeConfig({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "external-valid",
+          title: "文档摘要",
+          visible: true,
+          iconType: "builtin",
+          iconValue: "iconInfo",
+          surface: "topbar",
+          order: 0,
+          actionType: "external-plugin-command",
+          actionId: "siyuan-doc-assist:insert-doc-summary",
+        },
+        {
+          id: "external-invalid",
+          title: "坏绑定",
+          visible: true,
+          iconType: "builtin",
+          iconValue: "iconInfo",
+          surface: "topbar",
+          order: 1,
+          actionType: "external-plugin-command",
+          actionId: "broken-format",
+        },
+      ],
+      experimental: null,
+    });
+
+    expect(config.items[0].actionType).toBe("external-plugin-command");
+    expect(config.items[0].actionId).toBe("siyuan-doc-assist:insert-doc-summary");
+    expect(config.items[1].actionType).toBe("external-plugin-command");
+    expect(config.items[1].actionId).toBe("__external__:__unset__");
+  });
+
   it("returns isolated snapshots when replacing and resetting store state", async () => {
     const plugin = {
       loadData: async () => null,

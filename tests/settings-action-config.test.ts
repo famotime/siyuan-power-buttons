@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_COMMANDS, PLUGIN_COMMANDS } from "@/core/commands";
+import {
+  BUILTIN_COMMANDS,
+  PLUGIN_COMMANDS,
+  formatExternalCommandActionId,
+} from "@/core/commands";
 import { createButtonItem } from "@/core/config/defaults";
 import {
   applyActionTypeDefaults,
@@ -9,6 +13,7 @@ import {
   ensureSelectedActionConfiguration,
   summarizeClickSequence,
 } from "@/features/settings/action-config";
+import type { SettingsExternalCommandProvider } from "@/features/settings/types";
 
 describe("settings action config helpers", () => {
   it("creates an empty experimental shortcut config without forcing a fallback shortcut", () => {
@@ -99,6 +104,31 @@ describe("settings action config helpers", () => {
     expect(pluginItem.actionId).toBe(PLUGIN_COMMANDS[0].id);
     expect(shortcutItem.actionId).toBe("");
     expect(shortcutItem.experimentalShortcut?.shortcut).toBe("");
+  });
+
+  it("applies external command defaults from the first discovered provider command", () => {
+    const externalItem = createButtonItem({
+      actionType: "external-plugin-command",
+      actionId: "",
+    });
+    const externalProviders: SettingsExternalCommandProvider[] = [
+      {
+        providerId: "siyuan-doc-assist",
+        providerName: "文档助手 / Doc Assist",
+        commands: [
+          {
+            id: "insert-doc-summary",
+            title: "插入文档摘要",
+          },
+        ],
+      },
+    ];
+
+    applyActionTypeDefaults(externalItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS, externalProviders);
+
+    expect(externalItem.actionId).toBe(
+      formatExternalCommandActionId("siyuan-doc-assist", "insert-doc-summary"),
+    );
   });
 
   it("applies icon defaults for each icon type", () => {
