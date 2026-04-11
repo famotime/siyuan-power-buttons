@@ -115,13 +115,18 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       return this.externalCommandProviders;
     }
 
-    await this.options.externalCommands.refresh();
-    this.externalCommandProviders = await Promise.all(
-      this.options.externalCommands.listProviders().map(async provider => ({
-        ...provider,
-        commands: await this.options.externalCommands!.listCommands(provider.providerId),
-      })),
-    );
+    try {
+      await this.options.externalCommands.refresh();
+      this.externalCommandProviders = await Promise.all(
+        this.options.externalCommands.listProviders().map(async provider => ({
+          ...provider,
+          commands: await this.options.externalCommands!.listCommands(provider.providerId),
+        })),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.options.showMessage(`读取外部插件命令失败：${message}`, 5000, "error");
+    }
 
     return this.externalCommandProviders;
   }
@@ -143,13 +148,14 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     };
   }
 
-  openSetting(): void {
+  async openSetting(): Promise<void> {
+    await this.refreshExternalCommandProviders();
     this.options.settingsDialog.open(this.createSettingsAppProps());
   }
 
   private registerPluginCommands(): void {
     this.options.pluginCommandHandlers.set("open-settings", () => {
-      this.openSetting();
+      return this.openSetting();
     });
     this.options.pluginCommandHandlers.set("copy-config-json", async () => {
       const serialized = this.options.exportConfigAsJson(this.options.configStore.snapshot());
@@ -157,7 +163,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
         await this.options.clipboard.writeText(serialized);
         this.options.showMessage("快捷按钮配置已复制。");
       } catch {
-        this.openSetting();
+        await this.openSetting();
         this.options.showMessage("复制失败，已自动打开设置界面。", 5000, "error");
       }
     });
@@ -174,7 +180,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
         langText: command.title,
         hotkey: "",
         callback: () => {
-          void this.options.pluginCommandHandlers.get(command.id)?.();
+          return this.options.pluginCommandHandlers.get(command.id)?.();
         },
       });
     }

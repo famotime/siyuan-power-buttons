@@ -199,7 +199,7 @@ describe("plugin runtime", () => {
     });
 
     await state.runtime.onload();
-    state.runtime.openSetting();
+    await state.runtime.openSetting();
 
     expect(state.settingsDialog.open).toHaveBeenCalledWith(expect.objectContaining({
       externalCommandProviders: [
@@ -215,6 +215,76 @@ describe("plugin runtime", () => {
         },
       ],
     }));
+  });
+
+  it("refreshes external providers again when opening settings", async () => {
+    let providerTitle = "旧命令";
+    const state = createRuntime({
+      externalCommands: {
+        refresh: vi.fn().mockResolvedValue(undefined),
+        listProviders: () => [
+          {
+            providerId: "siyuan-doc-assist",
+            providerName: "文档助手 / Doc Assist",
+          },
+        ],
+        listCommands: vi.fn().mockImplementation(async () => [
+          {
+            id: "insert-doc-summary",
+            title: providerTitle,
+          },
+        ]),
+      },
+    });
+
+    await state.runtime.onload();
+    providerTitle = "新命令";
+    await state.runtime.openSetting();
+
+    expect(state.settingsDialog.open).toHaveBeenCalledWith(expect.objectContaining({
+      externalCommandProviders: [
+        expect.objectContaining({
+          commands: [
+            {
+              id: "insert-doc-summary",
+              title: "新命令",
+            },
+          ],
+        }),
+      ],
+    }));
+  });
+
+  it("degrades gracefully when external provider refresh fails during startup and settings open", async () => {
+    const refresh = vi.fn()
+      .mockRejectedValueOnce(new Error("registry offline"))
+      .mockRejectedValueOnce(new Error("registry offline"));
+    const state = createRuntime({
+      externalCommands: {
+        refresh,
+        listProviders: () => [
+          {
+            providerId: "siyuan-doc-assist",
+            providerName: "文档助手 / Doc Assist",
+          },
+        ],
+        listCommands: vi.fn().mockResolvedValue([
+          {
+            id: "insert-doc-summary",
+            title: "插入文档摘要",
+          },
+        ]),
+      },
+    });
+
+    await expect(state.runtime.onload()).resolves.toBeUndefined();
+    await expect(state.runtime.openSetting()).resolves.toBeUndefined();
+
+    expect(state.addCommand).toHaveBeenCalledTimes(PLUGIN_COMMANDS.length);
+    expect(state.settingsDialog.open).toHaveBeenCalledWith(expect.objectContaining({
+      externalCommandProviders: [],
+    }));
+    expect(state.showMessage).toHaveBeenCalledWith("读取外部插件命令失败：registry offline", 5000, "error");
   });
 
   it("keeps the fixed open-settings plugin command even when default config has no settings surface button", async () => {

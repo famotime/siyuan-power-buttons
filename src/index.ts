@@ -43,6 +43,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       showMessage(message, 5000, type);
     },
     pluginCommands: this.pluginCommandHandlers,
+    externalCommands: this.externalCommands,
     openUrl: (url: string) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
@@ -88,6 +89,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
         },
       });
     },
+    sourcePluginVersion: pluginInfo.version,
   });
   private runtime = new PowerButtonsRuntime({
     plugin: this,
@@ -125,7 +127,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   }
 
   openSetting(): void {
-    this.runtime.openSetting();
+    void this.runtime.openSetting();
   }
 
   onunload(): void {

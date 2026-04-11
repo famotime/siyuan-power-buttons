@@ -9,6 +9,7 @@ import {
   createDefaultConfig,
   importConfigFromJson,
 } from "@/core/config";
+import { getDefaultActionId } from "@/core/config/item-defaults";
 import {
   BUILTIN_ICON_OPTIONS,
   COMMON_EMOJI_OPTIONS,
@@ -24,6 +25,8 @@ import {
   movePreviewItem,
 } from "@/shared/preview-layout";
 import {
+  formatExternalCommandActionId,
+  parseExternalCommandActionId,
   triggerElementBySmartSelectors,
 } from "@/core/commands";
 import {
@@ -108,6 +111,7 @@ export function useSettingsController(props: SettingsAppProps) {
   const previewDragItem = ref<PreviewButtonItem | null>(null);
   const previewDragCleanup = ref<(() => void) | null>(null);
   const runtimePreviewItems = ref<PreviewButtonItem[]>([]);
+  const externalCommandProviders = ref(props.externalCommandProviders || []);
   const isRefreshingLayout = ref(false);
   const showPreviewLabels = ref(false);
   const importFileInput = ref<HTMLInputElement | null>(null);
@@ -134,8 +138,31 @@ export function useSettingsController(props: SettingsAppProps) {
 
   const builtinCommands = computed(() => props.builtinCommands);
   const pluginCommands = computed(() => props.pluginCommands);
-  const externalCommandProviders = computed(() => props.externalCommandProviders);
   const selectedItem = computed<PowerButtonItem | undefined>(() => config.items.find(item => item.id === selectedId.value));
+  const selectedExternalProvider = computed(() => {
+    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+      return null;
+    }
+
+    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
+    if (!parsed) {
+      return null;
+    }
+
+    return externalCommandProviders.value.find(provider => provider.providerId === parsed.providerId) || null;
+  });
+  const selectedExternalCommand = computed(() => {
+    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+      return null;
+    }
+
+    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
+    if (!parsed) {
+      return null;
+    }
+
+    return selectedExternalProvider.value?.commands.find(command => command.id === parsed.commandId) || null;
+  });
 
   const configPreviewItems = computed<PreviewButtonItem[]>(() => {
     return config.items.map(item => ({
@@ -310,6 +337,41 @@ export function useSettingsController(props: SettingsAppProps) {
       pluginCommands.value,
       externalCommandProviders.value,
     );
+    await persist();
+  }
+
+  async function refreshExternalProviders(): Promise<void> {
+    if (!props.onRefreshExternalCommands) {
+      return;
+    }
+
+    externalCommandProviders.value = await props.onRefreshExternalCommands();
+  }
+
+  async function setSelectedExternalProvider(providerId: string): Promise<void> {
+    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+      return;
+    }
+
+    const provider = externalCommandProviders.value.find(item => item.providerId === providerId);
+    const commandId = provider?.commands[0]?.id;
+    selectedItem.value.actionId = provider && commandId
+      ? formatExternalCommandActionId(provider.providerId, commandId)
+      : getDefaultActionId("external-plugin-command");
+    await persist();
+  }
+
+  async function setSelectedExternalCommand(commandId: string): Promise<void> {
+    if (!selectedItem.value || selectedItem.value.actionType !== "external-plugin-command") {
+      return;
+    }
+
+    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
+    if (!parsed) {
+      return;
+    }
+
+    selectedItem.value.actionId = formatExternalCommandActionId(parsed.providerId, commandId);
     await persist();
   }
 
@@ -701,6 +763,7 @@ export function useSettingsController(props: SettingsAppProps) {
     pluginCommands,
     restoreDisabledNativeItem,
     disabledNativePreviewItems,
+    externalCommandProviders,
     previewChipClass,
     previewChipTitle,
     previewIconMarkup,
@@ -710,9 +773,14 @@ export function useSettingsController(props: SettingsAppProps) {
     renderNamedIcon: renderBuiltinCatalogIcon,
     renderBuiltinIconMarkup,
     resetConfig,
+    refreshExternalProviders,
     selectedId,
+    selectedExternalCommand,
+    selectedExternalProvider,
     selectedItem,
     selectItem,
+    setSelectedExternalCommand,
+    setSelectedExternalProvider,
     selectBuiltinIcon,
     selectEmojiIcon,
     selectIconType,
