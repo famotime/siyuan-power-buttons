@@ -96,6 +96,14 @@ describe("ExternalCommandRegistry", () => {
           }),
         },
         {
+          name: "provider-with-invalid-id",
+          getPowerButtonsIntegration: () => ({
+            ...primaryProvider,
+            providerId: "bad:id",
+            providerName: "Bad Provider Id",
+          }),
+        },
+        {
           name: "throws-list-commands",
           getPowerButtonsIntegration: () => ({
             ...primaryProvider,
@@ -107,7 +115,14 @@ describe("ExternalCommandRegistry", () => {
         },
         {
           name: "doc-assist-primary",
-          getPowerButtonsIntegration: () => primaryProvider,
+          getPowerButtonsIntegration: () => ({
+            ...primaryProvider,
+            listCommands: () => [
+              { id: "insert-doc-summary", title: "插入文档摘要" },
+              { id: "bad:command", title: "Bad Command Id" },
+              { id: "trimmed-command", title: "  " },
+            ],
+          }),
         },
         {
           name: "doc-assist-shadow",
@@ -128,6 +143,7 @@ describe("ExternalCommandRegistry", () => {
     expect(await registry.listCommands("siyuan-doc-assist")).toEqual([
       { id: "insert-doc-summary", title: "插入文档摘要" },
     ]);
+    expect(registry.getProvider("bad:id")).toBeNull();
   });
 
   it("preserves the previous snapshot when refresh fails before a new snapshot is ready", async () => {

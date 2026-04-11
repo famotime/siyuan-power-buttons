@@ -3,6 +3,7 @@ import type {
   ExternalCommandProviderSummary,
   ExternalPluginCommandDefinition,
 } from "@/core/commands/external-command-types";
+import { formatExternalCommandActionId } from "@/core/commands/external-command-types";
 
 type IntegratablePlugin = {
   name?: string;
@@ -31,11 +32,47 @@ function isValidProvider(provider: unknown): provider is ExternalCommandProvider
     return false;
   }
 
+  try {
+    formatExternalCommandActionId(candidate.providerId, "probe-command");
+  } catch {
+    return false;
+  }
+
   if (typeof candidate.providerName !== "string" || !candidate.providerName.trim()) {
     return false;
   }
 
   return typeof candidate.listCommands === "function" && typeof candidate.invokeCommand === "function";
+}
+
+function isValidCommandDefinition(
+  providerId: string,
+  command: unknown,
+): command is ExternalPluginCommandDefinition {
+  if (!command || typeof command !== "object") {
+    return false;
+  }
+
+  const candidate = command as Partial<ExternalPluginCommandDefinition>;
+  if (typeof candidate.id !== "string" || !candidate.id.trim()) {
+    return false;
+  }
+
+  if (candidate.id.trim() !== candidate.id) {
+    return false;
+  }
+
+  if (typeof candidate.title !== "string" || !candidate.title.trim()) {
+    return false;
+  }
+
+  try {
+    formatExternalCommandActionId(providerId, candidate.id);
+  } catch {
+    return false;
+  }
+
+  return true;
 }
 
 export class ExternalCommandRegistry {
@@ -72,7 +109,7 @@ export class ExternalCommandRegistry {
         if (!Array.isArray(result)) {
           continue;
         }
-        commands = result;
+        commands = result.filter(command => isValidCommandDefinition(provider.providerId, command));
       } catch {
         continue;
       }
