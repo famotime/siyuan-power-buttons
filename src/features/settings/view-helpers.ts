@@ -6,6 +6,11 @@ import {
 } from "@/shared/native-icon";
 import type { PowerButtonItem, PreviewButtonItem } from "@/shared/types";
 
+export type SvgPreviewState = {
+  markup: string;
+  invalid: boolean;
+};
+
 export function renderNamedIcon(iconName: string, ownerDocument: Document = document): string {
   return renderIconMarkup({
     iconType: "iconpark",
@@ -24,6 +29,54 @@ export function renderSettingsIconMarkup(
     return item.iconValue || renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
   }
   return renderIconMarkup(item, ownerDocument);
+}
+
+export function resolveSvgPreviewState(
+  item: Pick<PowerButtonItem, "iconType" | "iconValue">,
+  ownerDocument: Document = document,
+): SvgPreviewState {
+  if (item.iconType !== "svg") {
+    return {
+      markup: renderSettingsIconMarkup(item, ownerDocument),
+      invalid: false,
+    };
+  }
+
+  const trimmed = item.iconValue.trim();
+  if (!trimmed) {
+    return {
+      markup: renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument),
+      invalid: false,
+    };
+  }
+
+  if (!trimmed.startsWith("<svg")) {
+    return {
+      markup: renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument),
+      invalid: true,
+    };
+  }
+
+  try {
+    const parser = new ownerDocument.defaultView!.DOMParser();
+    const parsed = parser.parseFromString(trimmed, "image/svg+xml");
+    if (parsed.querySelector("parsererror") || parsed.documentElement.tagName.toLowerCase() !== "svg") {
+      return {
+        markup: renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument),
+        invalid: true,
+      };
+    }
+  } catch {
+    return {
+      markup: renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument),
+      invalid: true,
+    };
+  }
+
+  return {
+    markup: trimmed,
+    invalid: false,
+  };
 }
 
 export function renderPreviewIconMarkup(item: PreviewButtonItem, ownerDocument: Document = document): string {

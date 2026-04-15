@@ -516,6 +516,41 @@
   gap: 6px;
 }
 
+.icon-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.icon-preview__hint {
+  color: color-mix(in srgb, var(--b3-theme-error) 88%, transparent);
+  line-height: 1.5;
+}
+
+.icon-preview__card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--b3-theme-background) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--b3-border-color) 86%, transparent);
+}
+
+.icon-preview__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+}
+
+.icon-preview__icon .siyuan-power-buttons__icon,
+.icon-preview__icon svg {
+  width: 40px;
+  height: 40px;
+}
+
 .form-grid__full {
   grid-column: 1 / -1;
 }

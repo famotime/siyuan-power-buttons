@@ -710,6 +710,13 @@
                   <span>SVG 内容或图标 id</span>
                   <textarea v-model="selectedItem.iconValue" class="b3-text-field" rows="5" @change="persist" />
                 </label>
+                <div class="icon-preview">
+                  <span>图标预览</span>
+                  <div class="icon-preview__card">
+                    <span class="icon-preview__icon" v-html="renderSvgPreviewState(selectedItem).markup" />
+                  </div>
+                  <small v-if="renderSvgPreviewState(selectedItem).invalid" class="icon-preview__hint">SVG 内容无效，已回退到默认图标预览。</small>
+                </div>
               </template>
             </div>
           </section>
@@ -783,6 +790,7 @@ const {
   removeItem,
   renderNamedIcon,
   renderBuiltinIconMarkup,
+  renderSvgPreviewState,
   resetConfig,
   refreshExternalProviders,
   restoreDisabledNativeItem,

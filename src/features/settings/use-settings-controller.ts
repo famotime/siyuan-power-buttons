@@ -72,6 +72,7 @@ import {
   renderNamedIcon,
   renderPreviewIconMarkup,
   renderSettingsIconMarkup,
+  resolveSvgPreviewState,
 } from "@/features/settings/view-helpers";
 
 function applyConfig(config: PowerButtonsConfig, nextConfig: PowerButtonsConfig): void {
@@ -780,6 +781,10 @@ export function useSettingsController(props: SettingsAppProps) {
     return renderNamedIcon(iconName);
   }
 
+  function renderSvgPreviewState(item: Pick<PowerButtonItem, "iconType" | "iconValue">) {
+    return resolveSvgPreviewState(item);
+  }
+
   function previewIconMarkup(item: PreviewButtonItem): string {
     return renderPreviewIconMarkup(item);
   }
@@ -844,6 +849,7 @@ export function useSettingsController(props: SettingsAppProps) {
     removeItem,
     renderNamedIcon: renderBuiltinCatalogIcon,
     renderBuiltinIconMarkup,
+    renderSvgPreviewState,
     resetConfig,
     refreshExternalProviders,
     selectedId,

@@ -218,6 +218,64 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("shows an SVG icon preview below the SVG editor textarea", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.items[0].iconType = "svg";
+    initialConfig.items[0].iconValue = "<svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' /></svg>";
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const textarea = target.querySelector(".icon-editor textarea.b3-text-field");
+    const preview = target.querySelector(".icon-preview");
+
+    expect(textarea).not.toBeNull();
+    expect(preview).not.toBeNull();
+    expect(preview?.querySelector("svg")).not.toBeNull();
+
+    unmount();
+  });
+
+  it("shows a fallback preview hint when the SVG input is invalid", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.items[0].iconType = "svg";
+    initialConfig.items[0].iconValue = "<svg><g></svg";
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const preview = target.querySelector(".icon-preview");
+    const hint = target.querySelector(".icon-preview__hint");
+
+    expect(preview).not.toBeNull();
+    expect(hint?.textContent).toContain("SVG 内容无效");
+    expect(preview?.querySelector("svg")).not.toBeNull();
+
+    unmount();
+  });
+
   it("initializes experimental action configs immediately when switching action type", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
