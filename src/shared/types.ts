@@ -27,7 +27,7 @@ export const ACTION_TYPES = [
 ] as const;
 
 export const ICON_TYPES = [
-  "builtin",
+  "iconpark",
   "emoji",
   "svg",
 ] as const;

@@ -11,8 +11,9 @@ import {
   getDefaultActionId,
 } from "@/core/config/item-defaults";
 import {
-  DEFAULT_BUILTIN_ICON,
+  DEFAULT_ICONPARK_ICON,
 } from "@/shared/constants";
+import { normalizeIconValue } from "@/shared/icon-catalog";
 import {
   SURFACES,
   ACTION_TYPES,
@@ -69,7 +70,10 @@ function ensureActionType(value: unknown): ActionType {
 }
 
 function ensureIconType(value: unknown): IconType {
-  return ICON_TYPES.includes(value as IconType) ? value as IconType : "builtin";
+  if (value === "builtin") {
+    return "iconpark";
+  }
+  return ICON_TYPES.includes(value as IconType) ? value as IconType : "iconpark";
 }
 
 function sanitizeExperimentalShortcut(raw: Record<string, unknown>, actionId: string): ExperimentalShortcutConfig {
@@ -177,7 +181,10 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
     title: safeTitle,
     visible: typeof raw.visible === "boolean" ? raw.visible : true,
     iconType: ensureIconType(raw.iconType),
-    iconValue: typeof raw.iconValue === "string" && raw.iconValue.trim() ? raw.iconValue : DEFAULT_BUILTIN_ICON,
+    iconValue: normalizeIconValue(
+      typeof raw.iconType === "string" ? raw.iconType : "iconpark",
+      typeof raw.iconValue === "string" && raw.iconValue.trim() ? raw.iconValue : DEFAULT_ICONPARK_ICON,
+    ),
     surface: ensureSurface(raw.surface),
     order: Number.isFinite(raw.order) ? Number(raw.order) : index,
     actionType,

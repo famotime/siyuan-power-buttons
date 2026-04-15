@@ -1,5 +1,5 @@
 import {
-  DEFAULT_BUILTIN_ICON,
+  DEFAULT_ICONPARK_ICON,
 } from "@/shared/constants";
 import {
   createExperimentalClickSequenceConfig,
@@ -26,8 +26,8 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
     id: overrides.id || createId(),
     title: overrides.title || "新建",
     visible: overrides.visible ?? true,
-    iconType: (overrides.iconType || "builtin") as IconType,
-    iconValue: overrides.iconValue || DEFAULT_BUILTIN_ICON,
+    iconType: (overrides.iconType || "iconpark") as IconType,
+    iconValue: overrides.iconValue || DEFAULT_ICONPARK_ICON,
     surface: (overrides.surface || "topbar") as SurfaceType,
     order: overrides.order ?? 0,
     actionType,
@@ -51,7 +51,8 @@ export function createDefaultConfig(): PowerButtonsConfig {
   const items = normalizeItemOrder([
     createButtonItem({
       title: "全局搜索",
-      iconValue: "iconSearch",
+      iconType: "iconpark",
+      iconValue: "iconpark:Search",
       surface: "topbar",
       actionType: "builtin-global-command",
       actionId: "globalSearch",
@@ -59,7 +60,8 @@ export function createDefaultConfig(): PowerButtonsConfig {
     }),
     createButtonItem({
       title: "大纲",
-      iconValue: "iconList",
+      iconType: "iconpark",
+      iconValue: "iconpark:ListView",
       surface: "statusbar-left",
       actionType: "builtin-global-command",
       actionId: "outline",

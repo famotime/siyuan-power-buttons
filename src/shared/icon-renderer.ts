@@ -1,4 +1,8 @@
-import { DEFAULT_BUILTIN_ICON } from "@/shared/constants";
+import { DEFAULT_ICONPARK_ICON } from "@/shared/constants";
+import {
+  getIconParkMarkup,
+  normalizeIconValue,
+} from "@/shared/icon-catalog";
 
 type QueryRoot = Pick<ParentNode, "querySelector"> | null | undefined;
 
@@ -42,10 +46,27 @@ function hasHostIconSymbol(iconName: string, root?: QueryRoot): boolean {
 }
 
 export function renderBuiltinIconMarkup(iconName: string, root?: QueryRoot): string {
-  const normalized = iconName.trim() || DEFAULT_BUILTIN_ICON;
+  const normalized = iconName.trim() || DEFAULT_ICONPARK_ICON;
   if (hasHostIconSymbol(normalized, root) || !BUNDLED_ICON_MARKUP[normalized]) {
     return createSpriteIconMarkup(normalized);
   }
 
   return BUNDLED_ICON_MARKUP[normalized];
+}
+
+export function renderIconMarkup(
+  item: Pick<{ iconType: string; iconValue: string }, "iconType" | "iconValue">,
+  root?: QueryRoot,
+): string {
+  if (item.iconType === "emoji") {
+    const safeEmoji = item.iconValue || "⚡";
+    return `<span class="emoji-icon">${safeEmoji}</span>`;
+  }
+
+  if (item.iconType === "svg") {
+    return item.iconValue.trim() || renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
+  }
+
+  const normalizedIcon = normalizeIconValue(item.iconType, item.iconValue);
+  return getIconParkMarkup(normalizedIcon) || renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
 }

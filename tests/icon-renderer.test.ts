@@ -1,7 +1,10 @@
 /* @vitest-environment jsdom */
 
 import { describe, expect, it } from "vitest";
-import { renderBuiltinIconMarkup } from "@/shared/icon-renderer";
+import {
+  renderBuiltinIconMarkup,
+  renderIconMarkup,
+} from "@/shared/icon-renderer";
 
 describe("builtin icon renderer", () => {
   it("uses host sprite symbols when the icon id exists", () => {
@@ -28,5 +31,26 @@ describe("builtin icon renderer", () => {
     expect(markup).not.toContain("xlink:href=\"#iconHome\"");
     expect(markup).toContain("<path");
     expect(markup).toContain("viewBox=\"0 0 24 24\"");
+  });
+
+  it("renders IconPark markup from the generated local catalog", () => {
+    const markup = renderIconMarkup({
+      iconType: "iconpark",
+      iconValue: "iconpark:Search",
+    }, document);
+
+    expect(markup).toContain("<svg");
+    expect(markup).toContain("viewBox=");
+    expect(markup).toContain("currentColor");
+  });
+
+  it("falls back to the default IconPark icon when an IconPark id is unknown", () => {
+    const markup = renderIconMarkup({
+      iconType: "iconpark",
+      iconValue: "iconpark:DoesNotExist",
+    }, document);
+
+    expect(markup).toContain("<svg");
+    expect(markup).toContain("currentColor");
   });
 });

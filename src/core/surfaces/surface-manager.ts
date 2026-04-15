@@ -4,10 +4,10 @@ import type {
 } from "siyuan";
 import { CommandExecutor } from "@/core/commands";
 import {
-  DEFAULT_BUILTIN_ICON,
+  DEFAULT_ICONPARK_ICON,
   DEFAULT_PLUGIN_COMMAND,
 } from "@/shared/constants";
-import { renderBuiltinIconMarkup } from "@/shared/icon-renderer";
+import { renderIconMarkup } from "@/shared/icon-renderer";
 import {
   getDockPosition,
   isDockSurface,
@@ -43,7 +43,10 @@ function createIconSvg(icon: string): string {
   if (icon.trim().startsWith("<svg")) {
     return icon;
   }
-  return renderBuiltinIconMarkup(icon, document);
+  return renderIconMarkup({
+    iconType: "iconpark",
+    iconValue: icon,
+  }, document);
 }
 
 function createEmojiSvg(emoji: string): string {
@@ -56,9 +59,9 @@ function getIconMarkup(item: PowerButtonItem): string {
     return createEmojiSvg(item.iconValue);
   }
   if (item.iconType === "svg") {
-    return item.iconValue.trim() ? createIconSvg(item.iconValue) : createIconSvg(DEFAULT_BUILTIN_ICON);
+    return item.iconValue.trim() ? createIconSvg(item.iconValue) : createIconSvg(DEFAULT_ICONPARK_ICON);
   }
-  return createIconSvg(item.iconValue || DEFAULT_BUILTIN_ICON);
+  return createIconSvg(item.iconValue || DEFAULT_ICONPARK_ICON);
 }
 
 function createStatusElement(item: PowerButtonItem, executor: CommandExecutor): HTMLElement {
@@ -197,7 +200,7 @@ export class SurfaceManager {
     for (const item of visibleItems) {
       if (item.surface === "topbar") {
         const element = this.plugin.addTopBar({
-          icon: item.iconType === "builtin" ? item.iconValue || DEFAULT_BUILTIN_ICON : getIconMarkup(item),
+          icon: item.iconType === "iconpark" ? getIconMarkup(item) : getIconMarkup(item),
           title: item.tooltip || item.title,
           callback: () => {
             void this.executor.execute(item);
@@ -245,7 +248,7 @@ export class SurfaceManager {
             size: item.surface.startsWith("dock-bottom")
               ? { width: null, height: 220 }
               : { width: 280, height: null },
-            icon: item.iconType === "builtin" ? item.iconValue || DEFAULT_BUILTIN_ICON : getIconMarkup(item),
+            icon: getIconMarkup(item),
             title: item.title,
             index: item.order,
             show: true,

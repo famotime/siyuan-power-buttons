@@ -9,9 +9,9 @@ import {
   importConfigFromJson,
 } from "@/core/config";
 import {
-  BUILTIN_ICON_OPTIONS,
   COMMON_EMOJI_OPTIONS,
-  filterBuiltinIcons,
+  filterIconParkIcons,
+  getIconParkCategories,
 } from "@/shared/icon-catalog";
 import {
   captureShortcutFromKeyboardEvent,
@@ -120,6 +120,7 @@ export function useSettingsController(props: SettingsAppProps) {
   const showPreviewLabels = ref(false);
   const importFileInput = ref<HTMLInputElement | null>(null);
   const iconKeyword = ref("");
+  const iconCategory = ref("");
   const shortcutCaptureError = ref("");
 
   const surfaces = CONFIGURABLE_SURFACES.map(value => ({
@@ -136,8 +137,9 @@ export function useSettingsController(props: SettingsAppProps) {
 
   const iconTypes = ICON_TYPES.map(value => ({
     value,
-    label: value === "builtin" ? "内置图标" : value === "emoji" ? "Emoji" : "SVG",
+    label: value === "iconpark" ? "IconPark" : value === "emoji" ? "Emoji" : "SVG",
   }));
+  const iconParkCategories = computed(() => getIconParkCategories());
   const commonEmojiOptions = COMMON_EMOJI_OPTIONS;
 
   const builtinCommands = computed(() => props.builtinCommands);
@@ -237,9 +239,9 @@ export function useSettingsController(props: SettingsAppProps) {
     return buildPreviewLayout([...activeRuntimePreviewItems.value, ...configPreviewItems.value], { includeHidden: true });
   });
 
-  const filteredBuiltinIcons = computed(() => {
-    const result = filterBuiltinIcons(iconKeyword.value);
-    return result.length ? result : BUILTIN_ICON_OPTIONS;
+  const filteredIconParkIcons = computed(() => {
+    const result = filterIconParkIcons(iconKeyword.value, iconCategory.value);
+    return result.length ? result : filterIconParkIcons("", iconCategory.value);
   });
 
   const selectedShortcutConflictMessage = computed(() => {
@@ -451,11 +453,11 @@ export function useSettingsController(props: SettingsAppProps) {
     await persist();
   }
 
-  async function selectBuiltinIcon(value: string): Promise<void> {
+  async function selectIconParkIcon(value: string): Promise<void> {
     if (!selectedItem.value) {
       return;
     }
-    selectedItem.value.iconType = "builtin";
+    selectedItem.value.iconType = "iconpark";
     selectedItem.value.iconValue = value;
     await persist();
   }
@@ -812,10 +814,12 @@ export function useSettingsController(props: SettingsAppProps) {
     commonEmojiOptions,
     config,
     duplicateItem,
-    filteredBuiltinIcons,
+    filteredIconParkIcons,
     handleImportFile,
     handlePreviewChipClick,
+    iconCategory,
     iconKeyword,
+    iconParkCategories,
     iconTypes,
     importFileInput,
     initialize: refreshCurrentLayout,
@@ -849,7 +853,7 @@ export function useSettingsController(props: SettingsAppProps) {
     selectItem,
     setSelectedPluginCommand,
     setSelectedPluginProvider,
-    selectBuiltinIcon,
+    selectIconParkIcon,
     selectEmojiIcon,
     selectIconType,
     showPreviewLabels,

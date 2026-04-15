@@ -653,25 +653,35 @@
               role="tabpanel"
               :aria-labelledby="iconTypeTabId(selectedItem.iconType)"
             >
-              <template v-if="selectedItem.iconType === 'builtin'">
+              <template v-if="selectedItem.iconType === 'iconpark'">
                 <label class="icon-search">
-                  <span>搜索内置图标</span>
-                  <input v-model="iconKeyword" class="b3-text-field" placeholder="输入名称，例如：搜索 / 设置 / search" />
+                  <span>搜索 IconPark 图标</span>
+                  <input v-model="iconKeyword" class="b3-text-field" placeholder="输入名称或关键词，例如：search / setting / 配置" />
+                </label>
+
+                <label class="icon-search">
+                  <span>图标分类</span>
+                  <select v-model="iconCategory" class="b3-select">
+                    <option value="">全部分类</option>
+                    <option v-for="category in iconParkCategories" :key="category" :value="category">
+                      {{ category }}
+                    </option>
+                  </select>
                 </label>
 
                 <div class="icon-grid">
                   <button
-                    v-for="icon in filteredBuiltinIcons"
+                    v-for="icon in filteredIconParkIcons"
                     :key="icon.value"
                     type="button"
                     class="icon-grid__item"
                     :class="{ 'is-active': selectedItem.iconValue === icon.value }"
                     :title="`${icon.label} (${icon.value})`"
-                    @click="selectBuiltinIcon(icon.value)"
+                    @click="selectIconParkIcon(icon.value)"
                   >
                     <span class="icon-grid__preview" v-html="renderNamedIcon(icon.value)" />
                     <span class="icon-grid__label">{{ icon.label }}</span>
-                    <small>{{ icon.value }}</small>
+                    <small>{{ icon.category }}</small>
                   </button>
                 </div>
               </template>
@@ -749,10 +759,12 @@ const {
   duplicateItem,
   exportConfigFile,
   pluginCommandProviders,
-  filteredBuiltinIcons,
+  filteredIconParkIcons,
   handleImportFile,
   handlePreviewChipClick,
+  iconCategory,
   iconKeyword,
+  iconParkCategories,
   iconTypes,
   importFileInput,
   initialize,
@@ -783,7 +795,7 @@ const {
   selectItem,
   setSelectedPluginCommand,
   setSelectedPluginProvider,
-  selectBuiltinIcon,
+  selectIconParkIcon,
   selectEmojiIcon,
   selectIconType,
   showPreviewLabels,

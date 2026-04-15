@@ -5,7 +5,7 @@ import {
   createExperimentalShortcutConfig,
   getDefaultActionId,
 } from "@/core/config/item-defaults";
-import { DEFAULT_BUILTIN_ICON } from "@/shared/constants";
+import { DEFAULT_ICONPARK_ICON } from "@/shared/constants";
 import type {
   BuiltinCommandDefinition,
   ExperimentalClickSequenceConfig,
@@ -86,8 +86,8 @@ export function applyActionTypeDefaults(
 }
 
 export function applyIconTypeDefaults(item: PowerButtonItem): void {
-  if (item.iconType === "builtin") {
-    item.iconValue = DEFAULT_BUILTIN_ICON;
+  if (item.iconType === "iconpark") {
+    item.iconValue = DEFAULT_ICONPARK_ICON;
     return;
   }
 

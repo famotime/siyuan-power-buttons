@@ -1,21 +1,31 @@
 import { describe, expect, it } from "vitest";
 import {
-  BUILTIN_ICON_OPTIONS,
   COMMON_EMOJI_OPTIONS,
-  filterBuiltinIcons,
+  filterIconParkIcons,
+  getIconParkCategories,
+  ICONPARK_ICON_OPTIONS,
 } from "@/shared/icon-catalog";
 
-describe("builtin icon catalog", () => {
-  it("contains common Siyuan icons for direct picking", () => {
-    expect(BUILTIN_ICON_OPTIONS.length).toBeGreaterThan(10);
-    expect(BUILTIN_ICON_OPTIONS.some(icon => icon.value === "iconSearch")).toBe(true);
-    expect(BUILTIN_ICON_OPTIONS.some(icon => icon.value === "iconSettings")).toBe(true);
-    expect(BUILTIN_ICON_OPTIONS.some(icon => icon.value === "iconList")).toBe(true);
+describe("IconPark icon catalog", () => {
+  it("contains a large generated icon catalog with outline entries", () => {
+    expect(ICONPARK_ICON_OPTIONS.length).toBeGreaterThan(2000);
+    expect(ICONPARK_ICON_OPTIONS.some(icon => icon.value === "iconpark:Search")).toBe(true);
+    expect(ICONPARK_ICON_OPTIONS.some(icon => icon.value === "iconpark:Setting")).toBe(true);
   });
 
-  it("filters icons by name and chinese label", () => {
-    expect(filterBuiltinIcons("search").some(icon => icon.value === "iconSearch")).toBe(true);
-    expect(filterBuiltinIcons("设置").some(icon => icon.value === "iconSettings")).toBe(true);
+  it("filters IconPark icons by name, label, and keywords", () => {
+    expect(filterIconParkIcons("search").some(icon => icon.value === "iconpark:Search")).toBe(true);
+    expect(filterIconParkIcons("setting").some(icon => icon.value === "iconpark:Setting")).toBe(true);
+    expect(filterIconParkIcons("配置").some(icon => icon.value === "iconpark:Setting")).toBe(true);
+  });
+
+  it("filters IconPark icons by category", () => {
+    const categories = getIconParkCategories();
+
+    expect(categories.length).toBeGreaterThan(10);
+    expect(categories).toContain("编辑");
+    expect(categories).toContain("通用");
+    expect(filterIconParkIcons("", "编辑").length).toBeGreaterThan(10);
   });
 
   it("contains common emoji options for direct picking", () => {

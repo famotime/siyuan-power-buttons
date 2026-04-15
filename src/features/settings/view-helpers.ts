@@ -1,5 +1,5 @@
-import { DEFAULT_BUILTIN_ICON, SURFACE_LABELS } from "@/shared/constants";
-import { renderBuiltinIconMarkup as renderSharedBuiltinIconMarkup } from "@/shared/icon-renderer";
+import { DEFAULT_ICONPARK_ICON, SURFACE_LABELS } from "@/shared/constants";
+import { renderIconMarkup } from "@/shared/icon-renderer";
 import {
   createNativeFallbackIconMarkup,
   resolveNativeIconMarkup,
@@ -7,7 +7,10 @@ import {
 import type { PowerButtonItem, PreviewButtonItem } from "@/shared/types";
 
 export function renderNamedIcon(iconName: string, ownerDocument: Document = document): string {
-  return renderSharedBuiltinIconMarkup(iconName, ownerDocument);
+  return renderIconMarkup({
+    iconType: "iconpark",
+    iconValue: iconName,
+  }, ownerDocument);
 }
 
 export function renderSettingsIconMarkup(
@@ -18,9 +21,9 @@ export function renderSettingsIconMarkup(
     return `<span class="emoji-icon">${item.iconValue || "⚡"}</span>`;
   }
   if (item.iconType === "svg") {
-    return item.iconValue || renderNamedIcon(DEFAULT_BUILTIN_ICON, ownerDocument);
+    return item.iconValue || renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
   }
-  return renderNamedIcon(item.iconValue || DEFAULT_BUILTIN_ICON, ownerDocument);
+  return renderIconMarkup(item, ownerDocument);
 }
 
 export function renderPreviewIconMarkup(item: PreviewButtonItem, ownerDocument: Document = document): string {
@@ -28,7 +31,7 @@ export function renderPreviewIconMarkup(item: PreviewButtonItem, ownerDocument: 
     return resolveNativeIconMarkup(item.iconMarkup, ownerDocument)
       || createNativeFallbackIconMarkup(item.title);
   }
-  return item.iconMarkup || renderNamedIcon(DEFAULT_BUILTIN_ICON, ownerDocument);
+  return item.iconMarkup || renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
 }
 
 export function buildPreviewChipClass(item: PreviewButtonItem, selectedId: string): Record<string, boolean> {

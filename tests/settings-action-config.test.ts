@@ -132,8 +132,8 @@ describe("settings action config helpers", () => {
   });
 
   it("applies icon defaults for each icon type", () => {
-    const builtinItem = createButtonItem({
-      iconType: "builtin",
+    const iconParkItem = createButtonItem({
+      iconType: "iconpark",
       iconValue: "",
     });
     const emojiItem = createButtonItem({
@@ -145,11 +145,11 @@ describe("settings action config helpers", () => {
       iconValue: "",
     });
 
-    applyIconTypeDefaults(builtinItem);
+    applyIconTypeDefaults(iconParkItem);
     applyIconTypeDefaults(emojiItem);
     applyIconTypeDefaults(svgItem);
 
-    expect(builtinItem.iconValue).toBe("iconInfo");
+    expect(iconParkItem.iconValue).toBe("iconpark:Search");
     expect(emojiItem.iconValue).toBe("⚡");
     expect(svgItem.iconValue).toContain("<svg");
   });

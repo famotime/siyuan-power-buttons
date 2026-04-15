@@ -16,6 +16,7 @@ describe("config store model", () => {
     expect(config.items.length).toBe(2);
     expect(config.items.every(item => item.visible)).toBe(true);
     expect(config.items.map(item => item.title)).toEqual(["全局搜索", "大纲"]);
+    expect(config.items.every(item => item.iconType === "iconpark")).toBe(true);
     expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(false);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
     expect(config.experimental.shortcutAdapter).toBe(true);
@@ -51,9 +52,34 @@ describe("config store model", () => {
     expect(config.items).toHaveLength(1);
     expect(config.items[0].surface).toBe("topbar");
     expect(config.items[0].actionType).toBe("builtin-global-command");
+    expect(config.items[0].iconType).toBe("iconpark");
     expect(config.items[0].title.length).toBeGreaterThan(0);
     expect(config.experimental.shortcutAdapter).toBe(true);
     expect(config.experimental.clickSequenceAdapter).toBe(true);
+  });
+
+  it("preserves iconpark icon selections during sanitization", () => {
+    const config = sanitizeConfig({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "iconpark-search",
+          title: "搜索",
+          visible: true,
+          iconType: "iconpark",
+          iconValue: "iconpark:Search",
+          surface: "topbar",
+          order: 0,
+          actionType: "builtin-global-command",
+          actionId: "globalSearch",
+        },
+      ],
+      experimental: null,
+    });
+
+    expect(config.items[0].iconType).toBe("iconpark");
+    expect(config.items[0].iconValue).toBe("iconpark:Search");
   });
 
   it("migrates legacy dock surfaces into configurable statusbar surfaces", () => {
@@ -81,8 +107,8 @@ describe("config store model", () => {
     });
 
     expect(config.items.map(item => item.surface)).toEqual([
-      "statusbar-left",
       "statusbar-right",
+      "statusbar-left",
       "statusbar-left",
     ]);
   });
