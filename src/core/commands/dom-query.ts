@@ -68,6 +68,7 @@ function queryAllByIdentifier(identifier: string, root: ParentNode): HTMLElement
 
   addMatch(queryRoot.getElementById?.(identifier) || null);
   addMatches(`[data-id="${escaped}"]`);
+  addMatches(`[data-name="${escaped}"]`);
   addMatches(`[data-menu-id="${escaped}"]`);
   addMatches(`[data-type="${escaped}"]`);
   addMatches(`[data-action="${escaped}"]`);

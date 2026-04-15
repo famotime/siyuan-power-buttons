@@ -157,6 +157,12 @@ describe("settings app layout", () => {
     expect(target.textContent).toContain("搜索 IconPark 图标");
     expect(target.textContent).toContain("图标分类");
 
+    const firstIconParkItem = target.querySelector(".icon-grid__item") as HTMLButtonElement | null;
+    expect(firstIconParkItem).not.toBeNull();
+    expect(firstIconParkItem?.querySelector(".icon-grid__label")).toBeNull();
+    expect(firstIconParkItem?.querySelector("small")).toBeNull();
+    expect(firstIconParkItem?.getAttribute("title")).toContain("·");
+
     emojiTab?.click();
     await nextTick();
 

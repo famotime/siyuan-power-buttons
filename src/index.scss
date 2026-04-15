@@ -638,8 +638,8 @@
 
 .icon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
 }
 
 .emoji-grid {
@@ -653,8 +653,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px 8px;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px;
   border-radius: 12px;
   cursor: pointer;
 }
@@ -663,11 +664,6 @@
 .emoji-grid__item.is-active {
   border-color: var(--b3-theme-primary);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--b3-theme-primary) 30%, transparent);
-}
-
-.icon-grid__label {
-  font-size: 13px;
-  font-weight: 600;
 }
 
 .emoji-grid__item {

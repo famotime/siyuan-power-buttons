@@ -94,4 +94,38 @@ describe("experimental click sequence", () => {
       selector: "text:不存在",
     });
   });
+
+  it("matches simple identifiers against data-name during click sequences", async () => {
+    const dom = new JSDOM(`
+      <div>
+        <button data-name="copyBlockRef">复制块引用</button>
+      </div>
+    `);
+    const button = dom.window.document.querySelector("button") as HTMLButtonElement;
+    const clickHandler = vi.fn();
+    button.addEventListener("click", clickHandler);
+
+    const result = await executeExperimentalClickSequence({
+      actionId: "copyBlockRef",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "copyBlockRef",
+            timeoutMs: 100,
+            retryCount: 0,
+            retryDelayMs: 0,
+            delayAfterMs: 0,
+          },
+        ],
+      },
+    }, {
+      document: dom.window.document,
+      root: dom.window.document,
+      windowTarget: dom.window,
+    });
+
+    expect(result).toBe(true);
+    expect(clickHandler).toHaveBeenCalledTimes(1);
+  });
 });

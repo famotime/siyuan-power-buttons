@@ -28,6 +28,18 @@ describe("dom query", () => {
     expect(result?.textContent?.trim()).toBe("复制块引用");
   });
 
+  it("finds elements by data-name when using a simple identifier", () => {
+    const dom = new JSDOM(`
+      <div>
+        <button data-name="copyBlockRef">复制块引用</button>
+      </div>
+    `);
+
+    const result = findElementBySmartSelector("copyBlockRef", dom.window.document);
+
+    expect(result?.getAttribute("data-name")).toBe("copyBlockRef");
+  });
+
   it("supports raw css selectors", () => {
     const dom = new JSDOM(`
       <div>

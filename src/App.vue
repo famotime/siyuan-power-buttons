@@ -676,12 +676,10 @@
                     type="button"
                     class="icon-grid__item"
                     :class="{ 'is-active': selectedItem.iconValue === icon.value }"
-                    :title="`${icon.label} (${icon.value})`"
+                    :title="`${icon.label} · ${icon.category} · ${icon.value}`"
                     @click="selectIconParkIcon(icon.value)"
                   >
                     <span class="icon-grid__preview" v-html="renderNamedIcon(icon.value)" />
-                    <span class="icon-grid__label">{{ icon.label }}</span>
-                    <small>{{ icon.category }}</small>
                   </button>
                 </div>
               </template>
