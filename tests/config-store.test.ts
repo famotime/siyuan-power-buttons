@@ -107,8 +107,8 @@ describe("config store model", () => {
     });
 
     expect(config.items.map(item => item.surface)).toEqual([
-      "statusbar-right",
       "statusbar-left",
+      "statusbar-right",
       "statusbar-left",
     ]);
   });
