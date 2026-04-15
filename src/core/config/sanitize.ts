@@ -4,11 +4,10 @@ import {
   createDefaultConfig,
 } from "@/core/config/defaults";
 import {
-  createClickSequenceStep,
-  createExperimentalClickSequenceConfig,
-  createExperimentalShortcutConfig,
   DEFAULT_CLICK_SEQUENCE_SELECTOR,
   getDefaultActionId,
+  sanitizeExperimentalClickSequenceConfig,
+  sanitizeExperimentalShortcutConfig,
 } from "@/core/config/item-defaults";
 import {
   DEFAULT_ICONPARK_ICON,
@@ -24,17 +23,7 @@ import {
   normalizeItemOrder,
   sortItems,
 } from "@/shared/utils";
-import type {
-  ActionType,
-  DisabledNativeButton,
-  ClickSequenceStep,
-  ExperimentalClickSequenceConfig,
-  ExperimentalShortcutConfig,
-  IconType,
-  PowerButtonItem,
-  PowerButtonsConfig,
-  SurfaceType,
-} from "@/shared/types";
+import type { ActionType, DisabledNativeButton, IconType, PowerButtonItem, PowerButtonsConfig, SurfaceType } from "@/shared/types";
 
 const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
   "dock-bottom-left": "statusbar-left",
@@ -76,50 +65,20 @@ function ensureIconType(value: unknown): IconType {
   return ICON_TYPES.includes(value as IconType) ? value as IconType : "iconpark";
 }
 
-function sanitizeExperimentalShortcut(raw: Record<string, unknown>, actionId: string): ExperimentalShortcutConfig {
+function sanitizeExperimentalShortcut(raw: Record<string, unknown>, actionId: string) {
   const input = raw.experimentalShortcut && typeof raw.experimentalShortcut === "object"
     ? raw.experimentalShortcut as Record<string, unknown>
     : {};
 
-  return createExperimentalShortcutConfig({
-    shortcut: typeof input.shortcut === "string" && input.shortcut.trim()
-      ? input.shortcut.trim()
-      : undefined,
-    sendEscapeBefore: typeof input.sendEscapeBefore === "boolean" ? input.sendEscapeBefore : undefined,
-    dispatchTarget: ["auto", "active-editor", "window", "body"].includes(String(input.dispatchTarget))
-      ? input.dispatchTarget as ExperimentalShortcutConfig["dispatchTarget"]
-      : undefined,
-    allowDirectWindowDispatch: typeof input.allowDirectWindowDispatch === "boolean"
-      ? input.allowDirectWindowDispatch
-      : undefined,
-  }, actionId);
+  return sanitizeExperimentalShortcutConfig(input, actionId);
 }
 
-function sanitizeClickSequenceStep(value: unknown, fallbackSelector: string): ClickSequenceStep {
-  const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
-
-  return createClickSequenceStep({
-    selector: typeof raw.selector === "string" && raw.selector.trim()
-      ? raw.selector.trim()
-      : undefined,
-    timeoutMs: Number.isFinite(raw.timeoutMs) && Number(raw.timeoutMs) >= 0 ? Number(raw.timeoutMs) : undefined,
-    retryCount: Number.isFinite(raw.retryCount) && Number(raw.retryCount) >= 0 ? Number(raw.retryCount) : undefined,
-    retryDelayMs: Number.isFinite(raw.retryDelayMs) && Number(raw.retryDelayMs) >= 0 ? Number(raw.retryDelayMs) : undefined,
-    delayAfterMs: Number.isFinite(raw.delayAfterMs) && Number(raw.delayAfterMs) >= 0 ? Number(raw.delayAfterMs) : undefined,
-  }, fallbackSelector);
-}
-
-function sanitizeExperimentalClickSequence(raw: Record<string, unknown>, actionId: string): ExperimentalClickSequenceConfig {
+function sanitizeExperimentalClickSequence(raw: Record<string, unknown>, actionId: string) {
   const input = raw.experimentalClickSequence && typeof raw.experimentalClickSequence === "object"
     ? raw.experimentalClickSequence as Record<string, unknown>
     : {};
 
-  return createExperimentalClickSequenceConfig({
-    steps: Array.isArray(input.steps)
-      ? input.steps.map(step => sanitizeClickSequenceStep(step, actionId || DEFAULT_CLICK_SEQUENCE_SELECTOR))
-      : undefined,
-    stopOnFailure: typeof input.stopOnFailure === "boolean" ? input.stopOnFailure : undefined,
-  }, actionId);
+  return sanitizeExperimentalClickSequenceConfig(input, actionId || DEFAULT_CLICK_SEQUENCE_SELECTOR);
 }
 
 function readExperimentalFlag(

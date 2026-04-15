@@ -5,6 +5,7 @@ import {
   watch,
 } from "vue";
 import {
+  createDefaultConfig,
   createButtonItem,
   importConfigFromJson,
 } from "@/core/config";
@@ -25,12 +26,10 @@ import {
 } from "@/shared/constants";
 import {
   buildPreviewLayout,
-  movePreviewItem,
 } from "@/shared/preview-layout";
 import {
   formatExternalCommandActionId,
   parseExternalCommandActionId,
-  triggerElementBySmartSelectors,
 } from "@/core/commands";
 import {
   ACTION_TYPES,
@@ -66,6 +65,16 @@ import {
 import type { SettingsAppProps } from "@/features/settings/types";
 import type { SettingsPluginCommandProvider } from "@/features/settings/types";
 import {
+  buildPluginCommandProviders,
+  findSelectedPluginCommand,
+  findSelectedPluginProvider,
+  hasValidPluginCommandSelection,
+} from "@/features/settings/controller/plugin-command";
+import {
+  isSameNativeButton,
+  usePreviewInteractions,
+} from "@/features/settings/controller/preview-interactions";
+import {
   buildPreviewChipClass,
   getPreviewChipTitle,
   getSurfaceLabel,
@@ -81,32 +90,6 @@ function applyConfig(config: PowerButtonsConfig, nextConfig: PowerButtonsConfig)
   config.items = nextConfig.items;
   config.disabledNativeButtons = nextConfig.disabledNativeButtons;
   config.experimental = nextConfig.experimental;
-}
-
-function getPreviewInsertIndex(surfaceItems: PreviewButtonItem[], targetIndex: number): number {
-  return surfaceItems.slice(0, targetIndex).filter(item => item.editable).length;
-}
-
-function normalizeSelectors(selectors: string[] | undefined): string[] {
-  return Array.from(new Set((selectors || []).map(selector => selector.trim()).filter(Boolean)));
-}
-
-function isSameNativeButton(
-  item: Pick<PreviewButtonItem, "id" | "surface" | "nativeSelectors">,
-  suppressed: Pick<DisabledNativeButton, "id" | "surface" | "selectors">,
-): boolean {
-  if (item.id === suppressed.id) {
-    return true;
-  }
-
-  if (item.surface !== suppressed.surface) {
-    return false;
-  }
-
-  const itemSelectors = normalizeSelectors(item.nativeSelectors);
-  const suppressedSelectors = normalizeSelectors(suppressed.selectors);
-
-  return itemSelectors.some(selector => suppressedSelectors.includes(selector));
 }
 
 export function useSettingsController(props: SettingsAppProps) {
@@ -146,48 +129,14 @@ export function useSettingsController(props: SettingsAppProps) {
   const builtinCommands = computed(() => props.builtinCommands);
   const pluginCommands = computed(() => props.pluginCommands);
   const pluginCommandProviders = computed<SettingsPluginCommandProvider[]>(() => {
-    const providers: SettingsPluginCommandProvider[] = [];
-
-    if (pluginCommands.value.length > 0) {
-      providers.push({
-        providerId: INTERNAL_PLUGIN_PROVIDER_ID,
-        providerName: INTERNAL_PLUGIN_PROVIDER_NAME,
-        commands: pluginCommands.value.map(command => ({
-          id: command.id,
-          title: command.title,
-          description: command.description,
-        })),
-        internal: true,
-      });
-    }
-
-    providers.push(...externalCommandProviders.value);
-    return providers;
+    return buildPluginCommandProviders(pluginCommands.value, externalCommandProviders.value);
   });
   const selectedItem = computed<PowerButtonItem | undefined>(() => config.items.find(item => item.id === selectedId.value));
   const selectedPluginProvider = computed(() => {
-    if (!selectedItem.value || selectedItem.value.actionType !== "plugin-command") {
-      return null;
-    }
-
-    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
-    if (!parsed) {
-      return null;
-    }
-
-    return pluginCommandProviders.value.find(provider => provider.providerId === parsed.providerId) || null;
+    return findSelectedPluginProvider(selectedItem.value, pluginCommandProviders.value);
   });
   const selectedPluginCommand = computed(() => {
-    if (!selectedItem.value || selectedItem.value.actionType !== "plugin-command") {
-      return null;
-    }
-
-    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
-    if (!parsed) {
-      return null;
-    }
-
-    return selectedPluginProvider.value?.commands.find(command => command.id === parsed.commandId) || null;
+    return findSelectedPluginCommand(selectedItem.value, selectedPluginProvider.value);
   });
 
   const configPreviewItems = computed<PreviewButtonItem[]>(() => {
@@ -369,13 +318,7 @@ export function useSettingsController(props: SettingsAppProps) {
         externalCommandProviders.value = await props.onRefreshExternalCommands();
       }
 
-      const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
-      const hasValidSelection = Boolean(parsed && pluginCommandProviders.value.some(
-        provider => provider.providerId === parsed.providerId
-          && (parsed.commandId === "__unset__" || provider.commands.some(command => command.id === parsed.commandId)),
-      ));
-
-      if (!hasValidSelection) {
+      if (!hasValidPluginCommandSelection(selectedItem.value.actionId, pluginCommandProviders.value)) {
         applyActionTypeDefaults(
           selectedItem.value,
           builtinCommands.value,
@@ -399,13 +342,7 @@ export function useSettingsController(props: SettingsAppProps) {
       return;
     }
 
-    const parsed = parseExternalCommandActionId(selectedItem.value.actionId);
-    const hasValidSelection = Boolean(parsed && pluginCommandProviders.value.some(
-      provider => provider.providerId === parsed.providerId
-        && (parsed.commandId === "__unset__" || provider.commands.some(command => command.id === parsed.commandId)),
-    ));
-
-    if (hasValidSelection) {
+    if (hasValidPluginCommandSelection(selectedItem.value.actionId, pluginCommandProviders.value)) {
       return;
     }
 
@@ -572,177 +509,21 @@ export function useSettingsController(props: SettingsAppProps) {
     listDragIndex.value = null;
     await persist();
   }
-
-  function clearPreviewDragImage(): void {
-    previewDragCleanup.value?.();
-    previewDragCleanup.value = null;
-  }
-
-  function configurePreviewDragImage(event: DragEvent): void {
-    if (!event.dataTransfer || typeof event.dataTransfer.setDragImage !== "function") {
-      return;
-    }
-
-    const source = event.currentTarget;
-    if (!(source instanceof HTMLElement)) {
-      return;
-    }
-
-    clearPreviewDragImage();
-
-    const dragImage = source.cloneNode(true);
-    if (!(dragImage instanceof HTMLElement)) {
-      return;
-    }
-
-    dragImage.style.position = "fixed";
-    dragImage.style.top = "-10000px";
-    dragImage.style.left = "-10000px";
-    dragImage.style.pointerEvents = "none";
-    dragImage.style.margin = "0";
-    dragImage.style.transform = "none";
-    dragImage.style.width = `${Math.ceil(source.getBoundingClientRect().width || source.offsetWidth || 32)}px`;
-    dragImage.classList.add("workspace-chip--drag-image");
-    document.body.appendChild(dragImage);
-
-    const cleanup = () => {
-      dragImage.remove();
-    };
-    previewDragCleanup.value = cleanup;
-    window.setTimeout(() => {
-      if (previewDragCleanup.value === cleanup) {
-        clearPreviewDragImage();
-      }
-    }, 0);
-
-    const rect = source.getBoundingClientRect();
-    event.dataTransfer.setDragImage(
-      dragImage,
-      Math.max(0, Math.round(rect.width / 2)),
-      Math.max(0, Math.round(rect.height / 2)),
-    );
-  }
-
-  function onPreviewDragStart(event: DragEvent, item: PreviewButtonItem): void {
-    if (!item.draggable && !item.editable) {
-      return;
-    }
-    previewDragItem.value = item;
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", item.itemId || item.id);
-    }
-    configurePreviewDragImage(event);
-  }
-
-  async function moveFromPreview(surface: SurfaceType, targetIndex: number): Promise<void> {
-    const dragItem = previewDragItem.value;
-    if (!dragItem) {
-      return;
-    }
-
-    if (!dragItem.editable || !dragItem.itemId) {
-      if (dragItem.suppressed) {
-        if (dragItem.surface !== surface) {
-          props.onNotify("原生按钮只能拖回原来的区域以恢复显示。");
-          previewDragItem.value = null;
-          clearPreviewDragImage();
-          return;
-        }
-        config.disabledNativeButtons = config.disabledNativeButtons.filter(item => !isSameNativeButton(dragItem, item));
-        previewDragItem.value = null;
-        clearPreviewDragImage();
-        await persist();
-        return;
-      }
-
-      props.onNotify("原生按钮只能拖到禁用栏。");
-      previewDragItem.value = null;
-      clearPreviewDragImage();
-      return;
-    }
-
-    if (!CONFIGURABLE_SURFACES.includes(surface as typeof CONFIGURABLE_SURFACES[number])) {
-      props.onNotify("Dock 区域当前仅保留预览，不能放置快捷按钮。", "error");
-      previewDragItem.value = null;
-      clearPreviewDragImage();
-      return;
-    }
-    config.items = movePreviewItem(config.items, dragItem.itemId, surface, targetIndex);
-    selectedId.value = dragItem.itemId;
-    previewDragItem.value = null;
-    clearPreviewDragImage();
-    await persist();
-  }
-
-  async function onPreviewItemDrop(
-    surface: SurfaceType,
-    surfaceItems: PreviewButtonItem[],
-    targetIndex: number,
-  ): Promise<void> {
-    await moveFromPreview(surface, getPreviewInsertIndex(surfaceItems, targetIndex));
-  }
-
-  async function onPreviewSurfaceDrop(surface: SurfaceType): Promise<void> {
-    await moveFromPreview(surface, config.items.filter(item => item.surface === surface).length);
-  }
-
-  async function onDisabledNativeDrop(): Promise<void> {
-    const dragItem = previewDragItem.value;
-    if (!dragItem) {
-      return;
-    }
-
-    if (dragItem.editable) {
-      props.onNotify("禁用栏仅用于隐藏原生按钮；自定义按钮请使用显示开关。");
-      previewDragItem.value = null;
-      clearPreviewDragImage();
-      return;
-    }
-
-    if (dragItem.suppressed || !dragItem.nativeSelectors?.length) {
-      previewDragItem.value = null;
-      clearPreviewDragImage();
-      return;
-    }
-
-    const selectors = normalizeSelectors(dragItem.nativeSelectors);
-    const nextRule: DisabledNativeButton = {
-      id: dragItem.id,
-      title: dragItem.title,
-      surface: dragItem.surface,
-      selectors,
-      iconMarkup: dragItem.iconMarkup,
-    };
-
-    config.disabledNativeButtons = [
-      ...config.disabledNativeButtons.filter(item => !isSameNativeButton(dragItem, item)),
-      nextRule,
-    ];
-    previewDragItem.value = null;
-    clearPreviewDragImage();
-    await persist();
-  }
-
-  async function restoreDisabledNativeItem(item: PreviewButtonItem): Promise<void> {
-    config.disabledNativeButtons = config.disabledNativeButtons.filter(entry => !isSameNativeButton(item, entry));
-    await persist();
-  }
-
-  function handlePreviewChipClick(item: PreviewButtonItem): void {
-    if (!item.editable || !item.itemId) {
-      if (item.suppressed) {
-        props.onNotify("该原生按钮已禁用；拖回原区域即可恢复显示。");
-        return;
-      }
-      if (item.nativeSelectors?.length && triggerElementBySmartSelectors(item.nativeSelectors, document)) {
-        return;
-      }
-      props.onNotify("原生按钮当前仅支持读取预览，暂不可直接编辑。");
-      return;
-    }
-    selectedId.value = item.itemId;
-  }
+  const {
+    handlePreviewChipClick,
+    onDisabledNativeDrop,
+    onPreviewDragStart,
+    onPreviewItemDrop,
+    onPreviewSurfaceDrop,
+    restoreDisabledNativeItem,
+  } = usePreviewInteractions({
+    config,
+    selectedId,
+    previewDragItem,
+    previewDragCleanup,
+    persist,
+    notify: props.onNotify,
+  });
 
   function triggerExportConfigFile(): void {
     exportConfigFile(cloneConfig(config));
@@ -828,6 +609,7 @@ export function useSettingsController(props: SettingsAppProps) {
     iconTypes,
     importFileInput,
     initialize: refreshCurrentLayout,
+    refreshCurrentLayout,
     isRefreshingLayout,
     onListDragStart,
     onListDrop,

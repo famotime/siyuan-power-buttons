@@ -7,18 +7,20 @@
 - 顶栏
 - 状态栏左侧
 - 状态栏右侧
+- 编辑区
 
 当前功能：
 
 - 可视化配置界面
 - 多按钮增删改查
 - 列表拖拽排序
-- 预览区拖拽调整顶栏 / 状态栏位置
-- 内置命令、插件命令
+- 预览区拖拽调整顶栏 / 状态栏 / 编辑区位置
+- 内置命令、当前插件命令、跨插件 provider 命令
 - 图标类型切换：内置图标 / Emoji / SVG
 - JSON 配置文件导入导出
 - 配置持久化
 - 原生顶栏 / 状态栏 / Dock / 编辑区按钮快照预览
+- 可在预览禁用栏隐藏部分原生按钮入口
 
 实验能力：
 
@@ -52,5 +54,11 @@ npm run build
 
 当前测试基线：
 
-- `20` 个测试文件
-- `86` 个测试全部通过
+- `28` 个测试文件
+- `159` 个测试全部通过
+
+当前模块结构摘要：
+
+- `src/index.ts` 是薄入口，运行时 helper 位于 `src/core/runtime/`。
+- 设置页状态在 `src/features/settings/use-settings-controller.ts`，子组件与 controller helper 位于 `src/features/settings/components/` 和 `src/features/settings/controller/`。
+- Surface 渲染由 `src/core/surfaces/surface-manager.ts` 调度，编辑区挂载和 DOM element 创建已拆到独立 helper。

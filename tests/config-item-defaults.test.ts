@@ -5,6 +5,8 @@ import {
   createExperimentalShortcutConfig,
   getClickSequenceFallbackSelector,
   getDefaultActionId,
+  sanitizeExperimentalClickSequenceConfig,
+  sanitizeExperimentalShortcutConfig,
 } from "@/core/config/item-defaults";
 
 describe("config item defaults", () => {
@@ -56,6 +58,41 @@ describe("config item defaults", () => {
       retryCount: 2,
       retryDelayMs: 300,
       delayAfterMs: 200,
+    });
+  });
+
+  it("sanitizes experimental action configs with the same fallback rules used by settings and import", () => {
+    expect(sanitizeExperimentalShortcutConfig({
+      shortcut: "  Ctrl+B  ",
+      sendEscapeBefore: true,
+      dispatchTarget: "window",
+      allowDirectWindowDispatch: true,
+    }, "")).toEqual({
+      shortcut: "Ctrl+B",
+      sendEscapeBefore: true,
+      dispatchTarget: "window",
+      allowDirectWindowDispatch: true,
+    });
+
+    expect(sanitizeExperimentalClickSequenceConfig({
+      steps: [
+        {
+          selector: "",
+          timeoutMs: -1,
+        },
+      ],
+      stopOnFailure: false,
+    }, "barSettings")).toEqual({
+      steps: [
+        {
+          selector: "barSettings",
+          timeoutMs: 5000,
+          retryCount: 2,
+          retryDelayMs: 300,
+          delayAfterMs: 200,
+        },
+      ],
+      stopOnFailure: false,
     });
   });
 });

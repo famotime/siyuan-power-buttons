@@ -12,85 +12,31 @@
 
     <div class="settings-layout">
       <aside class="settings-panel settings-panel--sidebar">
-        <div class="panel-title">
-          <div>
-            <h2>1. 按钮列表</h2>
-            <p>{{ config.items.length }} 个按钮，拖拽可排序</p>
-          </div>
-          <div class="panel-title__actions">
-            <button class="b3-button" @click="addItem">新建</button>
-            <button class="b3-button b3-button--outline" :disabled="!selectedItem" @click="duplicateItem">复制</button>
-          </div>
-        </div>
+        <SettingsButtonListPanel
+          :config="config"
+          :selected-id="selectedId"
+          :selected-item="selectedItem"
+          :import-file-input="importFileInput"
+          :render-builtin-icon-markup="renderBuiltinIconMarkup"
+          :surface-label="surfaceLabel"
+          :add-item="addItem"
+          :duplicate-item="duplicateItem"
+          :select-item="selectItem"
+          :toggle-visible="toggleVisible"
+          :remove-item="removeItem"
+          :on-list-drag-start="onListDragStart"
+          :on-list-drop="onListDrop"
+          :export-config-file="exportConfigFile"
+          :open-import-file-picker="openImportFilePicker"
+          :handle-import-file="handleImportFile"
+        />
 
-        <div class="button-list">
-          <div
-            v-for="(item, index) in config.items"
-            :key="item.id"
-            class="button-list__item"
-            :class="{ 'is-active': selectedId === item.id }"
-            draggable="true"
-            @dragstart="onListDragStart(index)"
-            @dragover.prevent
-            @drop="onListDrop(index)"
-          >
-            <button type="button" class="button-list__main" @click="selectItem(item.id)">
-              <span class="button-list__drag">⋮⋮</span>
-              <span class="button-list__icon" v-html="renderBuiltinIconMarkup(item)" />
-              <span class="button-list__content">
-                <strong>{{ item.title || "未命名按钮" }}</strong>
-                <small>{{ surfaceLabel(item.surface) }}</small>
-              </span>
-            </button>
-            <button
-              type="button"
-              class="switch-button switch-button--compact"
-              :class="{ 'is-on': item.visible }"
-              :title="item.visible ? '切换为隐藏' : '切换为显示'"
-              :aria-label="item.visible ? '切换为隐藏' : '切换为显示'"
-              @click.stop="toggleVisible(item.id)"
-            >
-              <span class="switch-button__dot" />
-            </button>
-            <button
-              type="button"
-              class="button-list__delete"
-              title="删除按钮"
-              aria-label="删除按钮"
-              @click.stop="removeItem(item.id)"
-            >
-              <span v-html="TRASH_ICON" />
-            </button>
-          </div>
-        </div>
-
-        <div class="surface-summary">
-            <div class="surface-summary__header">
-              <div>
-                <h3>位置预览</h3>
-                <p>灰色为原生按钮，半透明为隐藏态。彩色按钮可拖动调整区域和顺序；原生按钮可拖到禁用栏后直接隐藏并禁用入口。</p>
-              </div>
-            <div class="surface-summary__controls">
-              <label class="surface-summary__toggle">
-                <span>显示文字</span>
-                <button
-                  type="button"
-                  class="switch-button switch-button--icon-only"
-                  :class="{ 'is-on': showPreviewLabels }"
-                  title="切换预览中的按钮文字显示"
-                  aria-label="切换预览中的按钮文字显示"
-                  @click="showPreviewLabels = !showPreviewLabels"
-                >
-                  <span class="switch-button__dot" />
-                </button>
-              </label>
-              <button class="b3-button b3-button--outline" :disabled="isRefreshingLayout" @click="refreshCurrentLayout">
-                {{ isRefreshingLayout ? "读取中..." : "读取当前布局" }}
-              </button>
-            </div>
-          </div>
-
-          <div class="workspace-preview" :class="{ 'show-labels': showPreviewLabels }">
+        <WorkspacePreviewPanel
+          :show-preview-labels="showPreviewLabels"
+          :is-refreshing-layout="isRefreshingLayout"
+          :toggle-preview-labels="() => { showPreviewLabels = !showPreviewLabels }"
+          :refresh-current-layout="refreshCurrentLayout"
+        >
             <div
               class="workspace-preview__topbar"
               @dragover.prevent
@@ -383,26 +329,7 @@
                 <span v-if="!disabledNativePreviewItems.length" class="surface-summary__empty"><small>拖入原生按钮以隐藏入口</small></span>
               </div>
             </div>
-          </div>
-        </div>
-
-        <section class="config-transfer">
-          <div>
-            <h3>配置文件</h3>
-            <p>导入或导出左侧所有已配置按钮，不针对单个按钮。</p>
-          </div>
-          <div class="config-transfer__actions">
-            <button class="b3-button b3-button--outline" type="button" @click="exportConfigFile">导出配置文件</button>
-            <button class="b3-button b3-button--outline" type="button" @click="openImportFilePicker">导入配置文件</button>
-          </div>
-          <input
-            ref="importFileInput"
-            class="config-transfer__input"
-            type="file"
-            accept=".json,application/json"
-            @change="handleImportFile"
-          />
-        </section>
+        </WorkspacePreviewPanel>
       </aside>
 
       <main class="settings-panel settings-panel--editor">
@@ -735,14 +662,10 @@ import {
   BUILTIN_COMMANDS,
   PLUGIN_COMMANDS,
 } from "@/core/commands";
+import SettingsButtonListPanel from "@/features/settings/components/SettingsButtonListPanel.vue";
+import WorkspacePreviewPanel from "@/features/settings/components/WorkspacePreviewPanel.vue";
 import type { SettingsAppProps } from "@/features/settings/types";
 import { useSettingsController } from "@/features/settings/use-settings-controller";
-
-const TRASH_ICON = `
-  <svg class="siyuan-power-buttons__icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4zm1 6h2v8h-2zm4 0h2v8h-2zM7 9h2v8H7zm1 12a2 2 0 0 1-2-2V7h12v12a2 2 0 0 1-2 2z" />
-  </svg>
-`;
 
 const props = withDefaults(defineProps<SettingsAppProps>(), {
   builtinCommands: () => BUILTIN_COMMANDS,
@@ -773,6 +696,7 @@ const {
   iconTypes,
   importFileInput,
   initialize,
+  refreshCurrentLayout,
   isRefreshingLayout,
   onListDragStart,
   onListDrop,

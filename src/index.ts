@@ -24,16 +24,15 @@ import {
   PLUGIN_COMMANDS,
 } from "@/core/commands";
 import { PowerButtonsRuntime } from "@/core/runtime/plugin-runtime";
+import {
+  collectInstalledPlugins,
+  createExperimentalActionRunners,
+} from "@/core/runtime/runtime-factory";
 import { SettingsDialogController } from "@/core/runtime/settings-dialog-controller";
 import { getAppVersion } from "@/core/system/app-version";
 import { SurfaceManager } from "@/core/surfaces";
 import { mountSettingsApp } from "@/main";
 import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
-
-type IntegratablePlugin = {
-  name?: string;
-  getPowerButtonsIntegration?: () => unknown;
-};
 
 export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
@@ -41,6 +40,21 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
   private readonly externalCommands = new ExternalCommandRegistry({
     getPlugins: () => this.getInstalledPlugins(),
+  });
+  private readonly experimentalActionRunners = createExperimentalActionRunners({
+    getExperimentalSupport: feature => this.getExperimentalSupport(feature),
+    showMessage,
+    getKeymap: () => (window as typeof window & { siyuan?: { config?: { keymap?: unknown } } }).siyuan?.config?.keymap,
+    pluginGlobalCommand: (commandId: string) => {
+      const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
+      pluginWithGlobal.globalCommand?.(commandId);
+    },
+    pluginCommandHandlers: this.pluginCommandHandlers,
+    runBuiltinCommandByDom: commandId => executeBuiltinCommandByDom(commandId, document),
+    executeExperimentalShortcut,
+    executeExperimentalClickSequence,
+    document,
+    windowTarget: window,
   });
   private executor = new CommandExecutor({
     plugin: this as Plugin & { globalCommand?: (command: string) => void },
@@ -53,47 +67,8 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       window.open(url, "_blank", "noopener,noreferrer");
     },
     runBuiltinCommand: commandId => executeBuiltinCommandByDom(commandId, document),
-    runExperimentalShortcut: item => {
-      const support = this.getExperimentalSupport("shortcutAdapter");
-      if (!support.supported) {
-        showMessage(support.reason || "实验快捷键适配当前不可用。", 5000, "error");
-        return true;
-      }
-      return executeExperimentalShortcut(item, {
-        getKeymap: () => (window as typeof window & { siyuan?: { config?: { keymap?: unknown } } }).siyuan?.config?.keymap as never,
-        executeBuiltinCommand: commandId => {
-          const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
-          if (typeof pluginWithGlobal.globalCommand === "function") {
-            pluginWithGlobal.globalCommand(commandId);
-            return true;
-          }
-          return executeBuiltinCommandByDom(commandId, document);
-        },
-        executePluginCommand: async commandId => {
-          const handler = this.pluginCommandHandlers.get(commandId);
-          if (!handler) {
-            return false;
-          }
-          await handler();
-          return true;
-        },
-      });
-    },
-    runExperimentalClickSequence: item => {
-      const support = this.getExperimentalSupport("clickSequenceAdapter");
-      if (!support.supported) {
-        showMessage(support.reason || "实验点击序列当前不可用。", 5000, "error");
-        return true;
-      }
-      return executeExperimentalClickSequence(item, {
-        document,
-        root: document,
-        windowTarget: window,
-        onStepError: ({ index, selector }) => {
-          showMessage(`点击序列第 ${index + 1} 步失败：${selector}`, 5000, "error");
-        },
-      });
-    },
+    runExperimentalShortcut: item => this.experimentalActionRunners.runExperimentalShortcut(item),
+    runExperimentalClickSequence: item => this.experimentalActionRunners.runExperimentalClickSequence(item),
     sourcePluginVersion: pluginInfo.version,
   });
   private runtime = new PowerButtonsRuntime({
@@ -139,9 +114,9 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     this.runtime.onunload();
   }
 
-  private getInstalledPlugins(): IntegratablePlugin[] | undefined {
+  private getInstalledPlugins() {
     const appPlugins = Array.isArray(this.app?.plugins)
-      ? this.app.plugins as IntegratablePlugin[]
+      ? this.app.plugins
       : [];
     const globalPlugins = Array.isArray((window as Window & {
       siyuan?: {
@@ -160,21 +135,10 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
               };
             };
           };
-        }).siyuan!.ws!.app!.plugins as IntegratablePlugin[]
+        }).siyuan!.ws!.app!.plugins
       : [];
 
-    if (!appPlugins.length && !globalPlugins.length) {
-      return undefined;
-    }
-
-    const seen = new Set<IntegratablePlugin>();
-    return [...appPlugins, ...globalPlugins].filter((plugin) => {
-      if (!plugin || seen.has(plugin)) {
-        return false;
-      }
-      seen.add(plugin);
-      return true;
-    });
+    return collectInstalledPlugins(appPlugins, globalPlugins);
   }
 
   private getExperimentalSupport(feature: ExperimentalFeatureKey): { supported: boolean; reason?: string } {

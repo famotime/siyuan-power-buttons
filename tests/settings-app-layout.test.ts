@@ -850,6 +850,38 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("refreshes the current layout again when the preview refresh button is clicked", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onReadCurrentLayout = vi.fn().mockResolvedValue([]);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout,
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const refreshButton = Array.from(target.querySelectorAll<HTMLButtonElement>("button"))
+      .find(button => button.textContent?.trim() === "读取当前布局");
+
+    expect(onReadCurrentLayout).toHaveBeenCalledTimes(1);
+
+    refreshButton?.click();
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(onReadCurrentLayout).toHaveBeenCalledTimes(2);
+
+    unmount();
+  });
+
   it("renders native canvas pin controls at the top-left of the editor preview and keeps dock sections separated", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

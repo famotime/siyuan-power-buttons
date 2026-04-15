@@ -37,6 +37,24 @@ export function createExperimentalShortcutConfig(
   };
 }
 
+export function sanitizeExperimentalShortcutConfig(
+  input: Partial<ExperimentalShortcutConfig> = {},
+  actionId = "",
+): ExperimentalShortcutConfig {
+  return createExperimentalShortcutConfig({
+    shortcut: typeof input.shortcut === "string" && input.shortcut.trim()
+      ? input.shortcut.trim()
+      : undefined,
+    sendEscapeBefore: typeof input.sendEscapeBefore === "boolean" ? input.sendEscapeBefore : undefined,
+    dispatchTarget: ["auto", "active-editor", "window", "body"].includes(String(input.dispatchTarget))
+      ? input.dispatchTarget as ExperimentalShortcutConfig["dispatchTarget"]
+      : undefined,
+    allowDirectWindowDispatch: typeof input.allowDirectWindowDispatch === "boolean"
+      ? input.allowDirectWindowDispatch
+      : undefined,
+  }, actionId);
+}
+
 export function createClickSequenceStep(
   overrides: Partial<ClickSequenceStep> = {},
   fallbackSelector = DEFAULT_CLICK_SEQUENCE_SELECTOR,
@@ -62,4 +80,26 @@ export function createExperimentalClickSequenceConfig(
       : [createClickSequenceStep(undefined, fallbackSelector)],
     stopOnFailure: overrides.stopOnFailure ?? true,
   };
+}
+
+export function sanitizeExperimentalClickSequenceConfig(
+  input: Partial<ExperimentalClickSequenceConfig> = {},
+  actionId = DEFAULT_CLICK_SEQUENCE_SELECTOR,
+): ExperimentalClickSequenceConfig {
+  const fallbackSelector = getClickSequenceFallbackSelector(actionId);
+
+  return createExperimentalClickSequenceConfig({
+    steps: Array.isArray(input.steps)
+      ? input.steps.map(step => createClickSequenceStep({
+        selector: typeof step?.selector === "string" && step.selector.trim()
+          ? step.selector.trim()
+          : undefined,
+        timeoutMs: Number.isFinite(step?.timeoutMs) && Number(step.timeoutMs) >= 0 ? Number(step.timeoutMs) : undefined,
+        retryCount: Number.isFinite(step?.retryCount) && Number(step.retryCount) >= 0 ? Number(step.retryCount) : undefined,
+        retryDelayMs: Number.isFinite(step?.retryDelayMs) && Number(step.retryDelayMs) >= 0 ? Number(step.retryDelayMs) : undefined,
+        delayAfterMs: Number.isFinite(step?.delayAfterMs) && Number(step.delayAfterMs) >= 0 ? Number(step.delayAfterMs) : undefined,
+      }, fallbackSelector))
+      : undefined,
+    stopOnFailure: typeof input.stopOnFailure === "boolean" ? input.stopOnFailure : undefined,
+  }, actionId);
 }
