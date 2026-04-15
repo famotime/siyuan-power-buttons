@@ -53,4 +53,23 @@ describe("builtin icon renderer", () => {
     expect(markup).toContain("<svg");
     expect(markup).toContain("currentColor");
   });
+
+  it("hardens stroke-only IconPark paths against host fill overrides", () => {
+    const markup = renderIconMarkup({
+      iconType: "iconpark",
+      iconValue: "iconpark:AcceptEmail",
+    }, document);
+
+    expect(markup).toContain("style=\"fill:none\"");
+  });
+
+  it("preserves intentional fills while hardening stroked IconPark paths", () => {
+    const markup = renderIconMarkup({
+      iconType: "iconpark",
+      iconValue: "iconpark:AddPicture",
+    }, document);
+
+    expect(markup).toContain("fill=\"currentColor\"");
+    expect(markup).toContain("style=\"fill:none\"");
+  });
 });

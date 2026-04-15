@@ -6,6 +6,8 @@ import {
 
 type QueryRoot = Pick<ParentNode, "querySelector"> | null | undefined;
 
+const STROKED_SHAPE_TAGS = /<(path|circle|rect|ellipse|polygon|polyline)\b([^>]*\bstroke="[^"]+"[^>]*?)(\/?)>/g;
+
 const BUNDLED_ICON_MARKUP: Partial<Record<string, string>> = {
   iconHome: `
     <svg class="siyuan-power-buttons__icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -34,6 +36,41 @@ function escapeAttribute(value: string): string {
 
 function createSpriteIconMarkup(iconName: string): string {
   return `<svg class="siyuan-power-buttons__icon" aria-hidden="true"><use xlink:href="#${escapeAttribute(iconName)}"></use></svg>`;
+}
+
+function hardenStrokeOnlySvgFill(svg: string): string {
+  // SiYuan applies a global `svg { fill: currentColor; }`, so stroke-only IconPark
+  // markup needs explicit `fill:none` on shapes to avoid turning into solid blocks.
+  return svg.replace(STROKED_SHAPE_TAGS, (match, tag: string, attrs: string, selfClosing: string) => {
+    const hasFill = /\bfill="/.test(attrs);
+    const fillIsNone = /\bfill="none"/.test(attrs);
+    const hasStyle = /\bstyle="/.test(attrs);
+    const styleDefinesFill = /\bstyle="[^"]*\bfill\s*:/.test(attrs);
+
+    if (hasFill && !fillIsNone) {
+      return match;
+    }
+
+    let nextAttrs = attrs;
+    if (!hasFill) {
+      nextAttrs += " fill=\"none\"";
+    }
+
+    if (hasStyle) {
+      if (styleDefinesFill) {
+        return `<${tag}${nextAttrs}${selfClosing}>`;
+      }
+      nextAttrs = nextAttrs.replace(/\bstyle="([^"]*)"/, (_, style: string) => {
+        const normalized = style.trim().endsWith(";") ? style.trim() : `${style.trim()};`;
+        return `style="${normalized}fill:none"`;
+      });
+    }
+    else {
+      nextAttrs += " style=\"fill:none\"";
+    }
+
+    return `<${tag}${nextAttrs}${selfClosing}>`;
+  });
 }
 
 function hasHostIconSymbol(iconName: string, root?: QueryRoot): boolean {
@@ -68,5 +105,8 @@ export function renderIconMarkup(
   }
 
   const normalizedIcon = normalizeIconValue(item.iconType, item.iconValue);
-  return getIconParkMarkup(normalizedIcon) || renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
+  const iconParkMarkup = getIconParkMarkup(normalizedIcon);
+  return iconParkMarkup
+    ? hardenStrokeOnlySvgFill(iconParkMarkup)
+    : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
 }
