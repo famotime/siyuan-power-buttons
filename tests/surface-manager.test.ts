@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createDefaultConfig } from "@/core/config";
 import { CommandExecutor } from "@/core/commands";
 import { SurfaceManager } from "@/core/surfaces";
+import * as commands from "@/core/commands";
 
 describe("surface manager", () => {
   it("renders a fixed open-settings top bar entry before config-driven top bar buttons", async () => {
@@ -300,6 +301,158 @@ describe("surface manager", () => {
     expect(nativeButton.hidden).toBe(true);
     expect(settingsPreviewButton.hidden).toBe(false);
     expect(settingsPreviewButton.style.display).not.toBe("none");
+
+    manager.destroy();
+  });
+
+  it("does not rescan editor subtree mutations when the disabled rule only targets topbar", async () => {
+    document.body.innerHTML = `
+      <div id="toolbar">
+        <button id="native-toolbar-search" class="toolbar__item" type="button">搜索</button>
+      </div>
+      <div class="layout__center">
+        <div class="protyle">
+          <div class="protyle-breadcrumb__bar"></div>
+        </div>
+      </div>
+    `;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.disabledNativeButtons = [
+      {
+        id: "native:topbar:search",
+        title: "搜索",
+        surface: "topbar",
+        selectors: ["#native-toolbar-search"],
+      },
+    ];
+
+    const findSpy = vi.spyOn(commands, "findElementsBySmartSelector");
+    manager.render(config);
+    findSpy.mockClear();
+
+    const insertedEditorButton = document.createElement("button");
+    insertedEditorButton.id = "editor-search";
+    insertedEditorButton.textContent = "搜索";
+    insertedEditorButton.className = "protyle-breadcrumb__icon";
+    document.querySelector(".protyle-breadcrumb__bar")?.appendChild(insertedEditorButton);
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(insertedEditorButton.hidden).toBe(false);
+    expect(findSpy).not.toHaveBeenCalled();
+
+    manager.destroy();
+  });
+
+  it("batches multiple mutations in the same frame into one suppression rescan", async () => {
+    document.body.innerHTML = `
+      <div id="toolbar">
+        <button id="native-toolbar-search" class="toolbar__item" type="button">搜索</button>
+      </div>
+    `;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.disabledNativeButtons = [
+      {
+        id: "native:topbar:search",
+        title: "搜索",
+        surface: "topbar",
+        selectors: ["#native-toolbar-search"],
+      },
+    ];
+
+    const findSpy = vi.spyOn(commands, "findElementsBySmartSelector");
+    manager.render(config);
+    findSpy.mockClear();
+
+    const toolbar = document.querySelector("#toolbar") as HTMLElement;
+    toolbar.appendChild(document.createElement("div"));
+    toolbar.appendChild(document.createElement("div"));
+    toolbar.appendChild(document.createElement("div"));
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    expect(findSpy).toHaveBeenCalledTimes(1);
+
+    manager.destroy();
+  });
+
+  it("stops after the first matching stable selector instead of falling through to text selectors", () => {
+    document.body.innerHTML = `
+      <div id="toolbar">
+        <button id="native-toolbar-search" class="toolbar__item" type="button">搜索</button>
+      </div>
+    `;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.disabledNativeButtons = [
+      {
+        id: "native:topbar:search",
+        title: "搜索",
+        surface: "topbar",
+        selectors: ["text:搜索", "#native-toolbar-search", "[data-type='search']"],
+      },
+    ];
+
+    const findSpy = vi.spyOn(commands, "findElementsBySmartSelector");
+    manager.render(config);
+
+    expect(findSpy.mock.calls.map(call => call[0])).toEqual([
+      "#native-toolbar-search",
+      "#native-toolbar-search",
+    ]);
 
     manager.destroy();
   });
