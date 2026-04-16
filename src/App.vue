@@ -513,6 +513,27 @@
                           @change="syncExperimentalClickSequence"
                         />
                       </label>
+                      <label class="form-grid__full">
+                        <span>设值</span>
+                        <input
+                          v-model="step.value"
+                          class="b3-text-field"
+                          placeholder="例如：en_US / English (en_US) / 关键词"
+                          @change="syncExperimentalClickSequence"
+                        />
+                      </label>
+                      <label>
+                        <span>设值模式</span>
+                        <select
+                          v-model="step.valueMode"
+                          class="b3-select"
+                          :disabled="!step.value"
+                          @change="syncExperimentalClickSequence"
+                        >
+                          <option value="value">按 value 匹配</option>
+                          <option value="text">按文本匹配</option>
+                        </select>
+                      </label>
                       <label>
                         <span>等待超时(ms)</span>
                         <input v-model.number="step.timeoutMs" class="b3-text-field" type="number" min="0" step="100" @change="syncExperimentalClickSequence" />

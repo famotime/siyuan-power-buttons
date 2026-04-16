@@ -319,6 +319,71 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("edits click-sequence form-value fields in the settings panel", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "lang-step",
+        title: "切换语言",
+        actionType: "experimental-click-sequence",
+        actionId: "lang",
+        experimentalClickSequence: {
+          stopOnFailure: true,
+          steps: [
+            {
+              selector: "lang",
+              valueMode: "value",
+              timeoutMs: 1000,
+              retryCount: 0,
+              retryDelayMs: 0,
+              delayAfterMs: 0,
+            },
+          ],
+        },
+      }),
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const valueInput = Array.from(target.querySelectorAll<HTMLInputElement>(".click-sequence-step input.b3-text-field"))
+      .find(input => input.placeholder.includes("例如：en_US"));
+    const modeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".click-sequence-step select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "text"));
+
+    expect(valueInput).not.toBeUndefined();
+    expect(modeSelect).not.toBeUndefined();
+
+    valueInput!.value = "English (en_US)";
+    valueInput!.dispatchEvent(new Event("input"));
+    valueInput!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    modeSelect!.value = "text";
+    modeSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig.items[0].experimentalClickSequence.steps[0].value).toBe("English (en_US)");
+    expect(latestConfig.items[0].experimentalClickSequence.steps[0].valueMode).toBe("text");
+
+    unmount();
+  });
+
   it("captures shortcut combinations directly from keyboard input", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
