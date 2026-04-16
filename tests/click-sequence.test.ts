@@ -128,4 +128,43 @@ describe("experimental click sequence", () => {
     expect(result).toBe(true);
     expect(clickHandler).toHaveBeenCalledTimes(1);
   });
+
+  it("uses showPicker for select elements during click sequences when available", async () => {
+    const dom = new JSDOM(`
+      <div>
+        <select id="lang" class="b3-select fn__flex-center fn__size200">
+          <option value="en_US">English (en_US)</option>
+          <option value="zh_CN" selected>简体中文 (zh_CN)</option>
+        </select>
+      </div>
+    `);
+    const select = dom.window.document.getElementById("lang") as HTMLSelectElement & {
+      showPicker?: () => void;
+    };
+    const showPicker = vi.fn();
+    select.showPicker = showPicker;
+
+    const result = await executeExperimentalClickSequence({
+      actionId: "lang",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "lang",
+            timeoutMs: 100,
+            retryCount: 0,
+            retryDelayMs: 0,
+            delayAfterMs: 0,
+          },
+        ],
+      },
+    }, {
+      document: dom.window.document,
+      root: dom.window.document,
+      windowTarget: dom.window,
+    });
+
+    expect(result).toBe(true);
+    expect(showPicker).toHaveBeenCalledTimes(1);
+  });
 });

@@ -82,6 +82,20 @@ async function resolveStepElement(step: ClickSequenceStep, root: ParentNode): Pr
 }
 
 function clickElement(element: HTMLElement, windowTarget: Window): boolean {
+  const pickerElement = element as HTMLElement & {
+    showPicker?: () => void;
+  };
+
+  if (typeof pickerElement.showPicker === 'function') {
+    try {
+      element.focus();
+      pickerElement.showPicker();
+      return true;
+    } catch {
+      // Fall through to click-based activation when the picker API is blocked.
+    }
+  }
+
   try {
     element.click();
     return true;
