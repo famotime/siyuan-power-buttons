@@ -11,8 +11,14 @@ type StepError = {
 };
 
 function defaultClickSequenceStep(actionId: string, input?: Partial<ClickSequenceStep>): ClickSequenceStep {
+  const normalizedValue = typeof input?.value === "string" && input.value.length > 0
+    ? input.value
+    : undefined;
+
   return {
     selector: input?.selector || actionId || "text:设置",
+    value: normalizedValue,
+    valueMode: input?.valueMode === "text" ? "text" : "value",
     timeoutMs: input?.timeoutMs ?? 5000,
     retryCount: input?.retryCount ?? 2,
     retryDelayMs: input?.retryDelayMs ?? 300,
@@ -37,6 +43,10 @@ function sleep(ms: number): Promise<void> {
     return Promise.resolve();
   }
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function normalizeOptionText(value: string | null | undefined): string {
+  return (value || "").replace(/\s+/g, " ").trim();
 }
 
 async function waitForElement(
@@ -108,6 +118,47 @@ function clickElement(element: HTMLElement, windowTarget: Window): boolean {
   }
 }
 
+function dispatchFormEvents(element: HTMLElement, windowTarget: Window): void {
+  element.dispatchEvent(new windowTarget.Event("input", { bubbles: true }));
+  element.dispatchEvent(new windowTarget.Event("change", { bubbles: true }));
+}
+
+function setFormControlValue(step: ClickSequenceStep, element: HTMLElement, windowTarget: Window): boolean {
+  if (element instanceof windowTarget.HTMLSelectElement) {
+    const options = Array.from(element.options);
+    const match = step.valueMode === "text"
+      ? options.find(option => normalizeOptionText(option.textContent) === step.value)
+      : options.find(option => option.value === step.value);
+
+    if (!match) {
+      return false;
+    }
+
+    element.value = match.value;
+    dispatchFormEvents(element, windowTarget);
+    return true;
+  }
+
+  if (element instanceof windowTarget.HTMLTextAreaElement) {
+    element.value = step.value || "";
+    dispatchFormEvents(element, windowTarget);
+    return true;
+  }
+
+  if (element instanceof windowTarget.HTMLInputElement) {
+    const unsupportedTypes = new Set(["checkbox", "radio"]);
+    if (unsupportedTypes.has((element.type || "text").toLowerCase())) {
+      return false;
+    }
+
+    element.value = step.value || "";
+    dispatchFormEvents(element, windowTarget);
+    return true;
+  }
+
+  return false;
+}
+
 export async function executeExperimentalClickSequence(
   item: Pick<PowerButtonItem, "actionId" | "experimentalClickSequence">,
   options: {
@@ -126,8 +177,9 @@ export async function executeExperimentalClickSequence(
   for (let index = 0; index < clickSequence.steps.length; index += 1) {
     const step = clickSequence.steps[index];
     const element = await resolveStepElement(step, root);
+    const isValueStep = typeof step.value === "string";
 
-    if (!element || !clickElement(element, windowTarget)) {
+    if (!element || !(isValueStep ? setFormControlValue(step, element, windowTarget) : clickElement(element, windowTarget))) {
       allStepsSucceeded = false;
       await options.onStepError?.({
         index,

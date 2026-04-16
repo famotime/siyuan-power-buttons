@@ -167,4 +167,162 @@ describe("experimental click sequence", () => {
     expect(result).toBe(true);
     expect(showPicker).toHaveBeenCalledTimes(1);
   });
+
+  it("sets select values by option value and dispatches input plus change", async () => {
+    const dom = new JSDOM(`
+      <select id="lang">
+        <option value="en_US">English (en_US)</option>
+        <option value="zh_CN" selected>简体中文 (zh_CN)</option>
+      </select>
+    `);
+    const select = dom.window.document.getElementById("lang") as HTMLSelectElement;
+    const events: string[] = [];
+
+    select.addEventListener("input", () => {
+      events.push("input");
+    });
+    select.addEventListener("change", () => {
+      events.push("change");
+    });
+
+    const result = await executeExperimentalClickSequence({
+      actionId: "lang",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "lang",
+            value: "en_US",
+            valueMode: "value",
+            timeoutMs: 100,
+            retryCount: 0,
+            retryDelayMs: 0,
+            delayAfterMs: 0,
+          },
+        ],
+      },
+    }, {
+      document: dom.window.document,
+      root: dom.window.document,
+      windowTarget: dom.window,
+    });
+
+    expect(result).toBe(true);
+    expect(select.value).toBe("en_US");
+    expect(events).toEqual(["input", "change"]);
+  });
+
+  it("sets select values by option text", async () => {
+    const dom = new JSDOM(`
+      <select id="lang">
+        <option value="en_US">English (en_US)</option>
+        <option value="zh_CN" selected>简体中文 (zh_CN)</option>
+      </select>
+    `);
+
+    const result = await executeExperimentalClickSequence({
+      actionId: "lang",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "lang",
+            value: "English (en_US)",
+            valueMode: "text",
+            timeoutMs: 100,
+            retryCount: 0,
+            retryDelayMs: 0,
+            delayAfterMs: 0,
+          },
+        ],
+      },
+    }, {
+      document: dom.window.document,
+      root: dom.window.document,
+      windowTarget: dom.window,
+    });
+
+    expect(result).toBe(true);
+    expect((dom.window.document.getElementById("lang") as HTMLSelectElement).value).toBe("en_US");
+  });
+
+  it("sets input and textarea values through the same step model", async () => {
+    const dom = new JSDOM(`
+      <input id="keyword" value="" />
+      <textarea id="note"></textarea>
+    `);
+
+    const result = await executeExperimentalClickSequence({
+      actionId: "keyword",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "keyword",
+            value: "english",
+            valueMode: "value",
+            timeoutMs: 100,
+            retryCount: 0,
+            retryDelayMs: 0,
+            delayAfterMs: 0,
+          },
+          {
+            selector: "note",
+            value: "Line 1",
+            valueMode: "text",
+            timeoutMs: 100,
+            retryCount: 0,
+            retryDelayMs: 0,
+            delayAfterMs: 0,
+          },
+        ],
+      },
+    }, {
+      document: dom.window.document,
+      root: dom.window.document,
+      windowTarget: dom.window,
+    });
+
+    expect(result).toBe(true);
+    expect((dom.window.document.getElementById("keyword") as HTMLInputElement).value).toBe("english");
+    expect((dom.window.document.getElementById("note") as HTMLTextAreaElement).value).toBe("Line 1");
+  });
+
+  it("fails when a value step cannot match a select option", async () => {
+    const dom = new JSDOM(`
+      <select id="lang">
+        <option value="zh_CN" selected>简体中文 (zh_CN)</option>
+      </select>
+    `);
+    const onStepError = vi.fn();
+
+    const result = await executeExperimentalClickSequence({
+      actionId: "lang",
+      experimentalClickSequence: {
+        stopOnFailure: true,
+        steps: [
+          {
+            selector: "lang",
+            value: "en_US",
+            valueMode: "value",
+            timeoutMs: 100,
+            retryCount: 0,
+            retryDelayMs: 0,
+            delayAfterMs: 0,
+          },
+        ],
+      },
+    }, {
+      document: dom.window.document,
+      root: dom.window.document,
+      windowTarget: dom.window,
+      onStepError,
+    });
+
+    expect(result).toBe(false);
+    expect(onStepError).toHaveBeenCalledWith({
+      index: 0,
+      selector: "lang",
+    });
+  });
 });
