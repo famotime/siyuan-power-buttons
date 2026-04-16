@@ -51,6 +51,8 @@ describe("settings action config helpers", () => {
       steps: [
         {
           selector: "barSettings",
+          value: undefined,
+          valueMode: "value",
           timeoutMs: 5000,
           retryCount: 2,
           retryDelayMs: 300,
