@@ -178,6 +178,8 @@ describe("config store model", () => {
             steps: [
               {
                 selector: "barSettings",
+                value: "en_US",
+                valueMode: "value",
                 timeoutMs: 3000,
                 retryCount: 1,
                 retryDelayMs: 100,
@@ -185,6 +187,8 @@ describe("config store model", () => {
               },
               {
                 selector: "text:设置",
+                value: undefined,
+                valueMode: "value",
                 timeoutMs: 5000,
                 retryCount: 2,
                 retryDelayMs: 300,
@@ -208,6 +212,8 @@ describe("config store model", () => {
       steps: [
         {
           selector: "barSettings",
+          value: "en_US",
+          valueMode: "value",
           timeoutMs: 3000,
           retryCount: 1,
           retryDelayMs: 100,
@@ -215,6 +221,8 @@ describe("config store model", () => {
         },
         {
           selector: "text:设置",
+          value: undefined,
+          valueMode: "value",
           timeoutMs: 5000,
           retryCount: 2,
           retryDelayMs: 300,

@@ -46,6 +46,8 @@ export interface ExperimentalShortcutConfig {
 
 export interface ClickSequenceStep {
   selector: string;
+  value?: string;
+  valueMode?: "value" | "text";
   timeoutMs: number;
   retryCount: number;
   retryDelayMs: number;

@@ -38,6 +38,8 @@ describe("config item defaults", () => {
       steps: [
         {
           selector: "barSettings",
+          value: undefined,
+          valueMode: "value",
           timeoutMs: 5000,
           retryCount: 2,
           retryDelayMs: 300,
@@ -54,10 +56,36 @@ describe("config item defaults", () => {
       timeoutMs: -1,
     }, "text:帮助")).toEqual({
       selector: "text:帮助",
+      value: undefined,
+      valueMode: "value",
       timeoutMs: 5000,
       retryCount: 2,
       retryDelayMs: 300,
       delayAfterMs: 200,
+    });
+  });
+
+  it("builds reusable click-sequence configs with form-value defaults", () => {
+    expect(createExperimentalClickSequenceConfig({
+      steps: [
+        {
+          selector: "lang",
+          value: "en_US",
+        },
+      ],
+    }, "lang")).toEqual({
+      steps: [
+        {
+          selector: "lang",
+          value: "en_US",
+          valueMode: "value",
+          timeoutMs: 5000,
+          retryCount: 2,
+          retryDelayMs: 300,
+          delayAfterMs: 200,
+        },
+      ],
+      stopOnFailure: true,
     });
   });
 
@@ -86,6 +114,8 @@ describe("config item defaults", () => {
       steps: [
         {
           selector: "barSettings",
+          value: undefined,
+          valueMode: "value",
           timeoutMs: 5000,
           retryCount: 2,
           retryDelayMs: 300,

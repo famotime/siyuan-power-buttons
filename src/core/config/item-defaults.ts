@@ -59,8 +59,14 @@ export function createClickSequenceStep(
   overrides: Partial<ClickSequenceStep> = {},
   fallbackSelector = DEFAULT_CLICK_SEQUENCE_SELECTOR,
 ): ClickSequenceStep {
+  const normalizedValue = typeof overrides.value === "string" && overrides.value.length > 0
+    ? overrides.value
+    : undefined;
+
   return {
     selector: overrides.selector || fallbackSelector,
+    value: normalizedValue,
+    valueMode: overrides.valueMode === "text" ? "text" : "value",
     timeoutMs: Number.isFinite(overrides.timeoutMs) && Number(overrides.timeoutMs) >= 0 ? Number(overrides.timeoutMs) : 5000,
     retryCount: Number.isFinite(overrides.retryCount) && Number(overrides.retryCount) >= 0 ? Number(overrides.retryCount) : 2,
     retryDelayMs: Number.isFinite(overrides.retryDelayMs) && Number(overrides.retryDelayMs) >= 0 ? Number(overrides.retryDelayMs) : 300,
@@ -94,6 +100,8 @@ export function sanitizeExperimentalClickSequenceConfig(
         selector: typeof step?.selector === "string" && step.selector.trim()
           ? step.selector.trim()
           : undefined,
+        value: typeof step?.value === "string" ? step.value : undefined,
+        valueMode: step?.valueMode === "text" ? "text" : step?.valueMode === "value" ? "value" : undefined,
         timeoutMs: Number.isFinite(step?.timeoutMs) && Number(step.timeoutMs) >= 0 ? Number(step.timeoutMs) : undefined,
         retryCount: Number.isFinite(step?.retryCount) && Number(step.retryCount) >= 0 ? Number(step.retryCount) : undefined,
         retryDelayMs: Number.isFinite(step?.retryDelayMs) && Number(step.retryDelayMs) >= 0 ? Number(step.retryDelayMs) : undefined,

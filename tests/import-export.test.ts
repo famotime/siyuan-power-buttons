@@ -116,6 +116,8 @@ describe("config import and export", () => {
             steps: [
               {
                 selector: "barSettings",
+                value: "en_US",
+                valueMode: "value",
                 timeoutMs: 3000,
                 retryCount: 1,
                 retryDelayMs: 100,
@@ -123,6 +125,8 @@ describe("config import and export", () => {
               },
               {
                 selector: "text:设置",
+                value: undefined,
+                valueMode: "value",
                 timeoutMs: 5000,
                 retryCount: 2,
                 retryDelayMs: 300,
@@ -144,5 +148,47 @@ describe("config import and export", () => {
     const roundTripped = importConfigFromJson(serialized);
 
     expect(roundTripped).toEqual(config);
+  });
+
+  it("round-trips experimental click sequence form-value settings through import/export", () => {
+    const config = importConfigFromJson(JSON.stringify({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        {
+          id: "exp-sequence-form-value",
+          title: "切换语言",
+          visible: true,
+          iconType: "iconpark",
+          iconValue: "iconpark:Setting",
+          surface: "topbar",
+          order: 0,
+          actionType: "experimental-click-sequence",
+          actionId: "lang",
+          experimentalClickSequence: {
+            stopOnFailure: true,
+            steps: [
+              {
+                selector: "lang",
+                value: "English (en_US)",
+                valueMode: "text",
+                timeoutMs: 1000,
+                retryCount: 0,
+                retryDelayMs: 0,
+                delayAfterMs: 0,
+              },
+            ],
+          },
+        },
+      ],
+      experimental: {
+        nativeToolbarControl: false,
+        internalCommandAdapter: false,
+        shortcutAdapter: false,
+        clickSequenceAdapter: true,
+      },
+    }));
+
+    expect(importConfigFromJson(exportConfigAsJson(config))).toEqual(config);
   });
 });
