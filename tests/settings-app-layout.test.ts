@@ -65,6 +65,15 @@ describe("settings app layout", () => {
     expect(itemRule).toContain("box-sizing: border-box");
   });
 
+  it("normalizes preview chip svg icons to a fixed size", () => {
+    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+
+    expect(stylesheet).toContain(".workspace-chip__icon .siyuan-power-buttons__icon");
+    expect(stylesheet).toContain(".workspace-chip__icon svg");
+    expect(stylesheet).toContain("width: 18px");
+    expect(stylesheet).toContain("height: 18px");
+  });
+
   it("keeps new and duplicate actions together in the button list panel and removes the experimental toggles card", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

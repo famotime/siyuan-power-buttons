@@ -2,8 +2,8 @@
   <div class="power-buttons-settings">
     <header class="settings-header">
       <div>
-        <h1>思源快捷按钮</h1>
-        <p>左侧管理按钮清单，预览区会自动读取当前界面布局；彩色按钮可拖到顶栏、状态栏和编辑区调整位置，灰色原生按钮仅供查看。</p>
+        <h1>随心按</h1>
+        <p>哪里顺手放哪里，你的工具栏你做主——快捷按钮随心按，常用功能一键达。</p>
       </div>
       <div class="settings-header__actions">
         <button class="b3-button b3-button--outline" @click="resetConfig">恢复默认</button>

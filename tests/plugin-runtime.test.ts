@@ -297,7 +297,7 @@ describe("plugin runtime", () => {
 
     await openSettingsCommand?.callback();
 
-    expect(openSettingsCommand?.langText).toBe("动作类型（插件命令）-思源快捷按钮-打开快捷按钮设置");
+    expect(openSettingsCommand?.langText).toBe("动作类型（插件命令）-随心按-打开快捷按钮设置");
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
   });
 

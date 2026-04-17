@@ -658,8 +658,8 @@ git commit -m "Add click sequence form value controls to settings"
 ### Task 4: Run Full Verification and Update User-Facing Examples
 
 **Files:**
-- Modify: `docs/思源快捷按钮插件-动作类型使用指南.md`
-- Modify: `docs/思源快捷按钮插件-配置样例大全.md`
+- Modify: `docs/随心按插件-动作类型使用指南.md`
+- Modify: `docs/随心按插件-配置样例大全.md`
 - Test: `tests/click-sequence.test.ts`
 - Test: `tests/config-item-defaults.test.ts`
 - Test: `tests/config-store.test.ts`
@@ -753,7 +753,7 @@ Expected: PASS with Vite production build completing successfully and `dist` out
 - [ ] **Step 6: Commit docs and verified implementation**
 
 ```bash
-git add docs/思源快捷按钮插件-动作类型使用指南.md docs/思源快捷按钮插件-配置样例大全.md src/shared/types.ts src/core/config/item-defaults.ts src/core/config/sanitize.ts src/core/commands/click-sequence.ts src/features/settings/action-config.ts src/features/settings/use-settings-controller.ts src/App.vue tests/click-sequence.test.ts tests/config-item-defaults.test.ts tests/config-store.test.ts tests/import-export.test.ts tests/settings-app-layout.test.ts
+git add docs/随心按插件-动作类型使用指南.md docs/随心按插件-配置样例大全.md src/shared/types.ts src/core/config/item-defaults.ts src/core/config/sanitize.ts src/core/commands/click-sequence.ts src/features/settings/action-config.ts src/features/settings/use-settings-controller.ts src/App.vue tests/click-sequence.test.ts tests/config-item-defaults.test.ts tests/config-store.test.ts tests/import-export.test.ts tests/settings-app-layout.test.ts
 git commit -m "Add form value steps to experimental click sequences"
 ```
 

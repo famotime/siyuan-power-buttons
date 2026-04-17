@@ -3,7 +3,7 @@
     <div class="surface-summary__header">
       <div>
         <h3>位置预览</h3>
-        <p>灰色为原生按钮，半透明为隐藏态。彩色按钮可拖动调整区域和顺序；原生按钮可拖到禁用栏后直接隐藏并禁用入口。</p>
+        <p>自定义按钮可拖动至底栏或顶栏；原生按钮可拖到禁用栏隐藏</p>
       </div>
       <div class="surface-summary__controls">
         <label class="surface-summary__toggle">

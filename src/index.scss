@@ -471,6 +471,12 @@
   background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
 }
 
+.workspace-chip__icon .siyuan-power-buttons__icon,
+.workspace-chip__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .workspace-chip.is-native .workspace-chip__icon {
   background: color-mix(in srgb, var(--b3-theme-on-background) 8%, transparent);
 }
@@ -724,8 +730,8 @@
 }
 
 .siyuan-power-buttons__icon {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
 }
 

@@ -26,7 +26,7 @@ export class SettingsDialogController {
     this.destroy();
 
     this.dialog = this.options.createDialog({
-      title: "思源快捷按钮设置",
+      title: "随心按设置",
       width: "1280px",
       height: "80vh",
       content: `<div class="siyuan-power-buttons-settings-host"></div>`,

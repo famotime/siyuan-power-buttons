@@ -3,7 +3,7 @@
     <div class="panel-title">
       <div>
         <h2>1. 按钮列表</h2>
-        <p>{{ config.items.length }} 个按钮，拖拽可排序</p>
+        <p>共 {{ config.items.length }} 个按钮，拖拽可排序</p>
       </div>
       <div class="panel-title__actions">
         <button class="b3-button" @click="addItem">新建</button>
@@ -55,7 +55,7 @@
     <section class="config-transfer">
       <div>
         <h3>配置文件</h3>
-        <p>导入或导出左侧所有已配置按钮，不针对单个按钮。</p>
+        <p>导入或导出所有已配置按钮</p>
       </div>
       <div class="config-transfer__actions">
         <button class="b3-button b3-button--outline" type="button" @click="exportConfigFile">导出配置文件</button>

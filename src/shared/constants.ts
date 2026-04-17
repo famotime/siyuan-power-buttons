@@ -2,7 +2,7 @@ export const CONFIG_STORAGE_NAME = "settings.json";
 
 export const DEFAULT_ICONPARK_ICON = "iconpark:Search";
 export const INTERNAL_PLUGIN_PROVIDER_ID = "siyuan-power-buttons";
-export const INTERNAL_PLUGIN_PROVIDER_NAME = "思源快捷按钮";
+export const INTERNAL_PLUGIN_PROVIDER_NAME = "随心按";
 export const DEFAULT_PLUGIN_COMMAND = "siyuan-power-buttons:open-settings";
 
 export const SURFACE_LABELS: Record<string, string> = {
