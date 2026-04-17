@@ -137,6 +137,7 @@ describe("settings app layout", () => {
   it("renders the icon source switcher as standard tabs and offers IconPark plus emoji picks", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
+    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -165,6 +166,8 @@ describe("settings app layout", () => {
 
     expect(target.textContent).toContain("搜索 IconPark 图标");
     expect(target.textContent).toContain("图标分类");
+    expect(target.querySelector(".icon-search-row")).not.toBeNull();
+    expect(stylesheet).toContain(".icon-search-row {\n  display: grid;");
 
     const firstIconParkItem = target.querySelector(".icon-grid__item") as HTMLButtonElement | null;
     expect(firstIconParkItem).not.toBeNull();
@@ -331,6 +334,7 @@ describe("settings app layout", () => {
   it("edits click-sequence form-value fields in the settings panel", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
+    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
 
     const onChange = vi.fn().mockResolvedValue(undefined);
     const initialConfig = createDefaultConfig();
@@ -367,13 +371,35 @@ describe("settings app layout", () => {
 
     await nextTick();
 
+    const step = target.querySelector<HTMLElement>(".click-sequence-step");
+    const advancedToggle = Array.from(step?.querySelectorAll<HTMLButtonElement>("button") || [])
+      .find(button => button.textContent?.includes("高级设置"));
+
+    expect(step).not.toBeNull();
+    expect(advancedToggle).not.toBeUndefined();
+    expect(step?.textContent).not.toContain("等待超时(ms)");
+    expect(stylesheet).toContain(".form-grid label.click-sequence-step__field");
+    expect(stylesheet).toContain(".click-sequence-step__field--selector {\n  grid-column: 1 / -1;");
+    expect(stylesheet).not.toContain(".click-sequence-step__field--value {\n  grid-column: 1 / -1;");
+
+    advancedToggle!.click();
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
     const valueInput = Array.from(target.querySelectorAll<HTMLInputElement>(".click-sequence-step input.b3-text-field"))
       .find(input => input.placeholder.includes("例如：en_US"));
     const modeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".click-sequence-step select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "text"));
+    const selectorRow = target.querySelector<HTMLElement>(".click-sequence-step__field--selector");
+    const valueRow = target.querySelector<HTMLElement>(".click-sequence-step__field--value");
+    const modeRow = target.querySelector<HTMLElement>(".click-sequence-step__field--mode");
 
+    expect(step?.textContent).toContain("等待超时(ms)");
     expect(valueInput).not.toBeUndefined();
     expect(modeSelect).not.toBeUndefined();
+    expect(selectorRow?.classList.contains("click-sequence-step__field")).toBe(true);
+    expect(valueRow?.classList.contains("click-sequence-step__field")).toBe(true);
+    expect(modeRow?.classList.contains("click-sequence-step__field")).toBe(true);
 
     valueInput!.value = "English (en_US)";
     valueInput!.dispatchEvent(new Event("input"));
@@ -389,6 +415,81 @@ describe("settings app layout", () => {
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig.items[0].experimentalClickSequence.steps[0].value).toBe("English (en_US)");
     expect(latestConfig.items[0].experimentalClickSequence.steps[0].valueMode).toBe("text");
+
+    advancedToggle!.click();
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(step?.textContent).not.toContain("等待超时(ms)");
+
+    unmount();
+  });
+
+  it("renders click-sequence steps as draggable cards and reorders them", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "drag-steps",
+        title: "步骤排序",
+        actionType: "experimental-click-sequence",
+        actionId: "lang",
+        experimentalClickSequence: {
+          stopOnFailure: true,
+          steps: [
+            {
+              selector: "first-step",
+              valueMode: "value",
+              timeoutMs: 1000,
+              retryCount: 0,
+              retryDelayMs: 0,
+              delayAfterMs: 0,
+            },
+            {
+              selector: "second-step",
+              valueMode: "value",
+              timeoutMs: 1000,
+              retryCount: 0,
+              retryDelayMs: 0,
+              delayAfterMs: 0,
+            },
+          ],
+        },
+      }),
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const steps = Array.from(target.querySelectorAll<HTMLElement>(".click-sequence-step"));
+    const dragHandle = steps[1]?.querySelector<HTMLElement>(".click-sequence-step__drag");
+
+    expect(steps).toHaveLength(2);
+    expect(dragHandle).not.toBeNull();
+    expect(stylesheet).toContain(".click-sequence-step {\n  display: flex;");
+    expect(stylesheet).toContain("border: 1px solid");
+    expect(stylesheet).toContain("background:\n    linear-gradient(180deg");
+
+    steps[1].dispatchEvent(new Event("dragstart", { bubbles: true }));
+    steps[0].dispatchEvent(new Event("drop", { bubbles: true }));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig.items[0].experimentalClickSequence.steps[0].selector).toBe("second-step");
+    expect(latestConfig.items[0].experimentalClickSequence.steps[1].selector).toBe("first-step");
 
     unmount();
   });

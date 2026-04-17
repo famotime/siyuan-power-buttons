@@ -491,9 +491,21 @@
                     v-for="(step, index) in selectedItem.experimentalClickSequence!.steps"
                     :key="`${selectedItem.id}-step-${index}`"
                     class="click-sequence-step"
+                    :class="{
+                      'is-dragging': clickSequenceStepDragIndex === index,
+                      'is-drop-target': clickSequenceStepDropIndex === index && clickSequenceStepDragIndex !== index,
+                    }"
+                    draggable="true"
+                    @dragstart="onClickSequenceStepDragStart(index, $event)"
+                    @dragend="onClickSequenceStepDragEnd"
+                    @dragover.prevent="onClickSequenceStepDragOver(index)"
+                    @drop.prevent="onClickSequenceStepDrop(index)"
                   >
                     <div class="click-sequence-step__title">
-                      <strong>步骤 {{ index + 1 }}</strong>
+                      <div class="click-sequence-step__title-main">
+                        <span class="click-sequence-step__drag" aria-hidden="true">⋮⋮</span>
+                        <strong>步骤 {{ index + 1 }}</strong>
+                      </div>
                       <button
                         class="b3-button b3-button--outline"
                         type="button"
@@ -503,53 +515,66 @@
                         删除
                       </button>
                     </div>
-                    <div class="form-grid">
-                      <label class="form-grid__full">
+                    <div class="form-grid click-sequence-step__grid">
+                      <label class="form-grid__full click-sequence-step__field click-sequence-step__field--selector">
                         <span>选择器</span>
-                        <input
-                          v-model="step.selector"
-                          class="b3-text-field"
-                          placeholder="例如：barSettings / text:复制块引用 / .b3-menu__item"
-                          @change="syncExperimentalClickSequence"
-                        />
+                        <div class="click-sequence-step__selector-controls">
+                          <input
+                            v-model="step.selector"
+                            class="b3-text-field"
+                            placeholder="例如：barSettings / text:复制块引用 / .b3-menu__item"
+                            @change="syncExperimentalClickSequence"
+                          />
+                          <button
+                            type="button"
+                            class="b3-button b3-button--outline click-sequence-step__advanced-toggle"
+                            :aria-expanded="isClickSequenceStepAdvancedOpen(index)"
+                            :title="isClickSequenceStepAdvancedOpen(index) ? '收起高级设置' : '展开高级设置'"
+                            @click="toggleClickSequenceStepAdvanced(index)"
+                          >
+                            高级设置
+                          </button>
+                        </div>
                       </label>
-                      <label class="form-grid__full">
-                        <span>设值</span>
-                        <input
-                          v-model="step.value"
-                          class="b3-text-field"
-                          placeholder="例如：en_US / English (en_US) / 关键词"
-                          @change="syncExperimentalClickSequence"
-                        />
-                      </label>
-                      <label>
-                        <span>设值模式</span>
-                        <select
-                          v-model="step.valueMode"
-                          class="b3-select"
-                          :disabled="!step.value"
-                          @change="syncExperimentalClickSequence"
-                        >
-                          <option value="value">按 value 匹配</option>
-                          <option value="text">按文本匹配</option>
-                        </select>
-                      </label>
-                      <label>
-                        <span>等待超时(ms)</span>
-                        <input v-model.number="step.timeoutMs" class="b3-text-field" type="number" min="0" step="100" @change="syncExperimentalClickSequence" />
-                      </label>
-                      <label>
-                        <span>重试次数</span>
-                        <input v-model.number="step.retryCount" class="b3-text-field" type="number" min="0" step="1" @change="syncExperimentalClickSequence" />
-                      </label>
-                      <label>
-                        <span>重试间隔(ms)</span>
-                        <input v-model.number="step.retryDelayMs" class="b3-text-field" type="number" min="0" step="50" @change="syncExperimentalClickSequence" />
-                      </label>
-                      <label>
-                        <span>步骤后延迟(ms)</span>
-                        <input v-model.number="step.delayAfterMs" class="b3-text-field" type="number" min="0" step="50" @change="syncExperimentalClickSequence" />
-                      </label>
+                      <template v-if="isClickSequenceStepAdvancedOpen(index)">
+                        <label class="click-sequence-step__field click-sequence-step__field--value">
+                          <span>设值</span>
+                          <input
+                            v-model="step.value"
+                            class="b3-text-field"
+                            placeholder="例如：en_US / English (en_US) / 关键词"
+                            @change="syncExperimentalClickSequence"
+                          />
+                        </label>
+                        <label class="click-sequence-step__field click-sequence-step__field--mode">
+                          <span>设值模式</span>
+                          <select
+                            v-model="step.valueMode"
+                            class="b3-select"
+                            :disabled="!step.value"
+                            @change="syncExperimentalClickSequence"
+                          >
+                            <option value="value">按 value 匹配</option>
+                            <option value="text">按文本匹配</option>
+                          </select>
+                        </label>
+                        <label class="click-sequence-step__field click-sequence-step__field--timeout">
+                          <span>等待超时(ms)</span>
+                          <input v-model.number="step.timeoutMs" class="b3-text-field" type="number" min="0" step="100" @change="syncExperimentalClickSequence" />
+                        </label>
+                        <label class="click-sequence-step__field click-sequence-step__field--retry-count">
+                          <span>重试次数</span>
+                          <input v-model.number="step.retryCount" class="b3-text-field" type="number" min="0" step="1" @change="syncExperimentalClickSequence" />
+                        </label>
+                        <label class="click-sequence-step__field click-sequence-step__field--retry-delay">
+                          <span>重试间隔(ms)</span>
+                          <input v-model.number="step.retryDelayMs" class="b3-text-field" type="number" min="0" step="50" @change="syncExperimentalClickSequence" />
+                        </label>
+                        <label class="click-sequence-step__field click-sequence-step__field--delay-after">
+                          <span>步骤后延迟(ms)</span>
+                          <input v-model.number="step.delayAfterMs" class="b3-text-field" type="number" min="0" step="50" @change="syncExperimentalClickSequence" />
+                        </label>
+                      </template>
                     </div>
                   </div>
                 </div>
@@ -602,20 +627,22 @@
               :aria-labelledby="iconTypeTabId(selectedItem.iconType)"
             >
               <template v-if="selectedItem.iconType === 'iconpark'">
-                <label class="icon-search">
-                  <span>搜索 IconPark 图标</span>
-                  <input v-model="iconKeyword" class="b3-text-field" placeholder="输入名称或关键词，例如：search / setting / 配置" />
-                </label>
+                <div class="icon-search-row">
+                  <label class="icon-search">
+                    <span>搜索 IconPark 图标</span>
+                    <input v-model="iconKeyword" class="b3-text-field" placeholder="输入名称或关键词，例如：search / setting / 配置" />
+                  </label>
 
-                <label class="icon-search">
-                  <span>图标分类</span>
-                  <select v-model="iconCategory" class="b3-select">
-                    <option value="">全部分类</option>
-                    <option v-for="category in iconParkCategories" :key="category" :value="category">
-                      {{ category }}
-                    </option>
-                  </select>
-                </label>
+                  <label class="icon-search">
+                    <span>图标分类</span>
+                    <select v-model="iconCategory" class="b3-select">
+                      <option value="">全部分类</option>
+                      <option v-for="category in iconParkCategories" :key="category" :value="category">
+                        {{ category }}
+                      </option>
+                    </select>
+                  </label>
+                </div>
 
                 <div class="icon-grid">
                   <button
@@ -678,6 +705,8 @@
 <script setup lang="ts">
 import {
   onMounted,
+  ref,
+  watch,
 } from "vue";
 import {
   BUILTIN_COMMANDS,
@@ -687,6 +716,7 @@ import SettingsButtonListPanel from "@/features/settings/components/SettingsButt
 import WorkspacePreviewPanel from "@/features/settings/components/WorkspacePreviewPanel.vue";
 import type { SettingsAppProps } from "@/features/settings/types";
 import { useSettingsController } from "@/features/settings/use-settings-controller";
+import { moveItem } from "@/shared/utils";
 
 const props = withDefaults(defineProps<SettingsAppProps>(), {
   builtinCommands: () => BUILTIN_COMMANDS,
@@ -760,6 +790,62 @@ const {
 
 const iconTypeTabId = (iconType: string) => `icon-type-tab-${iconType}`;
 const iconTypePanelId = "icon-type-panel";
+const clickSequenceAdvancedSteps = ref<Record<string, boolean>>({});
+const clickSequenceStepDragIndex = ref<number | null>(null);
+const clickSequenceStepDropIndex = ref<number | null>(null);
+
+const clickSequenceStepAdvancedKey = (index: number): string => `${selectedId.value || "none"}:${index}`;
+
+const isClickSequenceStepAdvancedOpen = (index: number): boolean => Boolean(clickSequenceAdvancedSteps.value[clickSequenceStepAdvancedKey(index)]);
+
+const toggleClickSequenceStepAdvanced = (index: number): void => {
+  const key = clickSequenceStepAdvancedKey(index);
+  clickSequenceAdvancedSteps.value = {
+    ...clickSequenceAdvancedSteps.value,
+    [key]: !clickSequenceAdvancedSteps.value[key],
+  };
+};
+
+const onClickSequenceStepDragStart = (index: number, event: DragEvent): void => {
+  clickSequenceStepDragIndex.value = index;
+  clickSequenceStepDropIndex.value = index;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  }
+};
+
+const onClickSequenceStepDragOver = (index: number): void => {
+  clickSequenceStepDropIndex.value = index;
+};
+
+const onClickSequenceStepDragEnd = (): void => {
+  clickSequenceStepDragIndex.value = null;
+  clickSequenceStepDropIndex.value = null;
+};
+
+const onClickSequenceStepDrop = async (index: number): Promise<void> => {
+  const fromIndex = clickSequenceStepDragIndex.value;
+  onClickSequenceStepDragEnd();
+
+  if (fromIndex === null || fromIndex === index || !selectedItem.value?.experimentalClickSequence) {
+    return;
+  }
+
+  selectedItem.value.experimentalClickSequence.steps = moveItem(
+    selectedItem.value.experimentalClickSequence.steps,
+    fromIndex,
+    index,
+  );
+  clickSequenceAdvancedSteps.value = {};
+  await syncExperimentalClickSequence();
+};
+
+watch(selectedId, () => {
+  clickSequenceAdvancedSteps.value = {};
+  clickSequenceStepDragIndex.value = null;
+  clickSequenceStepDropIndex.value = null;
+});
 
 onMounted(() => {
   void initialize();
