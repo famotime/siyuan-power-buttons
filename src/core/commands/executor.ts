@@ -32,11 +32,11 @@ export class CommandExecutor {
   ): Promise<void> {
     switch (item.actionType) {
       case "builtin-global-command":
-        if (typeof this.options.plugin.globalCommand === "function") {
-          this.options.plugin.globalCommand(item.actionId);
+        if (await this.options.runBuiltinCommand?.(item.actionId)) {
           return;
         }
-        if (await this.options.runBuiltinCommand?.(item.actionId)) {
+        if (typeof this.options.plugin.globalCommand === "function") {
+          this.options.plugin.globalCommand(item.actionId);
           return;
         }
         await this.options.notify?.(`内置命令当前无法执行：${item.actionId}`, "error");

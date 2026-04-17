@@ -618,6 +618,7 @@ export function useSettingsController(props: SettingsAppProps) {
     onPreviewSurfaceDrop,
     onDisabledNativeDrop,
     openImportFilePicker: triggerImportFilePicker,
+    persist,
     pluginCommands,
     restoreDisabledNativeItem,
     disabledNativePreviewItems,

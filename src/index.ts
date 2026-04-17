@@ -3,6 +3,8 @@ import {
   Plugin,
   fetchSyncPost,
   getFrontend,
+  openSetting,
+  openTab,
   showMessage,
 } from "siyuan";
 import pluginInfo from "@/../plugin.json";
@@ -21,6 +23,7 @@ import {
   executeExperimentalClickSequence,
   executeExperimentalShortcut,
   executeBuiltinCommandByDom,
+  executeBuiltinCommandStable,
   PLUGIN_COMMANDS,
 } from "@/core/commands";
 import { PowerButtonsRuntime } from "@/core/runtime/plugin-runtime";
@@ -41,6 +44,13 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private readonly externalCommands = new ExternalCommandRegistry({
     getPlugins: () => this.getInstalledPlugins(),
   });
+  private readonly runBuiltinCommandStable = (commandId: string) => executeBuiltinCommandStable(commandId, {
+    app: this.app,
+    openAppSetting: app => openSetting(app as never),
+    openTab: options => openTab(options as never),
+    fetchPost: (url, data) => fetchSyncPost(url, data),
+    runBuiltinCommandByDom: targetCommandId => executeBuiltinCommandByDom(targetCommandId, document),
+  });
   private readonly experimentalActionRunners = createExperimentalActionRunners({
     getExperimentalSupport: feature => this.getExperimentalSupport(feature),
     showMessage,
@@ -50,7 +60,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       pluginWithGlobal.globalCommand?.(commandId);
     },
     pluginCommandHandlers: this.pluginCommandHandlers,
-    runBuiltinCommandByDom: commandId => executeBuiltinCommandByDom(commandId, document),
+    runBuiltinCommandByDom: commandId => this.runBuiltinCommandStable(commandId),
     executeExperimentalShortcut,
     executeExperimentalClickSequence,
     document,
@@ -66,7 +76,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     openUrl: (url: string) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
-    runBuiltinCommand: commandId => executeBuiltinCommandByDom(commandId, document),
+    runBuiltinCommand: commandId => this.runBuiltinCommandStable(commandId),
     runExperimentalShortcut: item => this.experimentalActionRunners.runExperimentalShortcut(item),
     runExperimentalClickSequence: item => this.experimentalActionRunners.runExperimentalClickSequence(item),
     sourcePluginVersion: pluginInfo.version,

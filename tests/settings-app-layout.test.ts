@@ -13,6 +13,7 @@ import {
 import {
   createDefaultConfig,
 } from "@/core/config";
+import { BUILTIN_COMMANDS } from "@/core/commands";
 import { createButtonItem } from "@/core/config/defaults";
 import { mountSettingsApp } from "@/main";
 
@@ -226,6 +227,41 @@ describe("settings app layout", () => {
     expect(shortcutInput?.placeholder).toBe("例如：Ctrl+B / Alt+5");
     expect(shortcutInput?.readOnly).toBe(true);
     expect(onChange).toHaveBeenCalled();
+
+    unmount();
+  });
+
+  it("persists builtin command changes from the settings editor immediately", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: BUILTIN_COMMANDS,
+      pluginCommands: [],
+      externalCommandProviders: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const builtinCommandSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "dailyNote"));
+
+    expect(builtinCommandSelect).not.toBeNull();
+    expect(builtinCommandSelect?.value).toBe("globalSearch");
+
+    builtinCommandSelect!.value = "dailyNote";
+    builtinCommandSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.items[0]?.actionId).toBe("dailyNote");
 
     unmount();
   });

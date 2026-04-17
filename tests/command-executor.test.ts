@@ -28,25 +28,10 @@ describe("command executor", () => {
 
   it("dispatches built-in global commands through the plugin API", async () => {
     const globalCommand = vi.fn();
+    const runBuiltinCommand = vi.fn(() => true);
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify: vi.fn(),
-      openUrl: vi.fn(),
-      pluginCommands: new Map(),
-      runBuiltinCommand: vi.fn(),
-    });
-
-    await executor.execute(createItem({}));
-
-    expect(globalCommand).toHaveBeenCalledWith("globalSearch");
-  });
-
-  it("falls back to the injected builtin runner when plugin globalCommand is unavailable", async () => {
-    const runBuiltinCommand = vi.fn(() => true);
-    const notify = vi.fn();
-    const executor = new CommandExecutor({
-      plugin: {} as never,
-      notify,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand,
@@ -55,7 +40,44 @@ describe("command executor", () => {
     await executor.execute(createItem({}));
 
     expect(runBuiltinCommand).toHaveBeenCalledWith("globalSearch");
+    expect(globalCommand).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the undocumented plugin global command when the stable builtin runner cannot execute", async () => {
+    const runBuiltinCommand = vi.fn(() => true);
+    const globalCommand = vi.fn();
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand } as never,
+      notify,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(() => false),
+    });
+
+    await executor.execute(createItem({}));
+
+    expect(globalCommand).toHaveBeenCalledWith("globalSearch");
     expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("keeps config as a builtin command and delegates it to the injected stable runner", async () => {
+    const runBuiltinCommand = vi.fn(() => true);
+    const globalCommand = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand } as never,
+      notify: vi.fn(),
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand,
+    });
+
+    await executor.execute(createItem({
+      actionId: "config",
+    }));
+
+    expect(runBuiltinCommand).toHaveBeenCalledWith("config");
+    expect(globalCommand).not.toHaveBeenCalled();
   });
 
   it("notifies instead of failing silently when a builtin command cannot be executed", async () => {

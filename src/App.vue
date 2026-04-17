@@ -3,7 +3,7 @@
     <header class="settings-header">
       <div>
         <h1>随心按</h1>
-        <p>哪里顺手放哪里，你的工具栏你做主——快捷按钮随心按，常用功能一键达。</p>
+        <p>快捷按钮随心按，常用功能一键达</p>
       </div>
       <div class="settings-header__actions">
         <button class="b3-button b3-button--outline" @click="resetConfig">恢复默认</button>
@@ -756,6 +756,7 @@ const {
   onPreviewItemDrop,
   onPreviewSurfaceDrop,
   openImportFilePicker,
+  persist,
   pluginCommands,
   previewChipClass,
   previewChipTitle,

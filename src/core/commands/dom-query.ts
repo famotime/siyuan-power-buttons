@@ -72,6 +72,8 @@ function queryAllByIdentifier(identifier: string, root: ParentNode): HTMLElement
   addMatches(`[data-menu-id="${escaped}"]`);
   addMatches(`[data-type="${escaped}"]`);
   addMatches(`[data-action="${escaped}"]`);
+  addMatches(`[title="${escaped}"]`);
+  addMatches(`[aria-label="${escaped}"]`);
   addMatches(`.${escapeClassName(identifier)}`);
   addMatches(`use[href="#${escaped}"], use[xlink\\:href="#${escaped}"]`);
 

@@ -76,4 +76,20 @@ describe("builtin dom command runner", () => {
     expect(nativeClick).toHaveBeenCalledTimes(1);
     expect(dispatchedClick).toHaveBeenCalledTimes(1);
   });
+
+  it("falls back to the builtin command title when the native control only exposes an aria label", () => {
+    document.body.innerHTML = `
+      <button aria-label="今日日记" type="button">
+        <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+      </button>
+    `;
+
+    const dailyNoteButton = document.querySelector('button[aria-label="今日日记"]') as HTMLButtonElement;
+    const dailyNoteClick = vi.fn();
+
+    dailyNoteButton.addEventListener("click", dailyNoteClick);
+
+    expect(executeBuiltinCommandByDom("dailyNote", document)).toBe(true);
+    expect(dailyNoteClick).toHaveBeenCalledTimes(1);
+  });
 });

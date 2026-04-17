@@ -35,7 +35,7 @@ export function createExperimentalActionRunners(options: {
   getKeymap: () => unknown;
   pluginGlobalCommand?: (command: string) => void;
   pluginCommandHandlers: Map<string, () => void | Promise<void>>;
-  runBuiltinCommandByDom: (commandId: string) => boolean;
+  runBuiltinCommandByDom: (commandId: string) => boolean | Promise<boolean>;
   executeExperimentalShortcut: (
     item: Pick<PowerButtonItem, 'actionType' | 'actionId' | 'experimentalShortcut'>,
     options: {
@@ -68,12 +68,15 @@ export function createExperimentalActionRunners(options: {
 
       return options.executeExperimentalShortcut(item, {
         getKeymap: options.getKeymap,
-        executeBuiltinCommand: commandId => {
+        executeBuiltinCommand: async (commandId) => {
+          if (await options.runBuiltinCommandByDom(commandId)) {
+            return true;
+          }
           if (typeof options.pluginGlobalCommand === 'function') {
             options.pluginGlobalCommand(commandId);
             return true;
           }
-          return options.runBuiltinCommandByDom(commandId);
+          return false;
         },
         executePluginCommand: async (commandId) => {
           const handler = options.pluginCommandHandlers.get(commandId);

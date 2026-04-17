@@ -1,3 +1,4 @@
+import { BUILTIN_COMMANDS } from "@/core/commands/catalog";
 import { triggerElementBySmartSelectors } from "@/core/commands/dom-query";
 
 const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
@@ -117,8 +118,26 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
   ],
 };
 
-export function executeBuiltinCommandByDom(commandId: string, root: ParentNode = document): boolean {
+function getBuiltinCommandQueries(commandId: string): string[] {
   const queries = BUILTIN_COMMAND_QUERIES[commandId];
+  if (!queries?.length) {
+    return [];
+  }
+
+  const title = BUILTIN_COMMANDS.find(command => command.id === commandId)?.title.trim();
+  if (!title) {
+    return queries;
+  }
+
+  return [
+    ...queries,
+    title,
+    `text:${title}`,
+  ];
+}
+
+export function executeBuiltinCommandByDom(commandId: string, root: ParentNode = document): boolean {
+  const queries = getBuiltinCommandQueries(commandId);
   if (!queries?.length) {
     return false;
   }
