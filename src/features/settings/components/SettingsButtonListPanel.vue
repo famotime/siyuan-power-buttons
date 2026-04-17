@@ -74,6 +74,7 @@
 
 <script setup lang="ts">
 import type { Ref } from 'vue';
+import { renderNamedIcon } from '@/features/settings/view-helpers';
 import type { PowerButtonItem, PowerButtonsConfig } from '@/shared/types';
 
 defineProps<{
@@ -95,9 +96,5 @@ defineProps<{
   handleImportFile: (event: Event) => void | Promise<void>;
 }>();
 
-const TRASH_ICON = `
-  <svg class="siyuan-power-buttons__icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4zm1 6h2v8h-2zm4 0h2v8h-2zM7 9h2v8H7zm1 12a2 2 0 0 1-2-2V7h12v12a2 2 0 0 1-2 2z" />
-  </svg>
-`;
+const TRASH_ICON = renderNamedIcon('iconpark:Delete');
 </script>

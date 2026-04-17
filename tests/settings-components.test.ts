@@ -60,4 +60,40 @@ describe('settings components', () => {
 
     app.unmount();
   });
+
+  it('renders the delete action with a stroked trash icon instead of a filled block', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const config = createDefaultConfig();
+
+    const app = createApp(SettingsButtonListPanel, {
+      config,
+      selectedId: config.items[0].id,
+      selectedItem: config.items[0],
+      importFileInput: ref<HTMLInputElement | null>(null),
+      renderBuiltinIconMarkup: () => '<svg viewBox="0 0 24 24"></svg>',
+      surfaceLabel: (value: string) => value,
+      addItem: vi.fn(),
+      duplicateItem: vi.fn(),
+      selectItem: vi.fn(),
+      toggleVisible: vi.fn(),
+      removeItem: vi.fn(),
+      onListDragStart: vi.fn(),
+      onListDrop: vi.fn(),
+      exportConfigFile: vi.fn(),
+      openImportFilePicker: vi.fn(),
+      handleImportFile: vi.fn(),
+    });
+
+    app.mount(target);
+    await nextTick();
+
+    const deleteIconMarkup = target.querySelector<HTMLButtonElement>('.button-list__delete')?.innerHTML || '';
+
+    expect(deleteIconMarkup).toContain('stroke="currentColor"');
+    expect(deleteIconMarkup).toContain('fill:none');
+
+    app.unmount();
+  });
 });
