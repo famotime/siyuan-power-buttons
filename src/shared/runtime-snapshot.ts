@@ -261,7 +261,7 @@ export function readNativeSurfaceSnapshot(root: ParentNode = document): PreviewB
   );
   const statusContainer = root.querySelector<HTMLElement>("#status");
   const statusbar = splitSurfaceByContainer(
-    queryUniqueElements(root, STATUS_SELECTORS),
+    queryUniqueElements(root, STATUS_SELECTORS, element => !isPreviewHidden(element)),
     statusContainer,
     "statusbar-left",
     "statusbar-right",

@@ -1125,6 +1125,57 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("removes a native status bar preview button after it is moved into the disabled tray", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-status-help-preview",
+          title: "帮助",
+          visible: true,
+          surface: "statusbar-right",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+          nativeSelectors: ["#statusHelp"],
+        },
+      ]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const nativeButton = Array.from(target.querySelectorAll(".workspace-preview__statusbar .workspace-chip.is-native"))
+      .find(node => node.textContent?.includes("帮助")) as HTMLButtonElement | undefined;
+    const disabledDropzone = target.querySelector(".workspace-preview__disabled-items") as HTMLElement;
+
+    expect(nativeButton?.textContent).toContain("帮助");
+
+    nativeButton?.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    disabledDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    expect(onChange).toHaveBeenCalled();
+    const remainingStatusbarButton = Array.from(target.querySelectorAll(".workspace-preview__statusbar .workspace-chip.is-native"))
+      .find(node => node.textContent?.includes("帮助"));
+    expect(remainingStatusbarButton).toBeUndefined();
+    expect(target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed[aria-label='帮助']")).not.toBeNull();
+
+    unmount();
+  });
+
   it("restores a disabled native button when it is dragged back to its original preview surface", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

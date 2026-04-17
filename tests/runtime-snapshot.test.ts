@@ -132,6 +132,28 @@ describe("runtime surface snapshot", () => {
     expect(snapshot.filter(item => item.surface === "topbar").map(item => item.title)).toEqual(["工作空间", "更多"]);
   });
 
+  it("skips hidden status bar items", () => {
+    document.body.innerHTML = `
+      <div id="status">
+        <button title="同步"></button>
+        <button title="帮助" hidden></button>
+        <button title="设置" class="fn__none" data-hide="true"></button>
+      </div>
+    `;
+
+    const status = document.getElementById("status");
+    const [syncButton, hiddenHelpButton, hiddenSettingsButton] = Array.from(document.querySelectorAll("#status button"));
+
+    mockRect(status!, { left: 0, right: 240, width: 240 });
+    mockRect(syncButton, { left: 12, right: 32, width: 20 });
+    mockRect(hiddenHelpButton, { left: 160, right: 180, width: 20 });
+    mockRect(hiddenSettingsButton, { left: 196, right: 216, width: 20 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+
+    expect(snapshot.filter(item => item.surface.startsWith("statusbar-")).map(item => item.title)).toEqual(["同步"]);
+  });
+
   it("reads native editor toolbar buttons into the canvas preview area", () => {
     document.body.innerHTML = `
       <div class="layout__center">
