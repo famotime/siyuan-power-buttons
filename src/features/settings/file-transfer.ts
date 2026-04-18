@@ -3,6 +3,21 @@ import type { PowerButtonsConfig } from "@/shared/types";
 
 type UrlApi = Pick<typeof URL, "createObjectURL" | "revokeObjectURL">;
 
+function padDatePart(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function buildExportConfigFilename(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = padDatePart(date.getMonth() + 1);
+  const day = padDatePart(date.getDate());
+  const hours = padDatePart(date.getHours());
+  const minutes = padDatePart(date.getMinutes());
+  const seconds = padDatePart(date.getSeconds());
+
+  return `siyuan-power-buttons-config-${year}${month}${day}-${hours}${minutes}${seconds}.json`;
+}
+
 export function exportConfigFile(
   config: PowerButtonsConfig,
   ownerDocument: Document = document,
@@ -13,7 +28,7 @@ export function exportConfigFile(
   const url = urlApi.createObjectURL(blob);
   const link = ownerDocument.createElement("a");
   link.href = url;
-  link.download = "siyuan-power-buttons-config.json";
+  link.download = buildExportConfigFilename();
   link.click();
   urlApi.revokeObjectURL(url);
 }
