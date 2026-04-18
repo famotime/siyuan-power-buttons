@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDefaultConfig } from "@/core/config";
+import { createButtonItem, createDefaultConfig } from "@/core/config";
 import {
   buildPreviewLayout,
   movePreviewItem,
@@ -7,8 +7,20 @@ import {
 
 describe("preview layout", () => {
   it("maps configurable buttons into topbar and statusbar regions", () => {
-    const config = createDefaultConfig();
-    const layout = buildPreviewLayout(config.items);
+    const layout = buildPreviewLayout([
+      createButtonItem({
+        id: "topbar-item",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "statusbar-left-item",
+        title: "今日日记",
+        surface: "statusbar-left",
+        order: 1,
+      }),
+    ]);
 
     expect(layout.topbar.length).toBe(1);
     expect(layout.statusbarLeft.length).toBe(1);
@@ -18,15 +30,22 @@ describe("preview layout", () => {
 
   it("keeps unknown regions empty and preserves button order", () => {
     const config = createDefaultConfig();
-    config.items.push({
-      ...config.items[0],
-      id: "extra-1",
-      title: "返回",
-      actionId: "goBack",
-      iconValue: "iconLeft",
-      surface: "topbar",
-      order: 99,
-    });
+    config.items = [
+      createButtonItem({
+        id: "recent-docs",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "go-back",
+        title: "返回",
+        actionId: "goBack",
+        iconValue: "iconLeft",
+        surface: "topbar",
+        order: 99,
+      }),
+    ];
 
     const layout = buildPreviewLayout(config.items);
 
@@ -36,8 +55,15 @@ describe("preview layout", () => {
 
   it("can include hidden buttons in preview when requested", () => {
     const config = createDefaultConfig();
-    config.items[1].surface = "statusbar-right";
-    config.items[1].visible = false;
+    config.items = [
+      createButtonItem({
+        id: "hidden-statusbar-item",
+        title: "隐藏按钮",
+        surface: "statusbar-right",
+        visible: false,
+        order: 0,
+      }),
+    ];
 
     const defaultLayout = buildPreviewLayout(config.items);
     const completeLayout = buildPreviewLayout(config.items, { includeHidden: true });
@@ -49,7 +75,14 @@ describe("preview layout", () => {
 
   it("treats canvas as a configurable preview surface for user buttons", () => {
     const config = createDefaultConfig();
-    config.items[0].surface = "canvas";
+    config.items = [
+      createButtonItem({
+        id: "canvas-item",
+        title: "最近文档",
+        surface: "canvas",
+        order: 0,
+      }),
+    ];
 
     const layout = buildPreviewLayout(config.items, { includeHidden: true });
 
@@ -59,15 +92,22 @@ describe("preview layout", () => {
 
   it("moves buttons across preview surfaces while preserving target order", () => {
     const config = createDefaultConfig();
-    config.items.push({
-      ...config.items[0],
-      id: "extra-2",
-      title: "帮助",
-      actionId: "help",
-      iconValue: "iconHelp",
-      surface: "statusbar-right",
-      order: 3,
-    });
+    config.items = [
+      createButtonItem({
+        id: "recent-docs",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "help",
+        title: "帮助",
+        actionId: "help",
+        iconValue: "iconHelp",
+        surface: "statusbar-right",
+        order: 1,
+      }),
+    ];
 
     const moved = movePreviewItem(config.items, config.items[0].id, "statusbar-right", 1);
     const layout = buildPreviewLayout(moved, { includeHidden: true });

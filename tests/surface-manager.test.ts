@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDefaultConfig } from "@/core/config";
 import { CommandExecutor } from "@/core/commands";
+import { createButtonItem } from "@/core/config/defaults";
 import { SurfaceManager } from "@/core/surfaces";
 import * as commands from "@/core/commands";
 
@@ -26,7 +27,17 @@ describe("surface manager", () => {
       ]),
     }));
 
-    manager.render(createDefaultConfig());
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "topbar-docs",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+    ];
+
+    manager.render(config);
 
     expect(addTopBar).toHaveBeenCalledTimes(2);
     expect(addTopBar.mock.calls[0][0]).toMatchObject({
@@ -64,7 +75,23 @@ describe("surface manager", () => {
       pluginCommands: new Map(),
     }));
 
-    manager.render(createDefaultConfig());
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "topbar-docs",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "statusbar-note",
+        title: "今日日记",
+        surface: "statusbar-right",
+        order: 1,
+      }),
+    ];
+
+    manager.render(config);
 
     expect(addTopBar).toHaveBeenCalledTimes(2);
     expect(addStatusBar).toHaveBeenCalledTimes(1);
@@ -130,7 +157,14 @@ describe("surface manager", () => {
     }));
 
     const config = createDefaultConfig();
-    config.items[0].surface = "canvas";
+    config.items = [
+      createButtonItem({
+        id: "canvas-docs",
+        title: "最近文档",
+        surface: "canvas",
+        order: 0,
+      }),
+    ];
 
     manager.render(config);
 
@@ -173,7 +207,14 @@ describe("surface manager", () => {
     }));
 
     const config = createDefaultConfig();
-    config.items[0].surface = "canvas";
+    config.items = [
+      createButtonItem({
+        id: "canvas-docs",
+        title: "最近文档",
+        surface: "canvas",
+        order: 0,
+      }),
+    ];
 
     manager.render(config);
 

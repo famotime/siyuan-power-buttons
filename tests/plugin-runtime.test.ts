@@ -76,7 +76,7 @@ describe("settings dialog controller", () => {
 
     const activeItem = hostRoot.querySelector(".button-list__item.is-active strong");
     expect(settingsUiState.lastSelectedButtonId).toBeTruthy();
-    expect(activeItem?.textContent?.trim()).toBe("今日日记");
+    expect(activeItem?.textContent?.trim()).toBe("最近文档");
   });
 
   it("persists the latest selected button id before teardown", () => {
@@ -455,10 +455,10 @@ describe("plugin runtime", () => {
     expect(state.showMessage).toHaveBeenCalledWith("读取插件命令失败：registry offline", 5000, "error");
   });
 
-  it("keeps the fixed open-settings plugin command even when default config has no settings surface button", async () => {
+  it("keeps the fixed open-settings plugin command even when the default config already includes a settings button", async () => {
     const state = createRuntime();
 
-    expect(state.config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(false);
+    expect(state.config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(true);
 
     await state.runtime.onload();
     const openSettingsCommand = state.addCommand.mock.calls.find(call => call[0].langKey === "power-buttons-open-settings")?.[0];

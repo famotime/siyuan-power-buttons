@@ -41,7 +41,7 @@ describe('settings components', () => {
     app.mount(target);
     await nextTick();
 
-    expect(target.textContent).toContain('2 个按钮');
+    expect(target.textContent).toContain(`${config.items.length} 个按钮`);
 
     const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>('.button-list__main'));
     listButtons[1]?.click();

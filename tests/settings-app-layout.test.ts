@@ -100,7 +100,7 @@ describe("settings app layout", () => {
     expect(headerActions?.textContent).toContain("恢复默认");
     expect(headerActions?.textContent).not.toContain("新建");
     expect(target.textContent).not.toContain("实验功能");
-    expect(listTitles.slice(0, 2)).toEqual(["最近文档", "今日日记"]);
+    expect(listTitles.slice(0, 2)).toEqual(["今日日记", "最近文档"]);
 
     unmount();
   });
@@ -121,7 +121,7 @@ describe("settings app layout", () => {
     await nextTick();
 
     const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
-    expect(listButtons).toHaveLength(2);
+    expect(listButtons).toHaveLength(createDefaultConfig().items.length);
 
     listButtons[1]?.click();
     await nextTick();
@@ -129,8 +129,8 @@ describe("settings app layout", () => {
     const activeItem = target.querySelector(".button-list__item.is-active strong");
     const editorTitle = target.querySelector(".settings-panel--editor .panel-title p");
 
-    expect(activeItem?.textContent?.trim()).toBe("今日日记");
-    expect(editorTitle?.textContent).toContain("今日日记");
+    expect(activeItem?.textContent?.trim()).toBe("最近文档");
+    expect(editorTitle?.textContent).toContain("最近文档");
 
     unmount();
   });
@@ -286,15 +286,15 @@ describe("settings app layout", () => {
       .find(select => Array.from(select.options).some(option => option.value === "dailyNote"));
 
     expect(builtinCommandSelect).not.toBeNull();
-    expect(builtinCommandSelect?.value).toBe("recentDocs");
+    expect(builtinCommandSelect?.value).toBe("dailyNote");
 
-    builtinCommandSelect!.value = "dailyNote";
+    builtinCommandSelect!.value = "recentDocs";
     builtinCommandSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items[0]?.actionId).toBe("dailyNote");
+    expect(latestConfig?.items[0]?.actionId).toBe("recentDocs");
 
     unmount();
   });
@@ -812,7 +812,7 @@ describe("settings app layout", () => {
     const sidebarToggles = target.querySelectorAll(".settings-panel--sidebar .switch-button--compact");
 
     expect(editorPanel?.textContent).not.toContain("显示状态");
-    expect(sidebarToggles).toHaveLength(2);
+    expect(sidebarToggles).toHaveLength(createDefaultConfig().items.length);
 
     unmount();
   });
@@ -1266,9 +1266,18 @@ describe("settings app layout", () => {
     document.body.appendChild(target);
 
     const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "topbar-preview-item",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+    ];
 
     const unmount = mountSettingsApp(target, {
-      initialConfig: createDefaultConfig(),
+      initialConfig,
       builtinCommands: [],
       pluginCommands: [],
       onChange,
@@ -1300,9 +1309,11 @@ describe("settings app layout", () => {
     document.body.appendChild(target);
 
     const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [];
 
     const unmount = mountSettingsApp(target, {
-      initialConfig: createDefaultConfig(),
+      initialConfig,
       builtinCommands: [],
       pluginCommands: [],
       onChange,
@@ -1358,9 +1369,11 @@ describe("settings app layout", () => {
     document.body.appendChild(target);
 
     const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [];
 
     const unmount = mountSettingsApp(target, {
-      initialConfig: createDefaultConfig(),
+      initialConfig,
       builtinCommands: [],
       pluginCommands: [],
       onChange,
@@ -1409,9 +1422,11 @@ describe("settings app layout", () => {
     document.body.appendChild(target);
 
     const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [];
 
     const unmount = mountSettingsApp(target, {
-      initialConfig: createDefaultConfig(),
+      initialConfig,
       builtinCommands: [],
       pluginCommands: [],
       onChange,
@@ -1463,9 +1478,18 @@ describe("settings app layout", () => {
   it("writes drag data for preview chips so browser drag-and-drop can start reliably", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "topbar-preview-item",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+    ];
 
     const unmount = mountSettingsApp(target, {
-      initialConfig: createDefaultConfig(),
+      initialConfig,
       builtinCommands: [],
       pluginCommands: [],
       onChange: vi.fn(),

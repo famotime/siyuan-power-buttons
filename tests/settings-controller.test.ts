@@ -115,13 +115,18 @@ describe('settings controller', () => {
     const persistedConfig = onChange.mock.calls.at(-1)?.[0];
     expect(confirmSpy).toHaveBeenCalledWith('确定恢复默认按钮配置吗？');
     expect(onReadCurrentLayout).toHaveBeenCalledTimes(1);
-    expect(persistedConfig?.items.map((item: { title: string }) => item.title)).toEqual(['最近文档', '今日日记']);
+    expect(persistedConfig?.items.map((item: { title: string }) => item.title)).toEqual(
+      createDefaultConfig().items.map(item => item.title),
+    );
     expect(controller.selectedId.value).toBe(persistedConfig?.items[0]?.id);
   });
 
   it('moves a native preview button into the disabled tray and persists the suppression rule', async () => {
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [];
     const onChange = vi.fn().mockResolvedValue(undefined);
     const controller = useSettingsController(createProps({
+      initialConfig,
       onChange,
       onReadCurrentLayout: vi.fn().mockResolvedValue([
         {
@@ -161,8 +166,18 @@ describe('settings controller', () => {
   });
 
   it('moves an editable preview button to a different surface and persists the new location', async () => {
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: 'topbar-item',
+        title: '顶部按钮',
+        surface: 'topbar',
+        order: 0,
+      }),
+    ];
     const onChange = vi.fn().mockResolvedValue(undefined);
     const controller = useSettingsController(createProps({
+      initialConfig,
       onChange,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     }));

@@ -8,17 +8,33 @@ import {
 import { CONFIGURABLE_SURFACES } from "@/shared/types";
 
 describe("config store model", () => {
-  it("creates a desktop-only default config without a prebuilt settings button and keeps experimental adapters enabled", () => {
+  it("creates a desktop-only documented default config with mixed action types and native suppression defaults", () => {
     const config = createDefaultConfig();
 
     expect(config.version).toBe(2);
     expect(config.desktopOnly).toBe(true);
-    expect(config.items.length).toBe(2);
+    expect(config.items.length).toBe(9);
     expect(config.items.every(item => item.visible)).toBe(true);
-    expect(config.items.map(item => item.title)).toEqual(["最近文档", "今日日记"]);
+    expect(config.items.map(item => item.title)).toEqual([
+      "今日日记",
+      "最近文档",
+      "数据历史",
+      "集市",
+      "重启所有插件",
+      "切换到英文",
+      "切换到中文",
+      "仅导出当前文档",
+      "随心按设置",
+    ]);
     expect(config.items.every(item => item.iconType === "iconpark")).toBe(true);
-    expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(false);
+    expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(true);
+    expect(config.items.some(item => item.actionType === "experimental-shortcut")).toBe(true);
+    expect(config.items.some(item => item.actionType === "experimental-click-sequence")).toBe(true);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
+    expect(config.disabledNativeButtons.map(item => item.id)).toEqual([
+      "native:statusbar-right:barDock",
+      "native:statusbar-right:statusHelp",
+    ]);
     expect(config.experimental.shortcutAdapter).toBe(true);
     expect(config.experimental.clickSequenceAdapter).toBe(true);
   });
@@ -290,13 +306,13 @@ describe("config store model", () => {
     const snapshot = store.snapshot();
     snapshot.items[0].title = "snapshot mutation";
 
-    expect(store.getConfig().items[0].title).toBe("最近文档");
-    expect(notified).toEqual(["最近文档"]);
+    expect(store.getConfig().items[0].title).toBe("今日日记");
+    expect(notified).toEqual(["今日日记"]);
 
     const resetSnapshot = await store.reset();
     resetSnapshot.items[0].title = "reset snapshot mutation";
 
-    expect(store.getConfig().items[0].title).toBe("最近文档");
+    expect(store.getConfig().items[0].title).toBe("今日日记");
   });
 
   it("preserves native suppression rules when sanitizing config", () => {
