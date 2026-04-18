@@ -10,6 +10,10 @@ function normalizeText(value: string | null | undefined): string {
   return (value || "").replace(/\s+/g, " ").trim();
 }
 
+function isPluginOwnedElement(element: Element | null): boolean {
+  return (element as HTMLElement | null | undefined)?.dataset?.powerButtonsOwned === "true";
+}
+
 function toClickableElement(element: Element | null): HTMLElement | null {
   if (!element) {
     return null;
@@ -32,7 +36,7 @@ function queryAllByText(text: string, root: ParentNode): HTMLElement[] {
   for (const element of root.querySelectorAll("*")) {
     if (normalizeText(element.textContent) === text) {
       const clickable = toClickableElement(element);
-      if (clickable && !seen.has(clickable)) {
+      if (clickable && !seen.has(clickable) && !isPluginOwnedElement(clickable)) {
         seen.add(clickable);
         elements.push(clickable);
       }
@@ -54,7 +58,7 @@ function queryAllByIdentifier(identifier: string, root: ParentNode): HTMLElement
 
   const addMatch = (element: Element | null): void => {
     const clickable = toClickableElement(element);
-    if (clickable && !seen.has(clickable)) {
+    if (clickable && !seen.has(clickable) && !isPluginOwnedElement(clickable)) {
       seen.add(clickable);
       matches.push(clickable);
     }
@@ -107,7 +111,7 @@ export function findElementsBySmartSelector(selector: string, root: ParentNode =
     const seen = new Set<HTMLElement>();
     for (const element of root.querySelectorAll(trimmed)) {
       const clickable = toClickableElement(element);
-      if (clickable && !seen.has(clickable)) {
+      if (clickable && !seen.has(clickable) && !isPluginOwnedElement(clickable)) {
         seen.add(clickable);
         matches.push(clickable);
       }

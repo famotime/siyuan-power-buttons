@@ -147,4 +147,183 @@ describe('builtin stable runner', () => {
       },
     });
   });
+
+  it('restarts plugins by toggling bazaar plugin availability off and on', async () => {
+    const fetchPost = vi.fn()
+      .mockResolvedValueOnce({
+        code: 0,
+        data: null,
+      })
+      .mockResolvedValueOnce({
+        code: 0,
+        data: null,
+      });
+    const reloadWindow = vi.fn();
+
+    const result = await executeBuiltinCommandStable('restartPlugins', {
+      app: { id: 'app' },
+      openAppSetting: vi.fn(),
+      openTab: vi.fn(),
+      fetchPost,
+      getBazaarConfig: () => ({
+        trust: true,
+        petalDisabled: false,
+      }),
+      reloadWindow,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(true);
+    expect(fetchPost).toHaveBeenNthCalledWith(1, '/api/setting/setBazaar', {
+      trust: true,
+      petalDisabled: true,
+    });
+    expect(fetchPost).toHaveBeenNthCalledWith(2, '/api/setting/setBazaar', {
+      trust: true,
+      petalDisabled: false,
+    });
+    expect(reloadWindow).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns false when plugin re-enable fails after a successful disable', async () => {
+    const fetchPost = vi.fn()
+      .mockResolvedValueOnce({
+        code: 0,
+        data: null,
+      })
+      .mockResolvedValueOnce({
+        code: 1,
+        msg: 'enable failed',
+      });
+
+    const result = await executeBuiltinCommandStable('restartPlugins', {
+      app: { id: 'app' },
+      openAppSetting: vi.fn(),
+      openTab: vi.fn(),
+      fetchPost,
+      getBazaarConfig: () => ({
+        trust: true,
+        petalDisabled: false,
+      }),
+      reloadWindow: vi.fn(),
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(false);
+    expect(fetchPost).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not reload the window when the plugin restart sequence fails', async () => {
+    const fetchPost = vi.fn()
+      .mockResolvedValueOnce({
+        code: 0,
+        data: null,
+      })
+      .mockResolvedValueOnce({
+        code: 1,
+        msg: 'enable failed',
+      });
+    const reloadWindow = vi.fn();
+
+    const result = await executeBuiltinCommandStable('restartPlugins', {
+      app: { id: 'app' },
+      openAppSetting: vi.fn(),
+      openTab: vi.fn(),
+      fetchPost,
+      getBazaarConfig: () => ({
+        trust: true,
+        petalDisabled: false,
+      }),
+      reloadWindow,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(false);
+    expect(reloadWindow).not.toHaveBeenCalled();
+  });
+
+  it('returns false without calling the API when bazaar config is unavailable for plugin restart', async () => {
+    const fetchPost = vi.fn();
+
+    const result = await executeBuiltinCommandStable('restartPlugins', {
+      app: { id: 'app' },
+      openAppSetting: vi.fn(),
+      openTab: vi.fn(),
+      fetchPost,
+      getBazaarConfig: () => null,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(false);
+    expect(fetchPost).not.toHaveBeenCalled();
+  });
+
+  it('skips notebooks without a daily note path and falls back to the next available notebook', async () => {
+    const openTab = vi.fn();
+    const fetchPost = vi.fn()
+      .mockResolvedValueOnce({
+        code: 0,
+        data: {
+          notebooks: [
+            { id: 'notebook-a', name: 'A', icon: '', sort: 0, closed: false },
+            { id: 'notebook-b', name: 'B', icon: '', sort: 1, closed: false },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        code: 0,
+        data: {
+          conf: {
+            dailyNoteSavePath: '',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        code: 0,
+        data: {
+          conf: {
+            dailyNoteSavePath: '/daily/{{now | date "2006-01-02"}}',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        code: 0,
+        data: '/daily/2026-04-18',
+      })
+      .mockResolvedValueOnce({
+        code: 0,
+        data: [
+          { id: 'existing-daily-note-b' },
+        ],
+      });
+
+    const result = await executeBuiltinCommandStable('dailyNote', {
+      app: { id: 'app' },
+      openAppSetting: vi.fn(),
+      openTab,
+      fetchPost,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(true);
+    expect(fetchPost).toHaveBeenNthCalledWith(1, '/api/notebook/lsNotebooks', '');
+    expect(fetchPost).toHaveBeenNthCalledWith(2, '/api/notebook/getNotebookConf', {
+      notebook: 'notebook-a',
+    });
+    expect(fetchPost).toHaveBeenNthCalledWith(3, '/api/notebook/getNotebookConf', {
+      notebook: 'notebook-b',
+    });
+    expect(fetchPost).toHaveBeenNthCalledWith(4, '/api/template/renderSprig', {
+      template: '/daily/{{now | date "2006-01-02"}}',
+    });
+    expect(fetchPost).toHaveBeenNthCalledWith(5, '/api/query/sql', {
+      stmt: "SELECT id FROM blocks WHERE box = 'notebook-b' AND hpath = '/daily/2026-04-18' AND type = 'd' LIMIT 1",
+    });
+    expect(openTab).toHaveBeenCalledWith({
+      app: { id: 'app' },
+      doc: {
+        id: 'existing-daily-note-b',
+      },
+    });
+  });
 });

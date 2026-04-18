@@ -7,6 +7,7 @@ import type {
 } from "@/shared/types";
 
 export const DEFAULT_CLICK_SEQUENCE_SELECTOR = "text:设置";
+export const DEFAULT_BUILTIN_COMMAND_ID = "recentDocs";
 
 export function getDefaultActionId(actionType: ActionType): string {
   if (actionType === "experimental-shortcut") {
@@ -18,11 +19,11 @@ export function getDefaultActionId(actionType: ActionType): string {
   if (actionType === "experimental-click-sequence") {
     return DEFAULT_CLICK_SEQUENCE_SELECTOR;
   }
-  return "globalSearch";
+  return DEFAULT_BUILTIN_COMMAND_ID;
 }
 
 export function getClickSequenceFallbackSelector(actionId: string): string {
-  return actionId && actionId !== "globalSearch" ? actionId : DEFAULT_CLICK_SEQUENCE_SELECTOR;
+  return actionId && actionId !== DEFAULT_BUILTIN_COMMAND_ID ? actionId : DEFAULT_CLICK_SEQUENCE_SELECTOR;
 }
 
 export function createExperimentalShortcutConfig(

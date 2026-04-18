@@ -102,7 +102,7 @@ describe("settings action config helpers", () => {
     applyActionTypeDefaults(pluginItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS);
     applyActionTypeDefaults(shortcutItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS);
 
-    expect(builtinItem.actionId).toBe(BUILTIN_COMMANDS[0].id);
+    expect(builtinItem.actionId).toBe("recentDocs");
     expect(pluginItem.actionId).toBe("siyuan-power-buttons:open-settings");
     expect(shortcutItem.actionId).toBe("");
     expect(shortcutItem.experimentalShortcut?.shortcut).toBe("");

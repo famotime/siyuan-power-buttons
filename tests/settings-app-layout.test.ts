@@ -100,7 +100,7 @@ describe("settings app layout", () => {
     expect(headerActions?.textContent).toContain("恢复默认");
     expect(headerActions?.textContent).not.toContain("新建");
     expect(target.textContent).not.toContain("实验功能");
-    expect(listTitles.slice(0, 2)).toEqual(["全局搜索", "大纲"]);
+    expect(listTitles.slice(0, 2)).toEqual(["最近文档", "今日日记"]);
 
     unmount();
   });
@@ -129,8 +129,8 @@ describe("settings app layout", () => {
     const activeItem = target.querySelector(".button-list__item.is-active strong");
     const editorTitle = target.querySelector(".settings-panel--editor .panel-title p");
 
-    expect(activeItem?.textContent?.trim()).toBe("大纲");
-    expect(editorTitle?.textContent).toContain("大纲");
+    expect(activeItem?.textContent?.trim()).toBe("今日日记");
+    expect(editorTitle?.textContent).toContain("今日日记");
 
     unmount();
   });
@@ -253,7 +253,7 @@ describe("settings app layout", () => {
       .find(select => Array.from(select.options).some(option => option.value === "dailyNote"));
 
     expect(builtinCommandSelect).not.toBeNull();
-    expect(builtinCommandSelect?.value).toBe("globalSearch");
+    expect(builtinCommandSelect?.value).toBe("recentDocs");
 
     builtinCommandSelect!.value = "dailyNote";
     builtinCommandSelect!.dispatchEvent(new Event("change"));
@@ -1208,7 +1208,7 @@ describe("settings app layout", () => {
 
     expect(onChange).toHaveBeenCalled();
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items.find((item: { title: string }) => item.title === "全局搜索")?.surface).toBe("canvas");
+    expect(latestConfig?.items.find((item: { title: string }) => item.title === "最近文档")?.surface).toBe("canvas");
 
     unmount();
   });

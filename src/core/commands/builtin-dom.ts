@@ -9,11 +9,6 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
     "backlinks",
     "barBacklink",
   ],
-  bookmark: [
-    "#dockLeft .dock__item[data-type='bookmark']",
-    "bookmark",
-    "barBookmark",
-  ],
   config: [
     "#barSettings",
     "barSettings",
@@ -28,67 +23,6 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
     "dailyNote",
     "daily",
   ],
-  fileTree: [
-    "#dockLeft .dock__item[data-type='file']",
-    "#dockLeft .dock__item[data-type='file-tree']",
-    "barFile",
-    "toolbarFile",
-    "file",
-    "fileTree",
-  ],
-  globalGraph: [
-    "#dockBottom .dock__item[data-type='globalGraph']",
-    "#dockBottom .dock__item[data-type='graph']",
-    "barGraphGlobal",
-    "globalGraph",
-  ],
-  globalSearch: [
-    "#barSearch",
-    "barSearch",
-    "menuSearch",
-    "globalSearch",
-    "search",
-  ],
-  goBack: [
-    "barBack",
-    "goBack",
-    "back",
-  ],
-  goForward: [
-    "barForward",
-    "goForward",
-    "forward",
-  ],
-  graphView: [
-    "#dockBottom .dock__item[data-type='graph']",
-    "barGraph",
-    "graph",
-    "graphView",
-  ],
-  inbox: [
-    "#dockRight .dock__item[data-type='inbox']",
-    "barInbox",
-    "menuInbox",
-    "inbox",
-  ],
-  mainMenu: [
-    "toolbarMore",
-    "barMore",
-    "more",
-    "iconMore",
-  ],
-  newFile: [
-    "#barNewDoc",
-    "barNewDoc",
-    "menuNewDoc",
-    "newFile",
-    "new",
-  ],
-  outline: [
-    "#dockLeft .dock__item[data-type='outline']",
-    "barOutline",
-    "outline",
-  ],
   recentDocs: [
     "menuRecent",
     "recentDocs",
@@ -99,22 +33,12 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
     "riffCard",
     "barRiffCard",
   ],
-  stickSearch: [
-    "pin",
-    "stickySearch",
-    "stickSearch",
-  ],
   syncNow: [
     "#barSync",
     "barSync",
     "menuSyncNow",
     "syncNow",
     "sync",
-  ],
-  tag: [
-    "#dockRight .dock__item[data-type='tag']",
-    "barTag",
-    "tag",
   ],
 };
 

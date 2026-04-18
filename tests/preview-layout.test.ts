@@ -30,7 +30,7 @@ describe("preview layout", () => {
 
     const layout = buildPreviewLayout(config.items);
 
-    expect(layout.topbar.map(item => item.title)).toEqual(["全局搜索", "返回"]);
+    expect(layout.topbar.map(item => item.title)).toEqual(["最近文档", "返回"]);
     expect(layout.bottomDockLeft.length).toBe(0);
   });
 
@@ -53,7 +53,7 @@ describe("preview layout", () => {
 
     const layout = buildPreviewLayout(config.items, { includeHidden: true });
 
-    expect(layout.canvas.map(item => item.title)).toContain("全局搜索");
+    expect(layout.canvas.map(item => item.title)).toContain("最近文档");
     expect(layout.topbar).toHaveLength(0);
   });
 
@@ -73,6 +73,6 @@ describe("preview layout", () => {
     const layout = buildPreviewLayout(moved, { includeHidden: true });
 
     expect(layout.topbar).toHaveLength(0);
-    expect(layout.statusbarRight.map(item => item.title)).toEqual(["帮助", "全局搜索"]);
+    expect(layout.statusbarRight.map(item => item.title)).toEqual(["帮助", "最近文档"]);
   });
 });

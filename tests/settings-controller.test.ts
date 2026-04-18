@@ -62,7 +62,7 @@ describe('settings controller', () => {
     const persistedConfig = onChange.mock.calls.at(-1)?.[0];
     expect(confirmSpy).toHaveBeenCalledWith('确定恢复默认按钮配置吗？');
     expect(onReadCurrentLayout).toHaveBeenCalledTimes(1);
-    expect(persistedConfig?.items.map((item: { title: string }) => item.title)).toEqual(['全局搜索', '大纲']);
+    expect(persistedConfig?.items.map((item: { title: string }) => item.title)).toEqual(['最近文档', '今日日记']);
     expect(controller.selectedId.value).toBe(persistedConfig?.items[0]?.id);
   });
 

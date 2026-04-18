@@ -15,6 +15,12 @@ type NotebookConfResponse = {
   };
 };
 
+type BazaarConfig = {
+  trust?: boolean;
+  petalDisabled: boolean;
+  [key: string]: unknown;
+};
+
 type FetchPost = (url: string, data: unknown) => Promise<ApiResponse<unknown>>;
 
 function isOkResponse<T>(response: ApiResponse<T> | null | undefined): response is ApiResponse<T> & { code: 0 } {
@@ -23,6 +29,19 @@ function isOkResponse<T>(response: ApiResponse<T> | null | undefined): response 
 
 function escapeSqlString(value: string): string {
   return value.replaceAll("'", "''");
+}
+
+async function setBazaarPluginAvailability(
+  fetchPost: FetchPost,
+  currentConfig: BazaarConfig,
+  petalDisabled: boolean,
+): Promise<boolean> {
+  const response = await fetchPost("/api/setting/setBazaar", {
+    ...currentConfig,
+    petalDisabled,
+  });
+
+  return isOkResponse(response);
 }
 
 async function resolveDailyNotePath(fetchPost: FetchPost, notebookId: string): Promise<string | null> {
@@ -63,46 +82,54 @@ async function openDailyNoteByApi(options: {
   const notebooks = isOkResponse(notebooksResponse) && Array.isArray(notebooksResponse.data?.notebooks)
     ? notebooksResponse.data.notebooks
     : [];
-  const notebook = notebooks.find(candidate => !candidate.closed) || notebooks[0];
-  if (!notebook?.id) {
-    return false;
-  }
+  const notebookCandidates = [
+    ...notebooks.filter(candidate => !candidate.closed),
+    ...notebooks.filter(candidate => candidate.closed),
+  ];
 
-  const hpath = await resolveDailyNotePath(options.fetchPost, notebook.id);
-  if (!hpath) {
-    return false;
-  }
+  for (const notebook of notebookCandidates) {
+    if (!notebook?.id) {
+      continue;
+    }
 
-  const existingDocId = await findExistingDocId(options.fetchPost, notebook.id, hpath);
-  if (existingDocId) {
+    const hpath = await resolveDailyNotePath(options.fetchPost, notebook.id);
+    if (!hpath) {
+      continue;
+    }
+
+    const existingDocId = await findExistingDocId(options.fetchPost, notebook.id, hpath);
+    if (existingDocId) {
+      options.openTab({
+        app: options.app,
+        doc: {
+          id: existingDocId,
+        },
+      });
+      return true;
+    }
+
+    const createResponse = await options.fetchPost("/api/filetree/createDocWithMd", {
+      notebook: notebook.id,
+      path: hpath,
+      markdown: "",
+    }) as ApiResponse<string>;
+    const createdDocId = isOkResponse(createResponse) && typeof createResponse.data === "string"
+      ? createResponse.data.trim()
+      : "";
+    if (!createdDocId) {
+      continue;
+    }
+
     options.openTab({
       app: options.app,
       doc: {
-        id: existingDocId,
+        id: createdDocId,
       },
     });
     return true;
   }
 
-  const createResponse = await options.fetchPost("/api/filetree/createDocWithMd", {
-    notebook: notebook.id,
-    path: hpath,
-    markdown: "",
-  }) as ApiResponse<string>;
-  const createdDocId = isOkResponse(createResponse) && typeof createResponse.data === "string"
-    ? createResponse.data.trim()
-    : "";
-  if (!createdDocId) {
-    return false;
-  }
-
-  options.openTab({
-    app: options.app,
-    doc: {
-      id: createdDocId,
-    },
-  });
-  return true;
+  return false;
 }
 
 export async function executeBuiltinCommandStable(commandId: string, options: {
@@ -110,11 +137,35 @@ export async function executeBuiltinCommandStable(commandId: string, options: {
   openAppSetting?: (app: unknown) => void;
   openTab?: (options: { app: unknown; doc: { id: string } }) => void;
   fetchPost?: FetchPost;
+  getBazaarConfig?: () => BazaarConfig | null | undefined;
+  reloadWindow?: () => void;
   runBuiltinCommandByDom: (commandId: string) => boolean | Promise<boolean>;
 }): Promise<boolean> {
   if (commandId === "config" && options.app && options.openAppSetting) {
     options.openAppSetting(options.app);
     return true;
+  }
+
+  if (commandId === "restartPlugins" && options.fetchPost) {
+    try {
+      const currentConfig = options.getBazaarConfig?.();
+      if (!currentConfig) {
+        return false;
+      }
+
+      if (!await setBazaarPluginAvailability(options.fetchPost, currentConfig, true)) {
+        return false;
+      }
+
+      if (!await setBazaarPluginAvailability(options.fetchPost, currentConfig, false)) {
+        return false;
+      }
+
+      options.reloadWindow?.();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   if (await options.runBuiltinCommandByDom(commandId)) {

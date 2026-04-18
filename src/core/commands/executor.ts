@@ -14,6 +14,10 @@ type ExternalCommandRegistryLike = {
   getProvider: (providerId: string) => ExternalCommandProvider | null;
 };
 
+function shouldFallbackToUndocumentedGlobalCommand(commandId: string): boolean {
+  return commandId !== "dailyNote" && commandId !== "restartPlugins";
+}
+
 export class CommandExecutor {
   constructor(private readonly options: {
     plugin: PluginLike;
@@ -35,7 +39,10 @@ export class CommandExecutor {
         if (await this.options.runBuiltinCommand?.(item.actionId)) {
           return;
         }
-        if (typeof this.options.plugin.globalCommand === "function") {
+        if (
+          typeof this.options.plugin.globalCommand === "function"
+          && shouldFallbackToUndocumentedGlobalCommand(item.actionId)
+        ) {
           this.options.plugin.globalCommand(item.actionId);
           return;
         }

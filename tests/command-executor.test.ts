@@ -15,14 +15,21 @@ describe("command executor", () => {
     surface: "topbar",
     order: 0,
     actionType: "builtin-global-command",
-    actionId: "globalSearch",
+    actionId: "recentDocs",
     tooltip: "",
     ...overrides,
   });
 
   it("exposes a stable built-in command catalog", () => {
-    expect(BUILTIN_COMMANDS.some(command => command.id === "globalSearch")).toBe(true);
-    expect(BUILTIN_COMMANDS.some(command => command.id === "config")).toBe(true);
+    expect(BUILTIN_COMMANDS.map(command => command.id)).toEqual([
+      "backlinks",
+      "config",
+      "recentDocs",
+      "dailyNote",
+      "riffCard",
+      "syncNow",
+      "restartPlugins",
+    ]);
     expect(BUILTIN_COMMANDS.every(command => command.title.length > 0)).toBe(true);
   });
 
@@ -39,7 +46,7 @@ describe("command executor", () => {
 
     await executor.execute(createItem({}));
 
-    expect(runBuiltinCommand).toHaveBeenCalledWith("globalSearch");
+    expect(runBuiltinCommand).toHaveBeenCalledWith("recentDocs");
     expect(globalCommand).not.toHaveBeenCalled();
   });
 
@@ -57,7 +64,7 @@ describe("command executor", () => {
 
     await executor.execute(createItem({}));
 
-    expect(globalCommand).toHaveBeenCalledWith("globalSearch");
+    expect(globalCommand).toHaveBeenCalledWith("recentDocs");
     expect(notify).not.toHaveBeenCalled();
   });
 
@@ -80,6 +87,44 @@ describe("command executor", () => {
     expect(globalCommand).not.toHaveBeenCalled();
   });
 
+  it("does not silently fall back to the undocumented plugin global command for daily notes", async () => {
+    const globalCommand = vi.fn();
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand } as never,
+      notify,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(() => false),
+    });
+
+    await executor.execute(createItem({
+      actionId: "dailyNote",
+    }));
+
+    expect(globalCommand).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：dailyNote", "error");
+  });
+
+  it("does not silently fall back to the undocumented plugin global command for restartPlugins", async () => {
+    const globalCommand = vi.fn();
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand } as never,
+      notify,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(() => false),
+    });
+
+    await executor.execute(createItem({
+      actionId: "restartPlugins",
+    }));
+
+    expect(globalCommand).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：restartPlugins", "error");
+  });
+
   it("notifies instead of failing silently when a builtin command cannot be executed", async () => {
     const notify = vi.fn();
     const executor = new CommandExecutor({
@@ -92,7 +137,7 @@ describe("command executor", () => {
 
     await executor.execute(createItem({}));
 
-    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：globalSearch", "error");
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：recentDocs", "error");
   });
 
   it("dispatches plugin commands and urls through injected handlers", async () => {

@@ -50,22 +50,22 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
 export function createDefaultConfig(): PowerButtonsConfig {
   const items = normalizeItemOrder([
     createButtonItem({
-      title: "全局搜索",
+      title: "最近文档",
       iconType: "iconpark",
-      iconValue: "iconpark:Search",
+      iconValue: "iconpark:HistoryQuery",
       surface: "topbar",
       actionType: "builtin-global-command",
-      actionId: "globalSearch",
-      tooltip: "打开全局搜索",
+      actionId: "recentDocs",
+      tooltip: "打开最近文档",
     }),
     createButtonItem({
-      title: "大纲",
+      title: "今日日记",
       iconType: "iconpark",
-      iconValue: "iconpark:ListView",
+      iconValue: "iconpark:CalendarDot",
       surface: "statusbar-left",
       actionType: "builtin-global-command",
-      actionId: "outline",
-      tooltip: "显示大纲",
+      actionId: "dailyNote",
+      tooltip: "打开今日日记",
     }),
   ]);
 

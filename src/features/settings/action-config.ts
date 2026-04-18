@@ -57,7 +57,10 @@ export function applyActionTypeDefaults(
   externalCommandProviders: SettingsExternalCommandProvider[] = [],
 ): void {
   if (item.actionType === "builtin-global-command") {
-    item.actionId = builtinCommands[0]?.id || getDefaultActionId("builtin-global-command");
+    const fallbackId = getDefaultActionId("builtin-global-command");
+    item.actionId = builtinCommands.some(command => command.id === fallbackId)
+      ? fallbackId
+      : (builtinCommands[0]?.id || fallbackId);
     return;
   }
 

@@ -5,30 +5,30 @@ import { executeBuiltinCommandByDom } from "@/core/commands";
 describe("builtin dom command runner", () => {
   it("clicks matching native controls for supported builtin commands", () => {
     document.body.innerHTML = `
-      <button id="barSearch" type="button"></button>
-      <div id="dockLeft">
-        <button class="dock__item" data-type="outline" type="button"></button>
+      <button data-menu-id="menuRecent" type="button"></button>
+      <div id="dockRight">
+        <button class="dock__item" data-type="backlinks" type="button"></button>
       </div>
     `;
 
-    const searchButton = document.getElementById("barSearch") as HTMLButtonElement;
-    const outlineButton = document.querySelector<HTMLButtonElement>("#dockLeft .dock__item[data-type='outline']");
-    const searchClick = vi.fn();
-    const outlineClick = vi.fn();
+    const recentButton = document.querySelector<HTMLButtonElement>('[data-menu-id="menuRecent"]');
+    const backlinksButton = document.querySelector<HTMLButtonElement>("#dockRight .dock__item[data-type='backlinks']");
+    const recentClick = vi.fn();
+    const backlinksClick = vi.fn();
 
-    searchButton.addEventListener("click", searchClick);
-    outlineButton?.addEventListener("click", outlineClick);
+    recentButton?.addEventListener("click", recentClick);
+    backlinksButton?.addEventListener("click", backlinksClick);
 
-    expect(executeBuiltinCommandByDom("globalSearch", document)).toBe(true);
-    expect(executeBuiltinCommandByDom("outline", document)).toBe(true);
-    expect(searchClick).toHaveBeenCalledTimes(1);
-    expect(outlineClick).toHaveBeenCalledTimes(1);
+    expect(executeBuiltinCommandByDom("recentDocs", document)).toBe(true);
+    expect(executeBuiltinCommandByDom("backlinks", document)).toBe(true);
+    expect(recentClick).toHaveBeenCalledTimes(1);
+    expect(backlinksClick).toHaveBeenCalledTimes(1);
   });
 
   it("returns false when no mapped native control is available", () => {
     document.body.innerHTML = `<div id="empty"></div>`;
 
-    expect(executeBuiltinCommandByDom("globalSearch", document)).toBe(false);
+    expect(executeBuiltinCommandByDom("recentDocs", document)).toBe(false);
     expect(executeBuiltinCommandByDom("not-supported", document)).toBe(false);
   });
 
@@ -36,45 +36,26 @@ describe("builtin dom command runner", () => {
     document.body.innerHTML = `
       <button data-id="barSettings" type="button"></button>
       <button data-menu-id="menuRecent" type="button"></button>
-      <button data-type="toolbarMore" type="button"></button>
+      <button data-type="barRiffCard" type="button"></button>
     `;
 
     const configButton = document.querySelector('[data-id="barSettings"]') as HTMLButtonElement;
     const recentButton = document.querySelector('[data-menu-id="menuRecent"]') as HTMLButtonElement;
-    const menuButton = document.querySelector('[data-type="toolbarMore"]') as HTMLButtonElement;
+    const riffCardButton = document.querySelector('[data-type="barRiffCard"]') as HTMLButtonElement;
     const configClick = vi.fn();
     const recentClick = vi.fn();
-    const menuClick = vi.fn();
+    const riffCardClick = vi.fn();
 
     configButton.addEventListener("click", configClick);
     recentButton.addEventListener("click", recentClick);
-    menuButton.addEventListener("click", menuClick);
+    riffCardButton.addEventListener("click", riffCardClick);
 
     expect(executeBuiltinCommandByDom("config", document)).toBe(true);
     expect(executeBuiltinCommandByDom("recentDocs", document)).toBe(true);
-    expect(executeBuiltinCommandByDom("mainMenu", document)).toBe(true);
+    expect(executeBuiltinCommandByDom("riffCard", document)).toBe(true);
     expect(configClick).toHaveBeenCalledTimes(1);
     expect(recentClick).toHaveBeenCalledTimes(1);
-    expect(menuClick).toHaveBeenCalledTimes(1);
-  });
-
-  it("finds toolbar buttons by svg icon alias and dispatches a mouse event when click throws", () => {
-    document.body.innerHTML = `
-      <button type="button">
-        <svg><use href="#iconMore"></use></svg>
-      </button>
-    `;
-
-    const button = document.querySelector("button") as HTMLButtonElement;
-    const nativeClick = vi.spyOn(button, "click").mockImplementation(() => {
-      throw new Error("click not supported");
-    });
-    const dispatchedClick = vi.fn();
-    button.addEventListener("click", dispatchedClick);
-
-    expect(executeBuiltinCommandByDom("mainMenu", document)).toBe(true);
-    expect(nativeClick).toHaveBeenCalledTimes(1);
-    expect(dispatchedClick).toHaveBeenCalledTimes(1);
+    expect(riffCardClick).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to the builtin command title when the native control only exposes an aria label", () => {
@@ -91,5 +72,38 @@ describe("builtin dom command runner", () => {
 
     expect(executeBuiltinCommandByDom("dailyNote", document)).toBe(true);
     expect(dailyNoteClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores plugin-owned buttons when matching a builtin command by title fallback", () => {
+    document.body.innerHTML = `
+      <button aria-label="今日日记" data-power-buttons-owned="true" type="button"></button>
+      <button id="native-daily-note" aria-label="今日日记" type="button"></button>
+    `;
+
+    const pluginOwnedButton = document.querySelector('button[data-power-buttons-owned="true"]') as HTMLButtonElement;
+    const nativeButton = document.getElementById("native-daily-note") as HTMLButtonElement;
+    const pluginOwnedClick = vi.fn();
+    const nativeClick = vi.fn();
+
+    pluginOwnedButton.addEventListener("click", pluginOwnedClick);
+    nativeButton.addEventListener("click", nativeClick);
+
+    expect(executeBuiltinCommandByDom("dailyNote", document)).toBe(true);
+    expect(pluginOwnedClick).not.toHaveBeenCalled();
+    expect(nativeClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns false when the only matching element is owned by the plugin itself", () => {
+    document.body.innerHTML = `
+      <button aria-label="今日日记" data-power-buttons-owned="true" type="button"></button>
+    `;
+
+    const pluginOwnedButton = document.querySelector('button[data-power-buttons-owned="true"]') as HTMLButtonElement;
+    const pluginOwnedClick = vi.fn();
+
+    pluginOwnedButton.addEventListener("click", pluginOwnedClick);
+
+    expect(executeBuiltinCommandByDom("dailyNote", document)).toBe(false);
+    expect(pluginOwnedClick).not.toHaveBeenCalled();
   });
 });

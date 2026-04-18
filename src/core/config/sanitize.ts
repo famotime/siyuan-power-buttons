@@ -1,3 +1,4 @@
+import { BUILTIN_COMMANDS } from "@/core/commands/catalog";
 import { isExternalCommandActionId } from "@/core/commands/external-command-types";
 import {
   createButtonItem,
@@ -56,6 +57,10 @@ function ensureRuntimeSurface(value: unknown): SurfaceType {
 
 function ensureActionType(value: unknown): ActionType {
   return ACTION_TYPES.includes(value as ActionType) ? value as ActionType : "builtin-global-command";
+}
+
+function isBuiltinCommandActionId(value: string): boolean {
+  return BUILTIN_COMMANDS.some(command => command.id === value);
 }
 
 function ensureIconType(value: unknown): IconType {
@@ -128,6 +133,9 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
 
   let actionType = ensureActionType(raw.actionType);
   let actionId = typeof raw.actionId === "string" ? raw.actionId.trim() : "";
+  if (actionType === "builtin-global-command" && actionId && !isBuiltinCommandActionId(actionId)) {
+    actionId = getDefaultActionId(actionType);
+  }
   if (actionType === "plugin-command" && actionId && !isExternalCommandActionId(actionId)) {
     actionId = getDefaultActionId(actionType);
   }

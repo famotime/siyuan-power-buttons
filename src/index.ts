@@ -49,6 +49,20 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     openAppSetting: app => openSetting(app as never),
     openTab: options => openTab(options as never),
     fetchPost: (url, data) => fetchSyncPost(url, data),
+    getBazaarConfig: () => (
+      (window as typeof window & {
+        siyuan?: {
+          config?: {
+            bazaar?: {
+              trust?: boolean;
+              petalDisabled: boolean;
+              [key: string]: unknown;
+            };
+          };
+        };
+      }).siyuan?.config?.bazaar
+    ),
+    reloadWindow: () => window.location.reload(),
     runBuiltinCommandByDom: targetCommandId => executeBuiltinCommandByDom(targetCommandId, document),
   });
   private readonly experimentalActionRunners = createExperimentalActionRunners({

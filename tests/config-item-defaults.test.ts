@@ -11,7 +11,7 @@ import {
 
 describe("config item defaults", () => {
   it("returns stable action id defaults for supported action types", () => {
-    expect(getDefaultActionId("builtin-global-command")).toBe("globalSearch");
+    expect(getDefaultActionId("builtin-global-command")).toBe("recentDocs");
     expect(getDefaultActionId("plugin-command")).toBe("siyuan-power-buttons:open-settings");
     expect(getDefaultActionId("experimental-shortcut")).toBe("");
     expect(getDefaultActionId("experimental-click-sequence")).toBe("text:设置");
@@ -19,7 +19,7 @@ describe("config item defaults", () => {
 
   it("derives click-sequence fallbacks from the action id", () => {
     expect(getClickSequenceFallbackSelector("barSettings")).toBe("barSettings");
-    expect(getClickSequenceFallbackSelector("globalSearch")).toBe("text:设置");
+    expect(getClickSequenceFallbackSelector("recentDocs")).toBe("text:设置");
     expect(getClickSequenceFallbackSelector("")).toBe("text:设置");
   });
 

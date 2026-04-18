@@ -23,7 +23,7 @@ describe("experimental shortcut adapter", () => {
     }, {
       getKeymap: () => ({
         general: {
-          globalSearch: {
+          recentDocs: {
             default: "⌘P",
           },
         },
@@ -32,7 +32,7 @@ describe("experimental shortcut adapter", () => {
     });
 
     expect(result).toBe(true);
-    expect(executeBuiltinCommand).toHaveBeenCalledWith("globalSearch");
+    expect(executeBuiltinCommand).toHaveBeenCalledWith("recentDocs");
   });
 
   it("dispatches editor shortcuts to the active editable element when no stable builtin handler applies", async () => {

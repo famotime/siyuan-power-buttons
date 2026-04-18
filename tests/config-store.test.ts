@@ -15,7 +15,7 @@ describe("config store model", () => {
     expect(config.desktopOnly).toBe(true);
     expect(config.items.length).toBe(2);
     expect(config.items.every(item => item.visible)).toBe(true);
-    expect(config.items.map(item => item.title)).toEqual(["全局搜索", "大纲"]);
+    expect(config.items.map(item => item.title)).toEqual(["最近文档", "今日日记"]);
     expect(config.items.every(item => item.iconType === "iconpark")).toBe(true);
     expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(false);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
@@ -287,13 +287,13 @@ describe("config store model", () => {
     const snapshot = store.snapshot();
     snapshot.items[0].title = "snapshot mutation";
 
-    expect(store.getConfig().items[0].title).toBe("全局搜索");
-    expect(notified).toEqual(["全局搜索"]);
+    expect(store.getConfig().items[0].title).toBe("最近文档");
+    expect(notified).toEqual(["最近文档"]);
 
     const resetSnapshot = await store.reset();
     resetSnapshot.items[0].title = "reset snapshot mutation";
 
-    expect(store.getConfig().items[0].title).toBe("全局搜索");
+    expect(store.getConfig().items[0].title).toBe("最近文档");
   });
 
   it("preserves native suppression rules when sanitizing config", () => {
