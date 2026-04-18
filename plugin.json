@@ -18,7 +18,7 @@
   },
   "description": {
     "default": "Configurable power buttons for Siyuan surfaces.",
-    "zh_CN": "为思源顶栏、状态栏与 Dock 提供可配置快捷按钮。"
+    "zh_CN": "快捷按钮随心按，常用功能一键达。"
   },
   "readme": {
     "default": "README.md"
