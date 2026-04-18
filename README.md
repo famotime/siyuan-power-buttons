@@ -4,15 +4,15 @@
 
 最近在开发几个插件，开发过程中需要频繁重启插件以调试最新代码，重启操作需要多步点击，进入设置-集市页面操作，操作多了我就希望有个一键直达功能：
 
-![image](assets/image-20260418110226-9o9euuj.png)
+![image](https://raw.githubusercontent.com/famotime/siyuan-power-buttons/main/assets/image-20260418110226-9o9euuj.png)
 
 类似的，在开发调试中英双语插件时，切换中英文界面需要 5 个点击步骤：
 
-![image](assets/image-20260418100341-cy7hi7r.png)
+![image](https://raw.githubusercontent.com/famotime/siyuan-power-buttons/main/assets/image-20260418100341-cy7hi7r.png)
 
 为了偷点懒，我希望将这些点击操作步骤自动化：
 
-<video controls="controls" src="assets/录屏助手_20260418_100548-20260418100653-ixrwdiq.mp4"></video>
+<video controls="controls" src="https://raw.githubusercontent.com/famotime/siyuan-power-buttons/main/assets/%E5%BD%95%E5%B1%8F%E5%8A%A9%E6%89%8B_20260418_100548-20260418100653-ixrwdiq.mp4"></video>
 
 当然，每个人都会有各自日常需要快速触达一项功能的场景，有些高频操作可以通过思源笔记的快捷键设置来解决，代价是你需要记忆快捷键；还有些操作（比如上面两个场景）则无法通过快捷键完成。
 
@@ -22,8 +22,10 @@
 
 ## 快捷按钮“随心按”，常用功能一键达
 
-![image](assets/image-20260418105905-x2fmbv4.png)
+![image](https://raw.githubusercontent.com/famotime/siyuan-power-buttons/main/assets/image-20260418105905-x2fmbv4.png)
 
 偷懒不是坏事，懒惰是技术进步的驱动力。
+
+当前版本仅支持桌面端思源。
 
 ‍
