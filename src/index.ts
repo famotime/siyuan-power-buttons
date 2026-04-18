@@ -36,6 +36,10 @@ import { SettingsDialogController } from "@/core/runtime/settings-dialog-control
 import { getAppVersion } from "@/core/system/app-version";
 import { SurfaceManager } from "@/core/surfaces";
 import { mountSettingsApp } from "@/main";
+import {
+  CONFIG_STORAGE_NAME,
+  SETTINGS_UI_STORAGE_NAME,
+} from "@/shared/constants";
 import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
 
 export default class SiyuanPowerButtonsPlugin extends Plugin {
@@ -139,6 +143,21 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
 
   onunload(): void {
     this.runtime.onunload();
+  }
+
+  async uninstall(): Promise<void> {
+    const removals = await Promise.allSettled([
+      this.removeData(CONFIG_STORAGE_NAME),
+      this.removeData(SETTINGS_UI_STORAGE_NAME),
+    ]);
+
+    removals.forEach((result, index) => {
+      if (result.status === "rejected") {
+        const storageName = index === 0 ? CONFIG_STORAGE_NAME : SETTINGS_UI_STORAGE_NAME;
+        const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        showMessage(`uninstall [${this.name}] remove data [${storageName}] fail: ${message}`, 5000, "error");
+      }
+    });
   }
 
   private getInstalledPlugins() {

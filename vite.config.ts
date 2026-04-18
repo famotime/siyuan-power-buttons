@@ -76,10 +76,6 @@ export default defineConfig(({
             src: "./plugin.json",
             dest: "./",
           },
-          {
-            src: "./src/i18n/**",
-            dest: "./i18n/",
-          },
         ],
       }),
     ],

@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 export class Plugin {
   loadData = vi.fn().mockResolvedValue(null);
   saveData = vi.fn().mockResolvedValue(undefined);
+  removeData = vi.fn().mockResolvedValue(undefined);
   addCommand = vi.fn();
   addTopBar = vi.fn();
   addStatusBar = vi.fn();

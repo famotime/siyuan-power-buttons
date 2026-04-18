@@ -109,4 +109,15 @@ describe('plugin fixed settings entry', () => {
     expect(Array.isArray(discoveredPlugins)).toBe(true);
     expect(discoveredPlugins).toContain(externalPlugin);
   });
+
+  it('removes persisted config files during uninstall', async () => {
+    const { default: SiyuanPowerButtonsPlugin } = await import('@/index');
+    const plugin = new SiyuanPowerButtonsPlugin();
+
+    await plugin.uninstall();
+
+    expect(plugin.removeData).toHaveBeenCalledTimes(2);
+    expect(plugin.removeData).toHaveBeenNthCalledWith(1, 'settings.json');
+    expect(plugin.removeData).toHaveBeenNthCalledWith(2, 'settings-ui.json');
+  });
 });
