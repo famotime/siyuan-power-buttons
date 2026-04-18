@@ -68,16 +68,7 @@ export function createExperimentalActionRunners(options: {
 
       return options.executeExperimentalShortcut(item, {
         getKeymap: options.getKeymap,
-        executeBuiltinCommand: async (commandId) => {
-          if (await options.runBuiltinCommandByDom(commandId)) {
-            return true;
-          }
-          if (typeof options.pluginGlobalCommand === 'function') {
-            options.pluginGlobalCommand(commandId);
-            return true;
-          }
-          return false;
-        },
+        executeBuiltinCommand: async (commandId) => options.runBuiltinCommandByDom(commandId),
         executePluginCommand: async (commandId) => {
           const handler = options.pluginCommandHandlers.get(commandId);
           if (!handler) {

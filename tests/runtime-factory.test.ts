@@ -101,4 +101,42 @@ describe('runtime factory helpers', () => {
     expect(runBuiltinCommandByDom).toHaveBeenCalledWith('dailyNote');
     expect(pluginGlobalCommand).not.toHaveBeenCalled();
   });
+
+  it('does not short-circuit experimental shortcuts through pluginGlobalCommand when stable builtin execution fails', async () => {
+    const runBuiltinCommandByDom = vi.fn(() => false);
+    const pluginGlobalCommand = vi.fn();
+    const executeExperimentalShortcut = vi.fn(async (_item, options) => {
+      const builtinResult = await options.executeBuiltinCommand('dataHistory');
+      return builtinResult;
+    });
+    const runners = createExperimentalActionRunners({
+      getExperimentalSupport: (_feature: ExperimentalFeatureKey) => ({
+        supported: true,
+      }),
+      showMessage: vi.fn(),
+      getKeymap: vi.fn(),
+      pluginGlobalCommand,
+      pluginCommandHandlers: new Map(),
+      runBuiltinCommandByDom,
+      executeExperimentalShortcut,
+      executeExperimentalClickSequence: vi.fn(),
+      document,
+      windowTarget: window,
+    });
+
+    const result = await runners.runExperimentalShortcut(createButtonItem({
+      actionType: 'experimental-shortcut',
+      actionId: 'Alt+H',
+      experimentalShortcut: {
+        shortcut: 'Alt+H',
+        sendEscapeBefore: false,
+        dispatchTarget: 'auto',
+        allowDirectWindowDispatch: false,
+      },
+    }));
+
+    expect(result).toBe(false);
+    expect(runBuiltinCommandByDom).toHaveBeenCalledWith('dataHistory');
+    expect(pluginGlobalCommand).not.toHaveBeenCalled();
+  });
 });

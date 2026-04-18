@@ -67,6 +67,55 @@ describe("experimental shortcut adapter", () => {
     expect(executeBuiltinCommand).toHaveBeenCalledWith("dataHistory");
     expect(result).toBe(true);
     expect(bodyHandler).toHaveBeenCalledTimes(1);
+    expect(bodyHandler.mock.calls[0]?.[0]?.key).toBe("H");
+  });
+
+  it("keeps auto dispatch on window for builtin global shortcuts even when an editor is present", async () => {
+    const dom = new JSDOM(`
+      <div class="protyle">
+        <div contenteditable="true" id="editor"></div>
+      </div>
+    `);
+    const executeBuiltinCommand = vi.fn(() => false);
+    const editor = dom.window.document.getElementById("editor") as HTMLElement;
+    const windowHandler = vi.fn();
+    const bodyHandler = vi.fn();
+    const editorHandler = vi.fn();
+
+    dom.window.addEventListener("keydown", windowHandler);
+    editor.addEventListener("keydown", editorHandler);
+    dom.window.document.body.addEventListener("keydown", bodyHandler);
+    editor.focus();
+
+    const result = await executeExperimentalShortcut({
+      actionId: "Alt+H",
+      experimentalShortcut: {
+        shortcut: "Alt+H",
+        sendEscapeBefore: false,
+        dispatchTarget: "auto",
+        allowDirectWindowDispatch: false,
+      },
+    }, {
+      getKeymap: () => ({
+        general: {
+          dataHistory: {
+            default: "⌥H",
+          },
+        },
+      }),
+      executeBuiltinCommand,
+      document: dom.window.document,
+      root: dom.window.document,
+      bodyTarget: dom.window.document.body,
+      windowTarget: dom.window,
+    });
+
+    expect(executeBuiltinCommand).toHaveBeenCalledWith("dataHistory");
+    expect(result).toBe(true);
+    expect(editorHandler).not.toHaveBeenCalled();
+    expect(bodyHandler).not.toHaveBeenCalled();
+    expect(windowHandler).toHaveBeenCalledTimes(1);
+    expect(windowHandler.mock.calls[0]?.[0]?.key).toBe("H");
   });
 
   it("dispatches editor shortcuts to the active editable element when no stable builtin handler applies", async () => {

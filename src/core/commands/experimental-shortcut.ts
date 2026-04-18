@@ -104,15 +104,18 @@ function resolveShortcutCommand(keymap: SiyuanKeymap | undefined, hotkey: string
 }
 
 function parseHotkeyToKeyboardEvent(hotkey: string): KeyboardEventInit | null {
+  const isMac = typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC");
   const event: KeyboardEventInit = {
     key: "",
     code: "",
-    ctrlKey: hotkey.includes("⌘") || hotkey.includes("⌃"),
+    ctrlKey: hotkey.includes("⌃") || (hotkey.includes("⌘") && !isMac),
     shiftKey: hotkey.includes("⇧"),
     altKey: hotkey.includes("⌥"),
-    metaKey: false,
+    metaKey: hotkey.includes("⌘") && isMac,
     bubbles: true,
     cancelable: true,
+    composed: true,
+    view: typeof window !== "undefined" ? window : undefined,
   };
 
   const mainKey = hotkey.replace(/[⌘⌃⇧⌥]/g, "").trim();
@@ -148,8 +151,10 @@ function parseHotkeyToKeyboardEvent(hotkey: string): KeyboardEventInit | null {
   }
 
   if (mainKey.length === 1) {
-    const key = mainKey.toUpperCase();
     const isDigit = /^\d$/.test(mainKey);
+    const key = isDigit
+      ? mainKey
+      : mainKey.toUpperCase();
     const keyCode = isDigit
       ? key.charCodeAt(0)
       : key.toUpperCase().charCodeAt(0);
@@ -237,8 +242,9 @@ export async function executeExperimentalShortcut(
   const bodyTarget = options.bodyTarget || ownerDocument.body;
   const windowTarget = options.windowTarget || window;
   const editable = getActiveEditableElement(root, ownerDocument);
+  const autoPrefersEditor = Boolean(shortcutMatch?.isEditorCommand && editable);
   const shouldTargetEditor = shortcutConfig.dispatchTarget === "active-editor"
-    || (shortcutConfig.dispatchTarget === "auto" && (shortcutMatch?.isEditorCommand || Boolean(editable)));
+    || (shortcutConfig.dispatchTarget === "auto" && autoPrefersEditor);
 
   if (shouldTargetEditor && editable) {
     editable.focus?.();
@@ -248,14 +254,14 @@ export async function executeExperimentalShortcut(
     return dispatchKeyboardEvent(editable, effectiveHotkey, windowTarget);
   }
 
-  if (shortcutConfig.dispatchTarget === "window" || (shortcutConfig.dispatchTarget === "auto" && shortcutConfig.allowDirectWindowDispatch)) {
+  if (shortcutConfig.dispatchTarget === "window" || shortcutConfig.dispatchTarget === "auto") {
     if (shortcutConfig.sendEscapeBefore) {
       dispatchKeyboardEvent(windowTarget, "Escape", windowTarget);
     }
     return dispatchKeyboardEvent(windowTarget, effectiveHotkey, windowTarget);
   }
 
-  if (shortcutConfig.dispatchTarget === "body" || shortcutConfig.dispatchTarget === "auto") {
+  if (shortcutConfig.dispatchTarget === "body") {
     if (shortcutConfig.sendEscapeBefore) {
       dispatchKeyboardEvent(windowTarget, "Escape", windowTarget);
     }
