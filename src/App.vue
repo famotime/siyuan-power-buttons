@@ -784,6 +784,7 @@ const {
   surfaceLabel,
   surfaces,
   syncExperimentalClickSequence,
+  syncExperimentalShortcut,
   toggleSelectedClickSequenceStopOnFailure,
   toggleSelectedShortcutOption,
   toggleVisible,

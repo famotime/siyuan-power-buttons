@@ -221,10 +221,14 @@ export async function executeExperimentalShortcut(
   const keymap = options.getKeymap?.();
   const shortcutMatch = resolveShortcutCommand(keymap, normalizedHotkey);
   if (shortcutMatch?.kind === "builtin-global-command" && options.executeBuiltinCommand && !shortcutMatch.isEditorCommand) {
-    return Boolean(await options.executeBuiltinCommand(shortcutMatch.commandId));
+    if (await options.executeBuiltinCommand(shortcutMatch.commandId)) {
+      return true;
+    }
   }
   if (shortcutMatch?.kind === "plugin-command" && options.executePluginCommand) {
-    return Boolean(await options.executePluginCommand(shortcutMatch.commandId));
+    if (await options.executePluginCommand(shortcutMatch.commandId)) {
+      return true;
+    }
   }
 
   const effectiveHotkey = shortcutMatch?.hotkey || normalizedHotkey;

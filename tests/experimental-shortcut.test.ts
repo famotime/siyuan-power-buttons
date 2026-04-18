@@ -35,6 +35,40 @@ describe("experimental shortcut adapter", () => {
     expect(executeBuiltinCommand).toHaveBeenCalledWith("recentDocs");
   });
 
+  it("falls back to keyboard dispatch when a builtin command match cannot be executed semantically", async () => {
+    const dom = new JSDOM(`<div id="workspace"></div>`);
+    const executeBuiltinCommand = vi.fn(() => false);
+    const bodyHandler = vi.fn();
+    dom.window.document.body.addEventListener("keydown", bodyHandler);
+
+    const result = await executeExperimentalShortcut({
+      actionId: "Alt+H",
+      experimentalShortcut: {
+        shortcut: "Alt+H",
+        sendEscapeBefore: false,
+        dispatchTarget: "body",
+        allowDirectWindowDispatch: false,
+      },
+    }, {
+      getKeymap: () => ({
+        general: {
+          dataHistory: {
+            default: "⌥H",
+          },
+        },
+      }),
+      executeBuiltinCommand,
+      document: dom.window.document,
+      root: dom.window.document,
+      bodyTarget: dom.window.document.body,
+      windowTarget: dom.window,
+    });
+
+    expect(executeBuiltinCommand).toHaveBeenCalledWith("dataHistory");
+    expect(result).toBe(true);
+    expect(bodyHandler).toHaveBeenCalledTimes(1);
+  });
+
   it("dispatches editor shortcuts to the active editable element when no stable builtin handler applies", async () => {
     const dom = new JSDOM(`
       <div class="protyle">

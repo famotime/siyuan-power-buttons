@@ -454,6 +454,15 @@ export function useSettingsController(props: SettingsAppProps) {
     await persist();
   }
 
+  async function syncExperimentalShortcut(): Promise<void> {
+    if (!selectedItem.value) {
+      return;
+    }
+    const shortcutConfig = ensureExperimentalShortcutConfig(selectedItem.value);
+    selectedItem.value.actionId = shortcutConfig.shortcut.trim();
+    await persist();
+  }
+
   async function toggleSelectedShortcutOption(key: "sendEscapeBefore" | "allowDirectWindowDispatch"): Promise<void> {
     if (!selectedItem.value) {
       return;
@@ -649,6 +658,7 @@ export function useSettingsController(props: SettingsAppProps) {
     surfaceLabel,
     surfaces,
     syncExperimentalClickSequence,
+    syncExperimentalShortcut,
     toggleSelectedClickSequenceStopOnFailure,
     toggleSelectedShortcutOption,
     toggleVisible,

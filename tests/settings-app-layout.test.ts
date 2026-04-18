@@ -653,6 +653,55 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("persists experimental shortcut dispatch target changes immediately", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "dispatch-target",
+        title: "快捷键按钮",
+        actionType: "experimental-shortcut",
+        actionId: "Ctrl+B",
+        tooltip: "实验快捷键",
+        experimentalShortcut: {
+          shortcut: "Ctrl+B",
+          sendEscapeBefore: false,
+          dispatchTarget: "auto",
+          allowDirectWindowDispatch: false,
+        },
+      }),
+    ];
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const dispatchTargetSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
+      .find(select => Array.from(select.options).some(option => option.value === "active-editor") && select.value === "auto");
+
+    expect(dispatchTargetSelect).not.toBeNull();
+
+    dispatchTargetSelect!.value = "window";
+    dispatchTargetSelect!.dispatchEvent(new Event("change"));
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await nextTick();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.items[0]?.experimentalShortcut?.dispatchTarget).toBe("window");
+
+    unmount();
+  });
+
   it("removes the duplicate custom action menu item from the action type selector", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
