@@ -69,7 +69,7 @@ export function createClickSequenceStep(
     value: normalizedValue,
     valueMode: overrides.valueMode === "text" ? "text" : "value",
     timeoutMs: Number.isFinite(overrides.timeoutMs) && Number(overrides.timeoutMs) >= 0 ? Number(overrides.timeoutMs) : 5000,
-    retryCount: Number.isFinite(overrides.retryCount) && Number(overrides.retryCount) >= 0 ? Number(overrides.retryCount) : 2,
+    retryCount: Number.isFinite(overrides.retryCount) && Number(overrides.retryCount) >= 0 ? Number(overrides.retryCount) : 1,
     retryDelayMs: Number.isFinite(overrides.retryDelayMs) && Number(overrides.retryDelayMs) >= 0 ? Number(overrides.retryDelayMs) : 300,
     delayAfterMs: Number.isFinite(overrides.delayAfterMs) && Number(overrides.delayAfterMs) >= 0 ? Number(overrides.delayAfterMs) : 200,
   };

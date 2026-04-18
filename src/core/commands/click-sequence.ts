@@ -20,7 +20,7 @@ function defaultClickSequenceStep(actionId: string, input?: Partial<ClickSequenc
     value: normalizedValue,
     valueMode: input?.valueMode === "text" ? "text" : "value",
     timeoutMs: input?.timeoutMs ?? 5000,
-    retryCount: input?.retryCount ?? 2,
+    retryCount: input?.retryCount ?? 1,
     retryDelayMs: input?.retryDelayMs ?? 300,
     delayAfterMs: input?.delayAfterMs ?? 200,
   };

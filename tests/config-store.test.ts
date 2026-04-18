@@ -23,8 +23,11 @@ describe("config store model", () => {
     expect(config.experimental.clickSequenceAdapter).toBe(true);
   });
 
-  it("creates new buttons with a Chinese default title", () => {
-    expect(createButtonItem().title).toBe("新建");
+  it("creates new buttons with the default title and status bar placement", () => {
+    const item = createButtonItem();
+
+    expect(item.title).toBe("新建");
+    expect(item.surface).toBe("statusbar-right");
   });
 
   it("sanitizes malformed input into a safe config", () => {

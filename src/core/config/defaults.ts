@@ -28,7 +28,7 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
     visible: overrides.visible ?? true,
     iconType: (overrides.iconType || "iconpark") as IconType,
     iconValue: overrides.iconValue || DEFAULT_ICONPARK_ICON,
-    surface: (overrides.surface || "topbar") as SurfaceType,
+    surface: (overrides.surface || "statusbar-right") as SurfaceType,
     order: overrides.order ?? 0,
     actionType,
     actionId,

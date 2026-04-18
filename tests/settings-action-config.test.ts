@@ -54,7 +54,7 @@ describe("settings action config helpers", () => {
           value: undefined,
           valueMode: "value",
           timeoutMs: 5000,
-          retryCount: 2,
+          retryCount: 1,
           retryDelayMs: 300,
           delayAfterMs: 200,
         },
