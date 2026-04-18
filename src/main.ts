@@ -3,10 +3,18 @@ import App from "@/App.vue";
 import type { SettingsAppProps } from "@/features/settings/types";
 import "@/index.scss";
 
-export function mountSettingsApp(target: HTMLElement, props: SettingsAppProps): () => void {
+type SettingsAppHandle = (() => void) & {
+  getSelectedButtonId?: () => string;
+};
+
+export function mountSettingsApp(target: HTMLElement, props: SettingsAppProps): SettingsAppHandle {
   const app = createApp(App, props as unknown as Record<string, unknown>);
-  app.mount(target);
-  return () => {
-    app.unmount();
+  const instance = app.mount(target) as {
+    getSelectedButtonId?: () => string;
   };
+  const unmount = (() => {
+    app.unmount();
+  }) as SettingsAppHandle;
+  unmount.getSelectedButtonId = () => instance.getSelectedButtonId?.() || "";
+  return unmount;
 }

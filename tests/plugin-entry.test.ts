@@ -14,6 +14,11 @@ vi.mock('@/core/config', () => ({
     reset = vi.fn();
     subscribe = vi.fn(() => vi.fn());
   },
+  SettingsUiStateStore: class MockSettingsUiStateStore {
+    load = vi.fn().mockResolvedValue({ lastSelectedButtonId: '' });
+    snapshot = vi.fn(() => ({ lastSelectedButtonId: '' }));
+    setLastSelectedButtonId = vi.fn().mockResolvedValue(undefined);
+  },
   exportConfigAsJson: vi.fn(() => '{}'),
 }));
 

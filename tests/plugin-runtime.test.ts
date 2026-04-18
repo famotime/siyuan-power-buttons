@@ -5,6 +5,7 @@ import { PLUGIN_COMMANDS } from "@/core/commands";
 import { createDefaultConfig } from "@/core/config";
 import { PowerButtonsRuntime } from "@/core/runtime/plugin-runtime";
 import { SettingsDialogController } from "@/core/runtime/settings-dialog-controller";
+import { mountSettingsApp } from "@/main";
 
 function createDialogElement(): HTMLDivElement {
   const element = document.createElement("div");
@@ -15,6 +16,100 @@ function createDialogElement(): HTMLDivElement {
 }
 
 describe("settings dialog controller", () => {
+  it("restores the last selected button when reopening with the real settings app mount flow", async () => {
+    const hostRoot = document.createElement("div");
+    document.body.appendChild(hostRoot);
+
+    const settingsUiState = {
+      lastSelectedButtonId: "",
+    };
+    let currentDialogDestroyCallback: (() => void) | undefined;
+    const createDialog = vi.fn((options: {
+      destroyCallback: () => void;
+      content: string;
+      title: string;
+      width: string;
+      height: string;
+    }) => {
+      currentDialogDestroyCallback = options.destroyCallback;
+      const element = document.createElement("div");
+      element.innerHTML = options.content;
+      hostRoot.replaceChildren(element);
+      return {
+        element,
+        destroy: () => {
+          currentDialogDestroyCallback?.();
+          hostRoot.replaceChildren();
+        },
+      };
+    });
+    const controller = new SettingsDialogController({
+      createDialog,
+      mountSettingsApp,
+    });
+    const props = {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      externalCommandProviders: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onSelectedIdChange: async (itemId: string) => {
+        settingsUiState.lastSelectedButtonId = itemId;
+      },
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    };
+
+    controller.open({
+      ...props,
+      initialSelectedButtonId: settingsUiState.lastSelectedButtonId,
+    });
+
+    const listButtons = Array.from(hostRoot.querySelectorAll<HTMLButtonElement>(".button-list__main"));
+    listButtons[1]?.click();
+    controller.destroy();
+
+    controller.open({
+      ...props,
+      initialSelectedButtonId: settingsUiState.lastSelectedButtonId,
+    });
+
+    const activeItem = hostRoot.querySelector(".button-list__item.is-active strong");
+    expect(settingsUiState.lastSelectedButtonId).toBeTruthy();
+    expect(activeItem?.textContent?.trim()).toBe("今日日记");
+  });
+
+  it("persists the latest selected button id before teardown", () => {
+    const unmount = vi.fn() as (() => void) & { getSelectedButtonId?: () => string };
+    unmount.getSelectedButtonId = () => "second-button";
+    const onSelectedIdChange = vi.fn().mockResolvedValue(undefined);
+    const createDialog = vi.fn().mockReturnValue({
+      element: createDialogElement(),
+      destroy: vi.fn(),
+    });
+    const mountSettingsApp = vi.fn().mockReturnValue(unmount);
+
+    const controller = new SettingsDialogController({
+      createDialog,
+      mountSettingsApp,
+    });
+
+    controller.open({
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      externalCommandProviders: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onSelectedIdChange,
+      onReadCurrentLayout: vi.fn(),
+    });
+    controller.destroy();
+
+    expect(onSelectedIdChange).toHaveBeenCalledWith("second-button");
+    expect(unmount).toHaveBeenCalledTimes(1);
+  });
+
   it("mounts into the dialog host and tears down the previous instance before reopening", () => {
     const firstUnmount = vi.fn();
     const secondUnmount = vi.fn();
@@ -71,6 +166,8 @@ describe("plugin runtime", () => {
     clipboardShouldFail?: boolean;
     frontend?: string;
     desktopOnly?: boolean;
+    lastSelectedButtonId?: string;
+    destroySelectedButtonId?: string;
     externalCommands?: {
       refresh: () => Promise<void>;
       listProviders: () => Array<{ providerId: string; providerName: string; providerVersion?: string }>;
@@ -94,15 +191,33 @@ describe("plugin runtime", () => {
         return unsubscribe;
       }),
     };
+    let persistedSelectedButtonId = options.lastSelectedButtonId ?? '';
+    const settingsUiStateStore = {
+      load: vi.fn().mockImplementation(async () => ({
+        lastSelectedButtonId: persistedSelectedButtonId,
+      })),
+      snapshot: vi.fn(() => ({
+        lastSelectedButtonId: persistedSelectedButtonId,
+      })),
+      setLastSelectedButtonId: vi.fn().mockResolvedValue(undefined),
+    };
 
     const surfaceManager = {
       render: vi.fn(),
       destroy: vi.fn(),
     };
+    let latestSettingsProps: Parameters<typeof settingsDialog.open>[0] | undefined;
     const settingsDialog = {
-      open: vi.fn(),
+      open: vi.fn((props) => {
+        latestSettingsProps = props;
+      }),
       refresh: vi.fn(),
-      destroy: vi.fn(),
+      destroy: vi.fn(async () => {
+        if (options.destroySelectedButtonId && latestSettingsProps?.onSelectedIdChange) {
+          await latestSettingsProps.onSelectedIdChange(options.destroySelectedButtonId);
+          persistedSelectedButtonId = options.destroySelectedButtonId;
+        }
+      }),
     };
     const pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
     const addCommand = vi.fn();
@@ -112,6 +227,7 @@ describe("plugin runtime", () => {
         addCommand,
       },
       configStore,
+      settingsUiStateStore,
       builtinCommands: [],
       pluginCommands: PLUGIN_COMMANDS,
       pluginCommandHandlers,
@@ -138,6 +254,10 @@ describe("plugin runtime", () => {
       pluginCommandHandlers,
       runtime,
       settingsDialog,
+      settingsUiStateStore,
+      setPersistedSelectedButtonId: (value: string) => {
+        persistedSelectedButtonId = value;
+      },
       showMessage,
       surfaceManager,
       unsubscribe,
@@ -214,6 +334,54 @@ describe("plugin runtime", () => {
           ],
         },
       ],
+    }));
+  });
+
+  it("passes the last selected button id into the settings app props", async () => {
+    const state = createRuntime({
+      lastSelectedButtonId: "daily-note-button",
+    });
+
+    await state.runtime.onload();
+    await state.runtime.openSetting();
+
+    expect(state.settingsDialog.open).toHaveBeenCalledWith(expect.objectContaining({
+      initialSelectedButtonId: "daily-note-button",
+      onSelectedIdChange: expect.any(Function),
+    }));
+  });
+
+  it("reuses the flushed selected button id when reopening settings", async () => {
+    const state = createRuntime({
+      lastSelectedButtonId: "first-button",
+      destroySelectedButtonId: "second-button",
+    });
+
+    await state.runtime.onload();
+    await state.runtime.openSetting();
+    await state.runtime.openSetting();
+
+    expect(state.settingsDialog.open).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      initialSelectedButtonId: "first-button",
+    }));
+    expect(state.settingsDialog.open).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      initialSelectedButtonId: "second-button",
+    }));
+  });
+
+  it("reloads the persisted selected button id before reopening settings", async () => {
+    const state = createRuntime({
+      lastSelectedButtonId: "first-button",
+    });
+
+    await state.runtime.onload();
+    await state.runtime.openSetting();
+
+    state.setPersistedSelectedButtonId("second-button");
+    await state.runtime.openSetting();
+
+    expect(state.settingsDialog.open).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      initialSelectedButtonId: "second-button",
     }));
   });
 

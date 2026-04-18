@@ -11,6 +11,7 @@ import pluginInfo from "@/../plugin.json";
 import {
   ConfigStore,
   exportConfigAsJson,
+  SettingsUiStateStore,
 } from "@/core/config";
 import {
   getExperimentalFeatureSupport,
@@ -39,6 +40,7 @@ import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
 
 export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
+  private settingsUiStateStore = new SettingsUiStateStore(this);
   private appVersion: string | null = null;
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
   private readonly externalCommands = new ExternalCommandRegistry({
@@ -98,6 +100,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private runtime = new PowerButtonsRuntime({
     plugin: this,
     configStore: this.configStore,
+    settingsUiStateStore: this.settingsUiStateStore,
     builtinCommands: BUILTIN_COMMANDS,
     pluginCommands: PLUGIN_COMMANDS,
     pluginCommandHandlers: this.pluginCommandHandlers,

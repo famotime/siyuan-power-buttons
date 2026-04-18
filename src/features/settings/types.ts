@@ -19,11 +19,13 @@ export interface SettingsPluginCommandProvider extends SettingsExternalCommandPr
 
 export interface SettingsAppProps {
   initialConfig: PowerButtonsConfig;
+  initialSelectedButtonId?: string;
   builtinCommands: BuiltinCommandDefinition[];
   pluginCommands: PluginCommandDefinition[];
   externalCommandProviders: SettingsExternalCommandProvider[];
   onChange: (config: PowerButtonsConfig) => void | Promise<void>;
   onNotify: (message: string, type?: "info" | "error") => void;
+  onSelectedIdChange?: (itemId: string) => void | Promise<void>;
   onRefreshExternalCommands?: () => SettingsExternalCommandProvider[] | Promise<SettingsExternalCommandProvider[]>;
   onReadCurrentLayout?: () => PreviewButtonItem[] | Promise<PreviewButtonItem[]>;
 }

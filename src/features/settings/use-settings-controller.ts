@@ -92,9 +92,17 @@ function applyConfig(config: PowerButtonsConfig, nextConfig: PowerButtonsConfig)
   config.experimental = nextConfig.experimental;
 }
 
+function resolveInitialSelectedId(config: PowerButtonsConfig, initialSelectedButtonId?: string): string {
+  if (initialSelectedButtonId && config.items.some(item => item.id === initialSelectedButtonId)) {
+    return initialSelectedButtonId;
+  }
+
+  return config.items[0]?.id || "";
+}
+
 export function useSettingsController(props: SettingsAppProps) {
   const config = reactive<PowerButtonsConfig>(cloneConfig(props.initialConfig));
-  const selectedId = ref(config.items[0]?.id || "");
+  const selectedId = ref(resolveInitialSelectedId(config, props.initialSelectedButtonId));
   const listDragIndex = ref<number | null>(null);
   const previewDragItem = ref<PreviewButtonItem | null>(null);
   const previewDragCleanup = ref<(() => void) | null>(null);
@@ -596,6 +604,14 @@ export function useSettingsController(props: SettingsAppProps) {
       ensureSelectedActionConfiguration(selectedItem.value);
     }
     shortcutCaptureError.value = "";
+  }, { immediate: true, flush: "sync" });
+
+  watch(selectedId, (value) => {
+    if (!props.onSelectedIdChange) {
+      return;
+    }
+
+    void Promise.resolve(props.onSelectedIdChange(value)).catch(() => undefined);
   }, { immediate: true, flush: "sync" });
 
   return {

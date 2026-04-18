@@ -9,11 +9,13 @@ import type { SettingsAppProps } from '@/features/settings/types';
 function createProps(overrides: Partial<SettingsAppProps> = {}): SettingsAppProps {
   return {
     initialConfig: createDefaultConfig(),
+    initialSelectedButtonId: '',
     builtinCommands: [],
     pluginCommands: [],
     externalCommandProviders: [],
     onChange: vi.fn().mockResolvedValue(undefined),
     onNotify: vi.fn(),
+    onSelectedIdChange: vi.fn().mockResolvedValue(undefined),
     onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     ...overrides,
   };
@@ -37,6 +39,57 @@ function createDragStartEvent(target: HTMLElement): DragEvent {
 }
 
 describe('settings controller', () => {
+  it('restores the previously selected button when the id still exists', () => {
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: 'first',
+        title: '第一个',
+        order: 0,
+      }),
+      createButtonItem({
+        id: 'second',
+        title: '第二个',
+        order: 1,
+      }),
+    ];
+
+    const controller = useSettingsController(createProps({
+      initialConfig,
+      initialSelectedButtonId: 'second',
+    }));
+
+    expect(controller.selectedId.value).toBe('second');
+    expect(controller.selectedItem.value?.title).toBe('第二个');
+  });
+
+  it('falls back to the first button and persists that fallback when the stored id is stale', async () => {
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: 'first',
+        title: '第一个',
+        order: 0,
+      }),
+      createButtonItem({
+        id: 'second',
+        title: '第二个',
+        order: 1,
+      }),
+    ];
+
+    const onSelectedIdChange = vi.fn().mockResolvedValue(undefined);
+    const controller = useSettingsController(createProps({
+      initialConfig,
+      initialSelectedButtonId: 'missing',
+      onSelectedIdChange,
+    }));
+
+    expect(controller.selectedId.value).toBe('first');
+    await Promise.resolve();
+    expect(onSelectedIdChange).toHaveBeenCalledWith('first');
+  });
+
   it('restores the default config after confirmation and persists it', async () => {
     const initialConfig = createDefaultConfig();
     initialConfig.items = [

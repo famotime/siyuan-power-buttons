@@ -1,4 +1,5 @@
 export const CONFIG_STORAGE_NAME = "settings.json";
+export const SETTINGS_UI_STORAGE_NAME = "settings-ui.json";
 
 export const DEFAULT_ICONPARK_ICON = "iconpark:Search";
 export const INTERNAL_PLUGIN_PROVIDER_ID = "siyuan-power-buttons";

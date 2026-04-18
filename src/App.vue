@@ -704,6 +704,7 @@
 
 <script setup lang="ts">
 import {
+  onBeforeUnmount,
   onMounted,
   ref,
   watch,
@@ -851,5 +852,17 @@ watch(selectedId, () => {
 
 onMounted(() => {
   void initialize();
+});
+
+defineExpose({
+  getSelectedButtonId: () => selectedId.value,
+});
+
+onBeforeUnmount(() => {
+  if (!props.onSelectedIdChange) {
+    return;
+  }
+
+  void Promise.resolve(props.onSelectedIdChange(selectedId.value)).catch(() => undefined);
 });
 </script>

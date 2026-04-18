@@ -135,6 +135,39 @@ describe("settings app layout", () => {
     unmount();
   });
 
+  it("flushes the latest selected button id again when the settings app unmounts", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const onSelectedIdChange = vi.fn().mockResolvedValue(undefined);
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onSelectedIdChange,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
+    listButtons[1]?.click();
+    await nextTick();
+
+    expect(onSelectedIdChange).toHaveBeenNthCalledWith(1, expect.any(String));
+    expect(onSelectedIdChange).toHaveBeenNthCalledWith(2, expect.any(String));
+
+    const secondSelectedId = onSelectedIdChange.mock.calls[1]?.[0];
+    unmount();
+    await nextTick();
+
+    expect(onSelectedIdChange).toHaveBeenCalledTimes(3);
+    expect(onSelectedIdChange).toHaveBeenNthCalledWith(3, secondSelectedId);
+  });
+
   it("renders the icon source switcher as standard tabs and offers IconPark plus emoji picks", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

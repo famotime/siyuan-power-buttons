@@ -13,6 +13,12 @@ type ConfigStoreLike<TConfig> = {
   subscribe: (listener: (config: TConfig) => void) => () => void;
 };
 
+type SettingsUiStateStoreLike = {
+  load: () => Promise<{ lastSelectedButtonId: string }>;
+  snapshot: () => { lastSelectedButtonId: string };
+  setLastSelectedButtonId: (itemId: string) => Promise<void>;
+};
+
 type SurfaceManagerLike<TConfig> = {
   render: (config: TConfig) => void;
   destroy: () => void;
@@ -53,6 +59,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
   private surfaceManager: SurfaceManagerLike<TConfig> | null = null;
   private unsubscribeConfig: (() => void) | null = null;
   private externalCommandProviders: SettingsAppProps["externalCommandProviders"] = [];
+  private lastSelectedButtonId = "";
 
   constructor(private readonly options: {
     plugin: {
@@ -64,6 +71,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       }) => void;
     };
     configStore: ConfigStoreLike<TConfig>;
+    settingsUiStateStore: SettingsUiStateStoreLike;
     builtinCommands: SettingsAppProps["builtinCommands"];
     pluginCommands: PluginCommandDefinition[];
     pluginCommandHandlers: Map<string, () => void | Promise<void>>;
@@ -80,6 +88,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
 
   async onload(): Promise<void> {
     await this.options.configStore.load();
+    this.lastSelectedButtonId = (await this.options.settingsUiStateStore.load()).lastSelectedButtonId;
     await this.refreshExternalCommandProviders();
     this.registerPluginCommands();
     this.unsubscribeConfig = this.options.configStore.subscribe((config) => {
@@ -137,12 +146,17 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
   private createSettingsAppProps(): SettingsAppProps {
     return {
       initialConfig: this.options.configStore.snapshot(),
+      initialSelectedButtonId: this.lastSelectedButtonId,
       builtinCommands: this.options.builtinCommands,
       pluginCommands: this.options.pluginCommands,
       externalCommandProviders: this.externalCommandProviders,
       onChange: async config => this.options.configStore.replace(config as TConfig),
       onNotify: (message, type = "info") => {
         this.options.showMessage(message, 4000, type);
+      },
+      onSelectedIdChange: async itemId => {
+        this.lastSelectedButtonId = itemId;
+        await this.options.settingsUiStateStore.setLastSelectedButtonId(itemId);
       },
       onRefreshExternalCommands: this.options.externalCommands
         ? () => this.refreshExternalCommandProviders()
@@ -153,6 +167,8 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
 
   async openSetting(): Promise<void> {
     await this.refreshExternalCommandProviders();
+    this.lastSelectedButtonId = (await this.options.settingsUiStateStore.load()).lastSelectedButtonId;
+    this.options.settingsDialog.destroy();
     this.options.settingsDialog.open(this.createSettingsAppProps());
   }
 
