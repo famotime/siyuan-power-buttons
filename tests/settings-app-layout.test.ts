@@ -1051,7 +1051,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("moves config import and export to the sidebar and removes json textarea tools", async () => {
+  it("renders config import and export as the last sidebar panel and removes json textarea tools", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -1066,9 +1066,16 @@ describe("settings app layout", () => {
 
     await nextTick();
 
+    const sidebar = target.querySelector(".settings-panel--sidebar");
+    const sidebarSections = Array.from(sidebar?.children ?? []);
     const sidebarTransfer = target.querySelector(".settings-panel--sidebar .config-transfer");
     const editorTransfer = target.querySelector(".settings-panel--editor .config-transfer");
 
+    expect(sidebarSections).toHaveLength(3);
+    expect(sidebarSections[0]?.textContent).toContain("按钮列表");
+    expect(sidebarSections[0]?.textContent).not.toContain("导出配置文件");
+    expect(sidebarSections[1]?.textContent).toContain("位置预览");
+    expect(sidebarSections[2]?.textContent).toContain("配置文件");
     expect(sidebarTransfer?.textContent).toContain("导出配置文件");
     expect(sidebarTransfer?.textContent).toContain("导入配置文件");
     expect(sidebarTransfer?.textContent).toContain("所有已配置按钮");

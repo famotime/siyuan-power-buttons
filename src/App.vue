@@ -16,7 +16,6 @@
           :config="config"
           :selected-id="selectedId"
           :selected-item="selectedItem"
-          :import-file-input="importFileInput"
           :render-builtin-icon-markup="renderBuiltinIconMarkup"
           :surface-label="surfaceLabel"
           :add-item="addItem"
@@ -26,9 +25,6 @@
           :remove-item="removeItem"
           :on-list-drag-start="onListDragStart"
           :on-list-drop="onListDrop"
-          :export-config-file="exportConfigFile"
-          :open-import-file-picker="openImportFilePicker"
-          :handle-import-file="handleImportFile"
         />
 
         <WorkspacePreviewPanel
@@ -330,6 +326,13 @@
               </div>
             </div>
         </WorkspacePreviewPanel>
+
+        <ConfigTransferPanel
+          :import-file-input="importFileInput"
+          :export-config-file="exportConfigFile"
+          :open-import-file-picker="openImportFilePicker"
+          :handle-import-file="handleImportFile"
+        />
       </aside>
 
       <main class="settings-panel settings-panel--editor">
@@ -713,6 +716,7 @@ import {
   BUILTIN_COMMANDS,
   PLUGIN_COMMANDS,
 } from "@/core/commands";
+import ConfigTransferPanel from "@/features/settings/components/ConfigTransferPanel.vue";
 import SettingsButtonListPanel from "@/features/settings/components/SettingsButtonListPanel.vue";
 import WorkspacePreviewPanel from "@/features/settings/components/WorkspacePreviewPanel.vue";
 import type { SettingsAppProps } from "@/features/settings/types";

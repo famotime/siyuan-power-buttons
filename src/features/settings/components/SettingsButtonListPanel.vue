@@ -52,28 +52,10 @@
       </div>
     </div>
 
-    <section class="config-transfer">
-      <div>
-        <h3>配置文件</h3>
-        <p>导入或导出所有已配置按钮</p>
-      </div>
-      <div class="config-transfer__actions">
-        <button class="b3-button b3-button--outline" type="button" @click="exportConfigFile">导出配置文件</button>
-        <button class="b3-button b3-button--outline" type="button" @click="openImportFilePicker">导入配置文件</button>
-      </div>
-      <input
-        :ref="importFileInput"
-        class="config-transfer__input"
-        type="file"
-        accept=".json,application/json"
-        @change="handleImportFile"
-      />
-    </section>
   </section>
 </template>
 
 <script setup lang="ts">
-import type { Ref } from 'vue';
 import { renderNamedIcon } from '@/features/settings/view-helpers';
 import type { PowerButtonItem, PowerButtonsConfig } from '@/shared/types';
 
@@ -81,7 +63,6 @@ defineProps<{
   config: PowerButtonsConfig;
   selectedId: string;
   selectedItem?: PowerButtonItem;
-  importFileInput: Ref<HTMLInputElement | null>;
   renderBuiltinIconMarkup: (item: Pick<PowerButtonItem, 'iconType' | 'iconValue'>) => string;
   surfaceLabel: (value: string) => string;
   addItem: () => void | Promise<void>;
@@ -91,9 +72,6 @@ defineProps<{
   removeItem: (itemId: string) => void | Promise<void>;
   onListDragStart: (index: number) => void;
   onListDrop: (index: number) => void | Promise<void>;
-  exportConfigFile: () => void;
-  openImportFilePicker: () => void;
-  handleImportFile: (event: Event) => void | Promise<void>;
 }>();
 
 const TRASH_ICON = renderNamedIcon('iconpark:Delete');
