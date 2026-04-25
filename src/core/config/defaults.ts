@@ -11,7 +11,6 @@ import {
   normalizeItemOrder,
 } from "@/shared/utils";
 import type {
-  DisabledNativeButton,
   ActionType,
   IconType,
   PowerButtonItem,
@@ -47,33 +46,6 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
       : overrides.experimentalClickSequence,
   };
 }
-
-const DEFAULT_DISABLED_NATIVE_BUTTONS: DisabledNativeButton[] = [
-  {
-    id: "native:statusbar-right:barDock",
-    title: "显示/隐藏停靠栏",
-    surface: "statusbar-right",
-    selectors: [
-      "#barDock",
-      "barDock",
-      "iconHideDock",
-      "text:显示/隐藏停靠栏",
-    ],
-    iconMarkup: "<svg viewBox=\"0 0 32 32\">\n        <g>\n    <path d=\"M16.015 6.545l-2.924 3.636h5.818l-2.895-3.636zM24.727 13.091v5.818l3.636-2.895-3.636-2.924zM7.273 13.091l-3.636 2.924 3.636 2.895v-5.818zM18.909 21.818h-5.818l2.924 3.636 2.895-3.636zM29.091 2.909h-26.182c-1.6 0-2.909 1.309-2.909 2.909v20.364c0 1.6 1.309 2.909 2.909 2.909h26.182c1.6 0 2.909-1.309 2.909-2.909v-20.364c0-1.6-1.309-2.909-2.909-2.909zM29.091 26.196h-26.182v-20.393h26.182v20.393z\"></path>\n  </g>\n    </svg>",
-  },
-  {
-    id: "native:statusbar-right:statusHelp",
-    title: "帮助",
-    surface: "statusbar-right",
-    selectors: [
-      "#statusHelp",
-      "statusHelp",
-      "iconHelp",
-      "text:帮助",
-    ],
-    iconMarkup: "<svg viewBox=\"0 0 32 32\"><g>\n    <path d=\"M14.4 25.6h3.2v-3.2h-3.2v3.2zM16 0c-8.832 0-16 7.168-16 16s7.168 16 16 16 16-7.168 16-16-7.168-16-16-16zM16 28.8c-7.056 0-12.8-5.744-12.8-12.8s5.744-12.8 12.8-12.8 12.8 5.744 12.8 12.8-5.744 12.8-12.8 12.8zM16 6.4c-3.536 0-6.4 2.864-6.4 6.4h3.2c0-1.76 1.44-3.2 3.2-3.2s3.2 1.44 3.2 3.2c0 3.2-4.8 2.8-4.8 8h3.2c0-3.6 4.8-4 4.8-8 0-3.536-2.864-6.4-6.4-6.4z\"></path>\n  </g></svg>",
-  },
-];
 
 export function createDefaultConfig(): PowerButtonsConfig {
   const items = normalizeItemOrder([
@@ -278,7 +250,7 @@ export function createDefaultConfig(): PowerButtonsConfig {
       id: "pb-4b654804-355d-4a3d-960f-8437e0f36e9b",
       title: "随心按设置",
       iconType: "iconpark",
-      iconValue: "iconpark:ArithmeticButtons",
+      iconValue: "iconpark:AsteriskKey",
       surface: "statusbar-right",
       actionType: "plugin-command",
       actionId: "siyuan-power-buttons:open-settings",
@@ -290,7 +262,7 @@ export function createDefaultConfig(): PowerButtonsConfig {
     version: 2,
     desktopOnly: true,
     items,
-    disabledNativeButtons: DEFAULT_DISABLED_NATIVE_BUTTONS,
+    disabledNativeButtons: [],
     experimental: {
       nativeToolbarControl: false,
       internalCommandAdapter: false,

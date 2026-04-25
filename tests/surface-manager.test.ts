@@ -5,6 +5,7 @@ import { CommandExecutor } from "@/core/commands";
 import { createButtonItem } from "@/core/config/defaults";
 import { SurfaceManager } from "@/core/surfaces";
 import * as commands from "@/core/commands";
+import { renderIconMarkup } from "@/shared/icon-renderer";
 
 describe("surface manager", () => {
   it("renders a fixed open-settings top bar entry before config-driven top bar buttons", async () => {
@@ -41,8 +42,11 @@ describe("surface manager", () => {
 
     expect(addTopBar).toHaveBeenCalledTimes(2);
     expect(addTopBar.mock.calls[0][0]).toMatchObject({
-      icon: "iconSettings",
-      title: "打开快捷按钮设置",
+      icon: renderIconMarkup({
+        iconType: "iconpark",
+        iconValue: "iconpark:AsteriskKey",
+      }, document),
+      title: "打开随心按设置",
     });
 
     await addTopBar.mock.calls[0][0].callback();

@@ -8,7 +8,7 @@ import {
 import { CONFIGURABLE_SURFACES } from "@/shared/types";
 
 describe("config store model", () => {
-  it("creates a desktop-only documented default config with mixed action types and native suppression defaults", () => {
+  it("creates a desktop-only documented default config without native suppression defaults", () => {
     const config = createDefaultConfig();
 
     expect(config.version).toBe(2);
@@ -31,10 +31,7 @@ describe("config store model", () => {
     expect(config.items.some(item => item.actionType === "experimental-shortcut")).toBe(true);
     expect(config.items.some(item => item.actionType === "experimental-click-sequence")).toBe(true);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
-    expect(config.disabledNativeButtons.map(item => item.id)).toEqual([
-      "native:statusbar-right:barDock",
-      "native:statusbar-right:statusHelp",
-    ]);
+    expect(config.disabledNativeButtons).toEqual([]);
     expect(config.experimental.shortcutAdapter).toBe(true);
     expect(config.experimental.clickSequenceAdapter).toBe(true);
   });

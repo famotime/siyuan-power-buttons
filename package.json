@@ -1,6 +1,6 @@
 {
   "name": "siyuan-power-buttons",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "A configurable power buttons plugin for Siyuan",
   "author": "Quincy Zou",
