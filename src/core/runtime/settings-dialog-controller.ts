@@ -33,7 +33,7 @@ export class SettingsDialogController {
 
     this.dialog = this.options.createDialog({
       title: "随心按设置",
-      width: "1280px",
+      width: "min(1280px, calc(100vw - 32px))",
       height: "80vh",
       content: `<div class="siyuan-power-buttons-settings-host"></div>`,
       destroyCallback: () => {

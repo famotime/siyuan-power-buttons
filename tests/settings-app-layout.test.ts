@@ -66,6 +66,16 @@ describe("settings app layout", () => {
     expect(itemRule).toContain("box-sizing: border-box");
   });
 
+  it("allows each settings panel to shrink within the two-column grid", () => {
+    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+
+    const panelRuleStart = stylesheet.indexOf(".settings-panel {");
+    const panelRuleEnd = stylesheet.indexOf("}", panelRuleStart);
+    const panelRule = stylesheet.slice(panelRuleStart, panelRuleEnd);
+
+    expect(panelRule).toContain("min-width: 0");
+  });
+
   it("normalizes preview chip svg icons to a fixed size", () => {
     const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
 

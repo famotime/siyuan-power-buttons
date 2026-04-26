@@ -13,6 +13,13 @@ describe("IconPark icon catalog", () => {
     expect(ICONPARK_ICON_OPTIONS.some(icon => icon.value === "iconpark:Setting")).toBe(true);
   });
 
+  it("does not contain duplicate generated icon values", () => {
+    const values = ICONPARK_ICON_OPTIONS.map(icon => icon.value);
+    const uniqueValues = new Set(values);
+
+    expect(uniqueValues.size).toBe(values.length);
+  });
+
   it("filters IconPark icons by name, label, and keywords", () => {
     expect(filterIconParkIcons("search").some(icon => icon.value === "iconpark:Search")).toBe(true);
     expect(filterIconParkIcons("setting").some(icon => icon.value === "iconpark:Setting")).toBe(true);

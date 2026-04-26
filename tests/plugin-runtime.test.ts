@@ -159,6 +159,33 @@ describe("settings dialog controller", () => {
     expect(secondUnmount).toHaveBeenCalledTimes(1);
     expect(secondDestroy).toHaveBeenCalledTimes(1);
   });
+
+  it("uses a viewport-constrained width when opening the settings dialog", () => {
+    const createDialog = vi.fn().mockReturnValue({
+      element: createDialogElement(),
+      destroy: vi.fn(),
+    });
+    const mountSettingsApp = vi.fn().mockReturnValue(vi.fn());
+
+    const controller = new SettingsDialogController({
+      createDialog,
+      mountSettingsApp,
+    });
+
+    controller.open({
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      externalCommandProviders: [],
+      onChange: vi.fn(),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn(),
+    });
+
+    expect(createDialog).toHaveBeenCalledWith(expect.objectContaining({
+      width: expect.stringContaining("100vw"),
+    }));
+  });
 });
 
 describe("plugin runtime", () => {
