@@ -8,7 +8,7 @@ import { formatExternalCommandActionId } from "@/core/commands/external-command-
 export const PLUGIN_COMMANDS: PluginCommandDefinition[] = [
   {
     id: "open-settings",
-    title: "打开随心按设置",
+    title: "随心按",
     description: "打开可视化配置界面。",
   },
   {

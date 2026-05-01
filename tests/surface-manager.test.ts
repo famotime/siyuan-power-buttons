@@ -46,7 +46,7 @@ describe("surface manager", () => {
         iconType: "iconpark",
         iconValue: "iconpark:AsteriskKey",
       }, document),
-      title: "打开随心按设置",
+      title: "随心按",
     });
 
     await addTopBar.mock.calls[0][0].callback();

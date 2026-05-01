@@ -79,7 +79,7 @@ export function createCanvasElement(
 export function createFixedSettingsTopbar(plugin: Plugin, executor: CommandExecutor): HTMLElement {
   const element = plugin.addTopBar({
     icon: createIconSvg('iconpark:AsteriskKey'),
-    title: '打开随心按设置',
+    title: '随心按',
     callback: () => {
       void executor.execute({
         actionType: 'plugin-command',

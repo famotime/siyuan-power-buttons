@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Keep `打开随心按设置` as a permanent plugin-management menu entry while removing the prebuilt settings button from default surface config.
+**Goal:** Keep `随心按` as a permanent plugin-management menu entry while removing the prebuilt settings button from default surface config.
 
 **Architecture:** Preserve the existing split between runtime-registered plugin commands and config-driven surface buttons. Only change default config generation and the tests that describe its behavior, leaving manual `plugin-command/open-settings` buttons fully supported.
 
@@ -87,7 +87,7 @@ it("registers the fixed open-settings plugin command independently from config i
   const openSettingsCommand = state.addCommand.mock.calls.find(call => call[0].langKey === "power-buttons-open-settings")?.[0];
   await openSettingsCommand?.callback();
 
-  expect(openSettingsCommand?.langText).toBe("打开随心按设置");
+  expect(openSettingsCommand?.langText).toBe("随心按");
   expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
 });
 ```

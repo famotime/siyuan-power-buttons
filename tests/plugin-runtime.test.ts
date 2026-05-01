@@ -492,7 +492,7 @@ describe("plugin runtime", () => {
 
     await openSettingsCommand?.callback();
 
-    expect(openSettingsCommand?.langText).toBe("动作类型（插件命令）-随心按-打开随心按设置");
+    expect(openSettingsCommand?.langText).toBe("动作类型（插件命令）-随心按-随心按");
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
   });
 

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Keep `打开随心按设置` as a permanent plugin-management menu entry while removing the default in-surface settings button from generated default config.
+Keep `随心按` as a permanent plugin-management menu entry while removing the default in-surface settings button from generated default config.
 
 ## Scope
 
@@ -21,7 +21,7 @@ It does not change:
 
 ### Fixed entry
 
-The plugin-management dropdown must always expose `打开随心按设置`.
+The plugin-management dropdown must always expose `随心按`.
 
 This entry remains registered from runtime startup and must not depend on `config.items`.
 
