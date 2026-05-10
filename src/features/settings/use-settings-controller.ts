@@ -8,6 +8,7 @@ import {
   createDefaultConfig,
   createButtonItem,
   importConfigFromJson,
+  mergeImportedButtonsWithStats,
 } from "@/core/config";
 import {
   COMMON_EMOJI_OPTIONS,
@@ -550,6 +551,10 @@ export function useSettingsController(props: SettingsAppProps) {
     openImportFilePicker(importFileInput.value);
   }
 
+  function setImportFileInput(element: HTMLInputElement | null): void {
+    importFileInput.value = element;
+  }
+
   async function handleImportFile(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement | null;
     const file = input?.files?.[0];
@@ -558,10 +563,14 @@ export function useSettingsController(props: SettingsAppProps) {
     }
 
     try {
-      applyConfig(config, importConfigFromJson(await readConfigFile(file)));
+      const mergeResult = mergeImportedButtonsWithStats(
+        config,
+        importConfigFromJson(await readConfigFile(file)),
+      );
+      applyConfig(config, mergeResult.config);
       selectedId.value = config.items[0]?.id || "";
       await persist();
-      props.onNotify("配置文件已导入。");
+      props.onNotify(`已导入 ${mergeResult.importedCount} 个新按钮，跳过 ${mergeResult.skippedCount} 个已存在按钮。`);
     } catch (error) {
       props.onNotify(error instanceof Error ? error.message : String(error), "error");
     } finally {
@@ -660,6 +669,7 @@ export function useSettingsController(props: SettingsAppProps) {
     renderSvgPreviewState,
     resetConfig,
     refreshExternalProviders,
+    setImportFileInput,
     selectedId,
     selectedPluginCommand,
     selectedPluginProvider,

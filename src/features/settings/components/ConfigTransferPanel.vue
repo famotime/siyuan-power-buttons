@@ -9,7 +9,7 @@
       <button class="b3-button b3-button--outline" type="button" @click="openImportFilePicker">导入配置文件</button>
     </div>
     <input
-      :ref="importFileInput"
+      :ref="setImportFileInput"
       class="config-transfer__input"
       type="file"
       accept=".json,application/json"
@@ -19,10 +19,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Ref } from 'vue';
-
 defineProps<{
-  importFileInput: Ref<HTMLInputElement | null>;
+  setImportFileInput: (element: HTMLInputElement | null) => void;
   exportConfigFile: () => void;
   openImportFilePicker: () => void;
   handleImportFile: (event: Event) => void | Promise<void>;

@@ -18,6 +18,10 @@ import { createButtonItem } from "@/core/config/defaults";
 import { mountSettingsApp } from "@/main";
 
 describe("settings app layout", () => {
+  function normalizeLineEndings(value: string): string {
+    return value.replace(/\r\n/g, "\n");
+  }
+
   afterEach(() => {
     document.body.innerHTML = "";
     vi.restoreAllMocks();
@@ -45,7 +49,7 @@ describe("settings app layout", () => {
   });
 
   it("moves the preview gradient styling to the active button list item", () => {
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
 
     const activeRuleStart = stylesheet.indexOf(".button-list__item.is-active");
     const activeRuleEnd = stylesheet.indexOf("}", activeRuleStart);
@@ -56,7 +60,7 @@ describe("settings app layout", () => {
   });
 
   it("keeps button list items within the sidebar card width", () => {
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8")));
 
     const itemRuleStart = stylesheet.indexOf(".button-list__item {");
     const itemRuleEnd = stylesheet.indexOf("}", itemRuleStart);
@@ -67,7 +71,7 @@ describe("settings app layout", () => {
   });
 
   it("allows each settings panel to shrink within the two-column grid", () => {
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8")));
 
     const panelRuleStart = stylesheet.indexOf(".settings-panel {");
     const panelRuleEnd = stylesheet.indexOf("}", panelRuleStart);
@@ -77,7 +81,7 @@ describe("settings app layout", () => {
   });
 
   it("normalizes preview chip svg icons to a fixed size", () => {
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
 
     expect(stylesheet).toContain(".workspace-chip__icon .siyuan-power-buttons__icon");
     expect(stylesheet).toContain(".workspace-chip__icon svg");
@@ -181,7 +185,7 @@ describe("settings app layout", () => {
   it("renders the icon source switcher as standard tabs and offers IconPark plus emoji picks", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -413,7 +417,7 @@ describe("settings app layout", () => {
   it("edits click-sequence form-value fields in the settings panel", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
 
     const onChange = vi.fn().mockResolvedValue(undefined);
     const initialConfig = createDefaultConfig();
@@ -507,7 +511,7 @@ describe("settings app layout", () => {
   it("renders click-sequence steps as draggable cards and reorders them", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
 
     const onChange = vi.fn().mockResolvedValue(undefined);
     const initialConfig = createDefaultConfig();
@@ -1098,7 +1102,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("imports and exports the full button configuration through files", async () => {
+  it("imports missing buttons from files without replacing the current configuration", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -1108,8 +1112,26 @@ describe("settings app layout", () => {
     const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test");
     const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "existing-daily-note",
+        title: "已有今日日记",
+        actionType: "builtin-global-command",
+        actionId: "dailyNote",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "existing-search",
+        title: "已有全局搜索",
+        actionType: "experimental-shortcut",
+        actionId: "Ctrl+P",
+        order: 1,
+      }),
+    ];
+
     const unmount = mountSettingsApp(target, {
-      initialConfig: createDefaultConfig(),
+      initialConfig,
       builtinCommands: [],
       pluginCommands: [],
       onChange,
@@ -1133,10 +1155,19 @@ describe("settings app layout", () => {
     const importedConfig = createDefaultConfig();
     importedConfig.items = [
       createButtonItem({
-        id: "imported-only",
+        id: "duplicate-daily-note",
+        title: "导入的今日日记",
+        actionType: "builtin-global-command",
+        actionId: "dailyNote",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "imported-history",
         title: "导入后的按钮",
         tooltip: "来自文件导入",
-        order: 0,
+        actionType: "experimental-shortcut",
+        actionId: "Alt+H",
+        order: 1,
       }),
     ];
 
@@ -1153,9 +1184,42 @@ describe("settings app layout", () => {
 
     await vi.waitFor(() => {
       expect(onChange).toHaveBeenCalled();
-      expect(onNotify).toHaveBeenCalledWith("配置文件已导入。");
+      expect(onNotify).toHaveBeenCalledWith("已导入 1 个新按钮，跳过 1 个已存在按钮。");
     });
-    expect(Array.from(target.querySelectorAll(".button-list__content strong")).map(node => node.textContent?.trim())).toEqual(["导入后的按钮"]);
+    expect(Array.from(target.querySelectorAll(".button-list__content strong")).map(node => node.textContent?.trim())).toEqual([
+      "已有今日日记",
+      "已有全局搜索",
+      "导入后的按钮",
+    ]);
+
+    unmount();
+  });
+
+  it("opens the hidden file input when the import button is clicked", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const inputClick = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+
+    const unmount = mountSettingsApp(target, {
+      initialConfig: createDefaultConfig(),
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange: vi.fn().mockResolvedValue(undefined),
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await nextTick();
+
+    const importButton = Array.from(target.querySelectorAll<HTMLButtonElement>("button"))
+      .find(button => button.textContent?.trim() === "导入配置文件");
+
+    expect(importButton).not.toBeUndefined();
+
+    importButton?.click();
+
+    expect(inputClick).toHaveBeenCalledTimes(1);
 
     unmount();
   });
@@ -1221,7 +1285,7 @@ describe("settings app layout", () => {
 
     const canvasItems = target.querySelector(".workspace-preview__canvas-items");
     const canvasText = canvasItems?.textContent || "";
-    const stylesheet = readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8");
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
 
     expect(canvasText).toContain("钉住编辑区");
     expect(stylesheet).toContain(".workspace-preview__segment--end");

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { createApp, nextTick, ref } from 'vue';
+import { createApp, nextTick } from 'vue';
 import { describe, expect, it, vi } from 'vitest';
 import { createDefaultConfig } from '@/core/config/defaults';
 import ConfigTransferPanel from '@/features/settings/components/ConfigTransferPanel.vue';
@@ -62,9 +62,10 @@ describe('settings components', () => {
     const exportConfigFile = vi.fn();
     const openImportFilePicker = vi.fn();
     const handleImportFile = vi.fn();
+    const setImportFileInput = vi.fn();
 
     const app = createApp(ConfigTransferPanel, {
-      importFileInput: ref<HTMLInputElement | null>(null),
+      setImportFileInput,
       exportConfigFile,
       openImportFilePicker,
       handleImportFile,
@@ -83,6 +84,8 @@ describe('settings components', () => {
     const fileInput = target.querySelector<HTMLInputElement>('.config-transfer__input');
     fileInput?.dispatchEvent(new Event('change'));
 
+    expect(setImportFileInput).toHaveBeenCalledTimes(1);
+    expect(setImportFileInput.mock.calls[0]?.[0]).toBe(fileInput);
     expect(exportConfigFile).toHaveBeenCalledTimes(1);
     expect(openImportFilePicker).toHaveBeenCalledTimes(1);
     expect(handleImportFile).toHaveBeenCalledTimes(1);

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  createButtonItem,
   createDefaultConfig,
   exportConfigAsJson,
   importConfigFromJson,
+  mergeImportedButtons,
 } from "@/core/config";
 
 describe("config import and export", () => {
@@ -190,5 +192,56 @@ describe("config import and export", () => {
     }));
 
     expect(importConfigFromJson(exportConfigAsJson(config))).toEqual(config);
+  });
+
+  it("merges imported buttons by action type and action id without replacing existing config", () => {
+    const currentConfig = createDefaultConfig();
+    currentConfig.items = [
+      createButtonItem({
+        id: "existing-daily-note",
+        title: "今日日记",
+        actionType: "builtin-global-command",
+        actionId: "dailyNote",
+        surface: "topbar",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "existing-search",
+        title: "全局搜索",
+        actionType: "experimental-shortcut",
+        actionId: "Ctrl+P",
+        surface: "statusbar-right",
+        order: 1,
+      }),
+    ];
+    currentConfig.desktopOnly = false;
+
+    const importedConfig = createDefaultConfig();
+    importedConfig.items = [
+      createButtonItem({
+        id: "duplicate-daily-note",
+        title: "今日日记-导入副本",
+        actionType: "builtin-global-command",
+        actionId: "dailyNote",
+        surface: "canvas",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "new-history",
+        title: "数据历史",
+        actionType: "experimental-shortcut",
+        actionId: "Alt+H",
+        surface: "statusbar-right",
+        order: 1,
+      }),
+    ];
+    importedConfig.desktopOnly = true;
+
+    const merged = mergeImportedButtons(currentConfig, importedConfig);
+
+    expect(merged.desktopOnly).toBe(false);
+    expect(merged.items.map(item => item.title)).toEqual(["今日日记", "全局搜索", "数据历史"]);
+    expect(merged.items.map(item => item.actionId)).toEqual(["dailyNote", "Ctrl+P", "Alt+H"]);
+    expect(merged.items.map(item => item.order)).toEqual([0, 1, 2]);
   });
 });

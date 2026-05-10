@@ -328,7 +328,7 @@
         </WorkspacePreviewPanel>
 
         <ConfigTransferPanel
-          :import-file-input="importFileInput"
+          :set-import-file-input="setImportFileInput"
           :export-config-file="exportConfigFile"
           :open-import-file-picker="openImportFilePicker"
           :handle-import-file="handleImportFile"
@@ -725,6 +725,7 @@ import { moveItem } from "@/shared/utils";
 
 const props = withDefaults(defineProps<SettingsAppProps>(), {
   builtinCommands: () => BUILTIN_COMMANDS,
+  externalCommandProviders: () => [],
   pluginCommands: () => PLUGIN_COMMANDS,
   onReadCurrentLayout: () => [],
 });
@@ -750,7 +751,6 @@ const {
   iconKeyword,
   iconParkCategories,
   iconTypes,
-  importFileInput,
   initialize,
   refreshCurrentLayout,
   isRefreshingLayout,
@@ -775,6 +775,7 @@ const {
   resetConfig,
   refreshExternalProviders,
   restoreDisabledNativeItem,
+  setImportFileInput,
   selectedId,
   selectedPluginCommand,
   selectedPluginProvider,

@@ -22,7 +22,7 @@ export interface SettingsAppProps {
   initialSelectedButtonId?: string;
   builtinCommands: BuiltinCommandDefinition[];
   pluginCommands: PluginCommandDefinition[];
-  externalCommandProviders: SettingsExternalCommandProvider[];
+  externalCommandProviders?: SettingsExternalCommandProvider[];
   onChange: (config: PowerButtonsConfig) => void | Promise<void>;
   onNotify: (message: string, type?: "info" | "error") => void;
   onSelectedIdChange?: (itemId: string) => void | Promise<void>;
