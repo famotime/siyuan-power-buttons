@@ -783,9 +783,21 @@
 }
 
 .icon-grid {
+  --icon-grid-row-height: 60px;
+  --icon-grid-gap: 8px;
+  --icon-grid-visible-rows: 7;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 8px;
+  grid-auto-rows: var(--icon-grid-row-height);
+  gap: var(--icon-grid-gap);
+  align-content: start;
+  max-height: calc(
+    var(--icon-grid-row-height) * var(--icon-grid-visible-rows) +
+    var(--icon-grid-gap) * (var(--icon-grid-visible-rows) - 1)
+  );
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
 }
 
 .emoji-grid {
@@ -807,6 +819,7 @@
 }
 
 .icon-grid__item {
+  height: 100%;
   border: 0;
   background: transparent;
   box-shadow: none;

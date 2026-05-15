@@ -182,6 +182,20 @@ describe("settings app layout", () => {
     expect(onSelectedIdChange).toHaveBeenNthCalledWith(3, secondSelectedId);
   });
 
+  it("limits the IconPark candidate grid to seven visible rows and enables vertical scrolling", () => {
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+
+    const gridRuleStart = stylesheet.indexOf(".icon-grid {");
+    const gridRuleEnd = stylesheet.indexOf("}", gridRuleStart);
+    const gridRule = stylesheet.slice(gridRuleStart, gridRuleEnd);
+
+    expect(gridRule).toContain("grid-auto-rows");
+    expect(gridRule).toContain("max-height");
+    expect(gridRule).toContain("overflow-y: auto");
+    expect(gridRule).toContain("align-content: start");
+    expect(gridRule).toContain("7");
+  });
+
   it("renders the icon source switcher as standard tabs and offers IconPark plus emoji picks", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
