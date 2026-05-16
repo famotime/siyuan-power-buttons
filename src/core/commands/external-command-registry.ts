@@ -20,7 +20,7 @@ function isValidProvider(provider: unknown): provider is ExternalCommandProvider
   }
 
   const candidate = provider as Partial<ExternalCommandProvider>;
-  if (candidate.protocol !== "power-buttons-command-provider" || candidate.protocolVersion !== 1) {
+  if (candidate.protocol !== "power-buttons-command-provider" || (candidate.protocolVersion !== 1 && candidate.protocolVersion !== 2)) {
     return false;
   }
 

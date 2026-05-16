@@ -22,34 +22,62 @@ describe("ExternalCommandRegistry", () => {
         }),
     };
 
+    const v2Provider: ExternalCommandProvider = {
+      protocol: "power-buttons-command-provider",
+      protocolVersion: 2,
+      providerId: "siyuan-doc-assist-v2",
+      providerName: "文档助手 v2",
+      listCommands: () => [
+        {
+          id: "insert-doc-summary",
+          title: "插入文档摘要",
+          supportsTargetDoc: true,
+        },
+      ],
+      invokeCommand: () =>
+        Promise.resolve({
+          ok: true,
+        }),
+    };
+
     const registry = new ExternalCommandRegistry({
       getPlugins: () => [
         {
           name: "missing-integration",
         },
         {
-          name: "invalid-protocol",
+          name: "future-version",
           getPowerButtonsIntegration: () => ({
             ...mockProvider,
             providerId: "should-be-ignored",
-            protocolVersion: 2,
+            protocolVersion: 3,
           }),
         },
         {
           name: "doc-assist",
           getPowerButtonsIntegration: () => mockProvider,
         },
+        {
+          name: "doc-assist-v2",
+          getPowerButtonsIntegration: () => v2Provider,
+        },
       ],
     });
 
     await registry.refresh();
 
-    expect(registry.listProviders()).toEqual([
-      expect.objectContaining({
-        providerId: "siyuan-doc-assist",
-        providerName: "文档助手 / Doc Assist",
-      }),
-    ]);
+    expect(registry.listProviders()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          providerId: "siyuan-doc-assist",
+          providerName: "文档助手 / Doc Assist",
+        }),
+        expect.objectContaining({
+          providerId: "siyuan-doc-assist-v2",
+          providerName: "文档助手 v2",
+        }),
+      ]),
+    );
 
     expect(await registry.listCommands("siyuan-doc-assist")).toEqual([
       expect.objectContaining({
@@ -57,7 +85,15 @@ describe("ExternalCommandRegistry", () => {
       }),
     ]);
 
+    expect(await registry.listCommands("siyuan-doc-assist-v2")).toEqual([
+      expect.objectContaining({
+        id: "insert-doc-summary",
+        supportsTargetDoc: true,
+      }),
+    ]);
+
     expect(registry.getProvider("siyuan-doc-assist")).toBe(mockProvider);
+    expect(registry.getProvider("siyuan-doc-assist-v2")).toBe(v2Provider);
     expect(registry.getProvider("should-be-ignored")).toBeNull();
   });
 

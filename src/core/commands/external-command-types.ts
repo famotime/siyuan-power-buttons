@@ -13,14 +13,19 @@ export interface ExternalPluginCommandDefinition {
   keywords?: string[];
   desktopOnly?: boolean;
   supportsMobile?: boolean;
+  supportsTargetDoc?: boolean;
+  supportsSelection?: boolean;
 }
 
 export interface ExternalCommandInvokeContext {
-  trigger: "button-click";
-  sourcePlugin: "siyuan-power-buttons";
+  trigger: "button-click" | "workflow-step";
+  sourcePlugin: string;
   sourcePluginVersion?: string;
   surface?: string;
   buttonId?: string;
+  docId?: string;
+  scope?: "full-doc" | "selection" | "related-docs";
+  selectionBlockIds?: string[];
 }
 
 type ExternalCommandInvokeErrorCode =
@@ -45,7 +50,7 @@ export type ExternalCommandInvokeResult =
 
 export interface ExternalCommandProvider extends ExternalCommandProviderSummary {
   protocol: "power-buttons-command-provider";
-  protocolVersion: 1;
+  protocolVersion: 1 | 2;
   listCommands: () => Promise<ExternalPluginCommandDefinition[]> | ExternalPluginCommandDefinition[];
   invokeCommand: (
     commandId: string,
