@@ -88,6 +88,7 @@ import {
   renderSettingsIconMarkup,
   resolveSvgPreviewState,
 } from "@/features/settings/view-helpers";
+import { getNativeToolbarIcon } from "@/shared/native-icon";
 
 function applyConfig(config: PowerButtonsConfig, nextConfig: PowerButtonsConfig): void {
   config.version = nextConfig.version;
@@ -184,14 +185,18 @@ export function useSettingsController(props: SettingsAppProps) {
     }));
   });
 
-  /** 浮动工具栏原生按钮列表（含禁用状态） */
+  /** 浮动工具栏原生按钮列表（含禁用状态和图标） */
   const selectionToolbarNativeButtons = computed(() => {
     const disabledNames = new Set(config.disabledSelectionToolbarItems.map(item => item.name));
-    return CONFIGURABLE_NATIVE_NAMES.map(name => ({
-      name,
-      label: NATIVE_TOOLBAR_BUTTON_LABELS[name] || name,
-      disabled: disabledNames.has(name),
-    }));
+    return CONFIGURABLE_NATIVE_NAMES.map(name => {
+      const label = NATIVE_TOOLBAR_BUTTON_LABELS[name] || name;
+      return {
+        name,
+        label,
+        disabled: disabledNames.has(name),
+        iconMarkup: getNativeToolbarIcon(name, label),
+      };
+    });
   });
 
   /** 浮动工具栏中用户自定义的按钮 */

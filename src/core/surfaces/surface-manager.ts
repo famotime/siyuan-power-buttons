@@ -32,6 +32,9 @@ export class SurfaceManager {
   private canvasElements: HTMLElement[] = [];
   private dockRegistrations: DockRegistration[] = [];
   private nativeSuppressor = new NativeElementSuppressor();
+  private toolbarPatchObserver: MutationObserver | null = null;
+  private disabledToolbarNames = new Set<string>();
+  private patchedToolbarItems = new Set<HTMLElement>();
 
   constructor(
     private readonly plugin: Plugin,
@@ -118,10 +121,70 @@ export class SurfaceManager {
     }
 
     this.nativeSuppressor.apply(config.disabledNativeButtons, document);
+
+    // 禁用浮动工具栏原生按钮
+    this.disabledToolbarNames = new Set(
+      config.disabledSelectionToolbarItems.map(item => item.name),
+    );
+    this.patchSelectionToolbar();
+  }
+
+  /**
+   * 直接 patch 浮动工具栏 DOM，隐藏被禁用的原生按钮。
+   *
+   * siyuan 的 updateProtyleToolbar 仅在 protyle 初始化时调用一次，
+   * 已打开的编辑器不会因配置变更而刷新。此方法通过 DOM 操作弥补。
+   */
+  private patchSelectionToolbar(): void {
+    this.toolbarPatchObserver?.disconnect();
+    this.toolbarPatchObserver = null;
+    this.restoreToolbarPatch();
+
+    if (this.disabledToolbarNames.size === 0) {
+      return;
+    }
+
+    this.applyToolbarPatch();
+
+    // protyle-toolbar 是浮动元素，挂载在 body 下而非 .layout__center 内部
+    this.toolbarPatchObserver = new MutationObserver(() => {
+      this.applyToolbarPatch();
+    });
+    this.toolbarPatchObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  private applyToolbarPatch(): void {
+    if (this.disabledToolbarNames.size === 0) {
+      return;
+    }
+    for (const toolbar of document.querySelectorAll<HTMLElement>(".protyle-toolbar")) {
+      for (const item of toolbar.querySelectorAll<HTMLElement>("[data-type]")) {
+        const type = item.dataset.type;
+        if (!type || !this.disabledToolbarNames.has(type)) continue;
+        if (this.patchedToolbarItems.has(item)) continue;
+        item.style.display = "none";
+        this.patchedToolbarItems.add(item);
+      }
+    }
+  }
+
+  /** 恢复所有被 patch 过的工具栏按钮的显示状态 */
+  private restoreToolbarPatch(): void {
+    for (const item of this.patchedToolbarItems) {
+      item.style.display = "";
+    }
+    this.patchedToolbarItems.clear();
   }
 
   destroy(): void {
     this.nativeSuppressor.clear();
+    this.toolbarPatchObserver?.disconnect();
+    this.toolbarPatchObserver = null;
+    this.restoreToolbarPatch();
+    this.disabledToolbarNames.clear();
 
     for (const element of this.topbarElements) {
       element.remove();

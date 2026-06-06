@@ -293,21 +293,17 @@
                 <small class="workspace-preview__selection-toolbar-hint">选中文本后弹出</small>
               </div>
               <div class="workspace-preview__selection-toolbar-native">
-                <label
+                <button
                   v-for="btn in selectionToolbarNativeButtons"
                   :key="btn.name"
+                  type="button"
                   class="workspace-preview__native-toggle"
                   :class="{ 'is-disabled': btn.disabled }"
                   :title="btn.disabled ? `点击恢复「${btn.label}」` : `点击禁用「${btn.label}」`"
+                  @click="toggleSelectionToolbarNativeButton(btn.name)"
                 >
-                  <input
-                    type="checkbox"
-                    class="workspace-preview__native-checkbox"
-                    :checked="!btn.disabled"
-                    @change="toggleSelectionToolbarNativeButton(btn.name)"
-                  />
-                  <span class="workspace-preview__native-label">{{ btn.label }}</span>
-                </label>
+                  <span class="workspace-preview__native-icon" v-html="btn.iconMarkup" />
+                </button>
               </div>
               <div
                 v-if="selectionToolbarCustomItems.length"

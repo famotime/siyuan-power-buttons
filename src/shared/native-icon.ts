@@ -53,6 +53,24 @@ function inlineSymbolUses(svg: SVGElement, ownerDocument: Document): string | un
   return clone.outerHTML;
 }
 
+export function getNativeToolbarIcon(name: string, label: string, ownerDocument: Document = document): string {
+  const selectors = [
+    `.protyle-toolbar [data-type="${name}"]`,
+    `.b3-menu [data-type="${name}"]`,
+    `[data-type="${name}"]`,
+  ];
+  for (const selector of selectors) {
+    const el = ownerDocument.querySelector<HTMLElement>(selector);
+    if (!el) continue;
+    const svg = el.querySelector("svg");
+    if (svg) {
+      const resolved = resolveNativeIconMarkup(svg.outerHTML, ownerDocument);
+      if (resolved) return resolved;
+    }
+  }
+  return createNativeFallbackIconMarkup(label);
+}
+
 export function resolveNativeIconMarkup(markup: string | undefined, ownerDocument: Document = document): string | undefined {
   const trimmed = markup?.trim();
   if (!trimmed) {

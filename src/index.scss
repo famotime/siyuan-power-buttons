@@ -287,12 +287,12 @@
 .workspace-preview__native-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  border-radius: 6px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 12px;
-  line-height: 1.6;
   background: color-mix(in srgb, var(--b3-theme-surface) 60%, transparent);
   border: 1px solid color-mix(in srgb, var(--b3-theme-on-surface) 12%, transparent);
   transition: opacity 0.15s;
@@ -304,18 +304,21 @@
 
 .workspace-preview__native-toggle.is-disabled {
   opacity: 0.45;
-  text-decoration: line-through;
 }
 
-.workspace-preview__native-checkbox {
-  margin: 0;
-  width: 13px;
-  height: 13px;
-  cursor: pointer;
-}
+.workspace-preview__native-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
 
-.workspace-preview__native-label {
-  user-select: none;
+  svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+    stroke: none;
+  }
 }
 
 .workspace-preview__selection-toolbar-custom {
