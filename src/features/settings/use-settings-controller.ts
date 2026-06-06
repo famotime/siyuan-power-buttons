@@ -29,6 +29,10 @@ import {
   buildPreviewLayout,
 } from "@/shared/preview-layout";
 import {
+  NATIVE_TOOLBAR_BUTTON_LABELS,
+  CONFIGURABLE_NATIVE_NAMES,
+} from "@/core/surfaces/selection-toolbar-manager";
+import {
   formatExternalCommandActionId,
   parseExternalCommandActionId,
 } from "@/core/commands";
@@ -90,6 +94,7 @@ function applyConfig(config: PowerButtonsConfig, nextConfig: PowerButtonsConfig)
   config.desktopOnly = nextConfig.desktopOnly;
   config.items = nextConfig.items;
   config.disabledNativeButtons = nextConfig.disabledNativeButtons;
+  config.disabledSelectionToolbarItems = nextConfig.disabledSelectionToolbarItems;
   config.experimental = nextConfig.experimental;
 }
 
@@ -178,6 +183,35 @@ export function useSettingsController(props: SettingsAppProps) {
       suppressed: true,
     }));
   });
+
+  /** 浮动工具栏原生按钮列表（含禁用状态） */
+  const selectionToolbarNativeButtons = computed(() => {
+    const disabledNames = new Set(config.disabledSelectionToolbarItems.map(item => item.name));
+    return CONFIGURABLE_NATIVE_NAMES.map(name => ({
+      name,
+      label: NATIVE_TOOLBAR_BUTTON_LABELS[name] || name,
+      disabled: disabledNames.has(name),
+    }));
+  });
+
+  /** 浮动工具栏中用户自定义的按钮 */
+  const selectionToolbarCustomItems = computed(() => {
+    return config.items
+      .filter(item => item.surface === "selection-toolbar")
+      .sort((a, b) => a.order - b.order);
+  });
+
+  /** 切换浮动工具栏原生按钮的禁用状态 */
+  async function toggleSelectionToolbarNativeButton(name: string): Promise<void> {
+    const index = config.disabledSelectionToolbarItems.findIndex(item => item.name === name);
+    if (index >= 0) {
+      config.disabledSelectionToolbarItems.splice(index, 1);
+    } else {
+      const label = NATIVE_TOOLBAR_BUTTON_LABELS[name] || name;
+      config.disabledSelectionToolbarItems.push({ name, title: label });
+    }
+    await persist();
+  }
 
   const activeRuntimePreviewItems = computed<PreviewButtonItem[]>(() => {
     return runtimePreviewItems.value
@@ -656,6 +690,9 @@ export function useSettingsController(props: SettingsAppProps) {
     pluginCommands,
     restoreDisabledNativeItem,
     disabledNativePreviewItems,
+    selectionToolbarNativeButtons,
+    selectionToolbarCustomItems,
+    toggleSelectionToolbarNativeButton,
     externalCommandProviders,
     pluginCommandProviders,
     previewChipClass,

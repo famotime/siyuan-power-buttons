@@ -287,6 +287,68 @@
               </div>
             </div>
 
+            <div class="workspace-preview__selection-toolbar">
+              <div class="workspace-preview__selection-toolbar-header">
+                <span class="workspace-preview__tag"><b>浮动工具栏</b></span>
+                <small class="workspace-preview__selection-toolbar-hint">选中文本后弹出</small>
+              </div>
+              <div class="workspace-preview__selection-toolbar-native">
+                <label
+                  v-for="btn in selectionToolbarNativeButtons"
+                  :key="btn.name"
+                  class="workspace-preview__native-toggle"
+                  :class="{ 'is-disabled': btn.disabled }"
+                  :title="btn.disabled ? `点击恢复「${btn.label}」` : `点击禁用「${btn.label}」`"
+                >
+                  <input
+                    type="checkbox"
+                    class="workspace-preview__native-checkbox"
+                    :checked="!btn.disabled"
+                    @change="toggleSelectionToolbarNativeButton(btn.name)"
+                  />
+                  <span class="workspace-preview__native-label">{{ btn.label }}</span>
+                </label>
+              </div>
+              <div
+                v-if="selectionToolbarCustomItems.length"
+                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__selection-toolbar-custom"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('selection-toolbar')"
+              >
+                <button
+                  v-for="(item, index) in selectionToolbarCustomItems"
+                  :key="item.id"
+                  type="button"
+                  class="workspace-chip"
+                  :class="previewChipClass({
+                    id: item.id,
+                    itemId: item.id,
+                    title: item.title,
+                    visible: item.visible,
+                    surface: item.surface,
+                    order: item.order + 1000,
+                    editable: true,
+                    source: 'config',
+                    iconMarkup: renderBuiltinIconMarkup(item),
+                    draggable: true,
+                  })"
+                  :title="item.title"
+                  @click="selectItem(item.id)"
+                >
+                  <span class="workspace-chip__icon" v-html="renderBuiltinIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+              </div>
+              <div
+                v-else
+                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__selection-toolbar-custom"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('selection-toolbar')"
+              >
+                <span class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「浮动工具栏」位置</small></span>
+              </div>
+            </div>
+
             <div
               class="workspace-preview__disabled"
               @dragover.prevent
@@ -775,6 +837,9 @@ const {
   resetConfig,
   refreshExternalProviders,
   restoreDisabledNativeItem,
+  selectionToolbarNativeButtons,
+  selectionToolbarCustomItems,
+  toggleSelectionToolbarNativeButton,
   setImportFileInput,
   selectedId,
   selectedPluginCommand,
