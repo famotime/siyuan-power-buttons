@@ -7,6 +7,7 @@ import {
   openTab,
   showMessage,
 } from "siyuan";
+import type { IMenuItem } from "siyuan";
 import pluginInfo from "@/../plugin.json";
 import {
   ConfigStore,
@@ -35,6 +36,7 @@ import {
 import { SettingsDialogController } from "@/core/runtime/settings-dialog-controller";
 import { getAppVersion } from "@/core/system/app-version";
 import { SurfaceManager } from "@/core/surfaces";
+import { customizeSelectionToolbar } from "@/core/surfaces/selection-toolbar-manager";
 import { mountSettingsApp } from "@/main";
 import {
   CONFIG_STORAGE_NAME,
@@ -143,6 +145,14 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
 
   onunload(): void {
     this.runtime.onunload();
+  }
+
+  updateProtyleToolbar(toolbar: Array<string | IMenuItem>): Array<string | IMenuItem> {
+    return customizeSelectionToolbar(
+      toolbar,
+      this.configStore.getConfig(),
+      this.executor,
+    );
   }
 
   async uninstall(): Promise<void> {

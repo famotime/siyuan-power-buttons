@@ -21,10 +21,13 @@ import {
   ICON_TYPES,
 } from "@/shared/types";
 import {
+  CONFIGURABLE_NATIVE_NAMES,
+} from "@/core/surfaces/selection-toolbar-manager";
+import {
   normalizeItemOrder,
   sortItems,
 } from "@/shared/utils";
-import type { ActionType, DisabledNativeButton, IconType, PowerButtonItem, PowerButtonsConfig, SurfaceType } from "@/shared/types";
+import type { ActionType, DisabledNativeButton, DisabledSelectionToolbarItem, IconType, PowerButtonItem, PowerButtonsConfig, SurfaceType } from "@/shared/types";
 
 const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
   "dock-bottom-left": "statusbar-left",
@@ -124,6 +127,21 @@ function sanitizeDisabledNativeButton(value: unknown): DisabledNativeButton | nu
   };
 }
 
+function sanitizeDisabledSelectionToolbarItem(value: unknown): DisabledSelectionToolbarItem | null {
+  const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  const title = typeof raw.title === "string" ? raw.title.trim() : "";
+
+  if (!name || !CONFIGURABLE_NATIVE_NAMES.includes(name)) {
+    return null;
+  }
+
+  return {
+    name,
+    title: title || name,
+  };
+}
+
 function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   const fallback = createButtonItem({ order: index });
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
@@ -181,12 +199,18 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
       .map(sanitizeDisabledNativeButton)
       .filter((item): item is DisabledNativeButton => Boolean(item))
     : defaults.disabledNativeButtons;
+  const disabledSelectionToolbarItems = Array.isArray(raw.disabledSelectionToolbarItems)
+    ? raw.disabledSelectionToolbarItems
+      .map(sanitizeDisabledSelectionToolbarItem)
+      .filter((item): item is DisabledSelectionToolbarItem => Boolean(item))
+    : defaults.disabledSelectionToolbarItems;
 
   return {
     version: 2,
     desktopOnly: typeof raw.desktopOnly === "boolean" ? raw.desktopOnly : true,
     items,
     disabledNativeButtons,
+    disabledSelectionToolbarItems,
     experimental: {
       nativeToolbarControl: readExperimentalFlag(raw.experimental, "nativeToolbarControl", false),
       internalCommandAdapter: readExperimentalFlag(raw.experimental, "internalCommandAdapter", false),

@@ -3,6 +3,7 @@ export const SURFACES = [
   "statusbar-left",
   "statusbar-right",
   "canvas",
+  "selection-toolbar",
   "dock-left-top",
   "dock-left-bottom",
   "dock-right-top",
@@ -16,6 +17,7 @@ export const CONFIGURABLE_SURFACES = [
   "statusbar-left",
   "statusbar-right",
   "canvas",
+  "selection-toolbar",
 ] as const;
 
 export const ACTION_TYPES = [
@@ -82,11 +84,19 @@ export interface DisabledNativeButton {
   iconMarkup?: string;
 }
 
+export interface DisabledSelectionToolbarItem {
+  /** 原生按钮标识符，如 "strong", "em" 等 */
+  name: string;
+  /** 显示标题，用于设置界面 */
+  title: string;
+}
+
 export interface PowerButtonsConfig {
   version: 2;
   desktopOnly: boolean;
   items: PowerButtonItem[];
   disabledNativeButtons: DisabledNativeButton[];
+  disabledSelectionToolbarItems: DisabledSelectionToolbarItem[];
   experimental: {
     nativeToolbarControl: boolean;
     internalCommandAdapter: boolean;

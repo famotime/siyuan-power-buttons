@@ -24,6 +24,7 @@ export interface PreviewLayout<T> {
   statusbarLeft: T[];
   statusbarRight: T[];
   canvas: T[];
+  selectionToolbar: T[];
 }
 
 export function buildPreviewLayout<T extends Pick<PreviewButtonItem, "surface" | "order" | "visible">>(
@@ -41,6 +42,7 @@ export function buildPreviewLayout<T extends Pick<PreviewButtonItem, "surface" |
     statusbarLeft: [],
     statusbarRight: [],
     canvas: [],
+    selectionToolbar: [],
   };
 
   for (const item of sortItems(items).filter(entry => options.includeHidden || entry.visible)) {

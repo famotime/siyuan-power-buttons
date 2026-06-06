@@ -84,6 +84,11 @@ export class SurfaceManager {
         continue;
       }
 
+      if (item.surface === "selection-toolbar") {
+        // 浮动工具栏按钮由 updateProtyleToolbar 钩子管理，无需 DOM 操作
+        continue;
+      }
+
       if (isDockSurface(item.surface)) {
         const type = `siyuan-power-buttons-${item.id}`;
         const registration = this.plugin.addDock({

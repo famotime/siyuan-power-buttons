@@ -19,6 +19,7 @@ describe("surface metadata", () => {
     expect(getPreviewLayoutKey("statusbar-left")).toBe("statusbarLeft");
     expect(getPreviewLayoutKey("statusbar-right")).toBe("statusbarRight");
     expect(getPreviewLayoutKey("canvas")).toBe("canvas");
+    expect(getPreviewLayoutKey("selection-toolbar")).toBe("selectionToolbar");
   });
 
   it("exposes dock positions and surface group predicates from one place", () => {
@@ -27,6 +28,7 @@ describe("surface metadata", () => {
     expect(isDockSurface("dock-right-bottom")).toBe(true);
     expect(isStatusBarSurface("statusbar-right")).toBe(true);
     expect(isConfigurableSurface("statusbar-left")).toBe(true);
+    expect(isConfigurableSurface("selection-toolbar")).toBe(true);
     expect(isConfigurableSurface("dock-left-top")).toBe(false);
   });
 });

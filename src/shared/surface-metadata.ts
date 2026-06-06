@@ -12,7 +12,8 @@ export type PreviewLayoutKey =
   | "bottomDockRight"
   | "statusbarLeft"
   | "statusbarRight"
-  | "canvas";
+  | "canvas"
+  | "selectionToolbar";
 
 const PREVIEW_LAYOUT_KEYS: Record<PreviewSurfaceType, PreviewLayoutKey> = {
   topbar: "topbar",
@@ -25,6 +26,7 @@ const PREVIEW_LAYOUT_KEYS: Record<PreviewSurfaceType, PreviewLayoutKey> = {
   "statusbar-left": "statusbarLeft",
   "statusbar-right": "statusbarRight",
   canvas: "canvas",
+  "selection-toolbar": "selectionToolbar",
 };
 
 const DOCK_POSITIONS: Record<Extract<SurfaceType, `dock-${string}`>, TPluginDockPosition> = {
