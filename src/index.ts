@@ -148,6 +148,9 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   }
 
   updateProtyleToolbar(toolbar: Array<string | IMenuItem>): Array<string | IMenuItem> {
+    if (!this.configStore) {
+      return toolbar;
+    }
     return customizeSelectionToolbar(
       toolbar,
       this.configStore.getConfig(),
