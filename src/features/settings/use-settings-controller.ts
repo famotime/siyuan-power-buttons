@@ -111,6 +111,7 @@ export function useSettingsController(props: SettingsAppProps) {
   const config = reactive<PowerButtonsConfig>(cloneConfig(props.initialConfig));
   const selectedId = ref(resolveInitialSelectedId(config, props.initialSelectedButtonId));
   const listDragIndex = ref<number | null>(null);
+  const selectionToolbarDragIndex = ref<number | null>(null);
   const previewDragItem = ref<PreviewButtonItem | null>(null);
   const previewDragCleanup = ref<(() => void) | null>(null);
   const runtimePreviewItems = ref<PreviewButtonItem[]>([]);
@@ -566,6 +567,41 @@ export function useSettingsController(props: SettingsAppProps) {
     listDragIndex.value = null;
     await persist();
   }
+
+  function onSelectionToolbarDragStart(event: DragEvent, item: PowerButtonItem): void {
+    const sourceIndex = config.items.findIndex(i => i.id === item.id);
+    if (sourceIndex === -1) {
+      return;
+    }
+    selectionToolbarDragIndex.value = sourceIndex;
+    onPreviewDragStart(event, {
+      id: item.id,
+      itemId: item.id,
+      title: item.title || "未命名按钮",
+      visible: item.visible,
+      surface: item.surface,
+      order: item.order,
+      editable: true,
+      source: "config",
+      iconMarkup: renderSettingsIconMarkup(item),
+      draggable: true,
+    });
+  }
+
+  function onSelectionToolbarDragEnd(): void {
+    selectionToolbarDragIndex.value = null;
+  }
+
+  async function onSelectionToolbarDrop(index: number): Promise<void> {
+    const fromIndex = selectionToolbarDragIndex.value;
+    if (fromIndex === null || fromIndex === index) {
+      selectionToolbarDragIndex.value = null;
+      return;
+    }
+    config.items = normalizeItemOrder(moveItem(config.items, fromIndex, index));
+    selectionToolbarDragIndex.value = null;
+    await persist();
+  }
   const {
     handlePreviewChipClick,
     onDisabledNativeDrop,
@@ -686,6 +722,9 @@ export function useSettingsController(props: SettingsAppProps) {
     isRefreshingLayout,
     onListDragStart,
     onListDrop,
+    onSelectionToolbarDragStart,
+    onSelectionToolbarDragEnd,
+    onSelectionToolbarDrop,
     onPreviewDragStart,
     onPreviewItemDrop,
     onPreviewSurfaceDrop,

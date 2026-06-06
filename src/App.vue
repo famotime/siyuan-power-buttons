@@ -328,8 +328,13 @@
                     iconMarkup: renderBuiltinIconMarkup(item),
                     draggable: true,
                   })"
+                  draggable="true"
                   :title="item.title"
                   @click="selectItem(item.id)"
+                  @dragstart="(e) => onSelectionToolbarDragStart(e, item)"
+                  @dragend="onSelectionToolbarDragEnd"
+                  @dragover.prevent
+                  @drop.stop="onSelectionToolbarDrop(index)"
                 >
                   <span class="workspace-chip__icon" v-html="renderBuiltinIconMarkup(item)" />
                   <span class="workspace-chip__label">{{ item.title }}</span>
@@ -814,6 +819,9 @@ const {
   isRefreshingLayout,
   onListDragStart,
   onListDrop,
+  onSelectionToolbarDragStart,
+  onSelectionToolbarDragEnd,
+  onSelectionToolbarDrop,
   onDisabledNativeDrop,
   onPreviewDragStart,
   onPreviewItemDrop,
