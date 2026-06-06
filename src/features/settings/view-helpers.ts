@@ -99,12 +99,12 @@ export function buildPreviewChipClass(item: PreviewButtonItem, selectedId: strin
 
 export function getPreviewChipTitle(item: PreviewButtonItem): string {
   if (item.suppressed) {
-    return `${item.title} · 已禁用，拖回原区域可恢复`;
+    return `${item.title} — 已禁用，可拖回`;
   }
   if (!item.editable) {
-    return `${item.title} · 原生按钮，可拖到禁用栏隐藏`;
+    return `${item.title} — 可拖到禁用栏`;
   }
-  return `${item.title} · ${item.visible ? "显示中" : "隐藏中"} · 可拖拽调整`;
+  return `${item.title} — ${item.visible ? "显示中" : "隐藏中"}`;
 }
 
 export function getSurfaceLabel(value: string): string {

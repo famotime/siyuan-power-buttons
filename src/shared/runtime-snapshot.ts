@@ -98,12 +98,18 @@ function isCanvasToolbarItem(element: HTMLElement): boolean {
   return (isButtonLike || hasBuiltinMarker) && hasLabelOrIcon;
 }
 
+function stripHtmlTags(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return doc.body.textContent?.trim() || "";
+}
+
 function getElementLabel(element: HTMLElement, index: number): string {
-  return element.getAttribute("aria-label")
+  const raw = element.getAttribute("aria-label")
     || element.getAttribute("title")
     || element.textContent?.trim()
     || element.id
     || `原生按钮 ${index + 1}`;
+  return stripHtmlTags(raw);
 }
 
 function getElementIconMarkup(element: HTMLElement): string | undefined {
