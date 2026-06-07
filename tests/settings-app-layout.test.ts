@@ -17,6 +17,40 @@ import { BUILTIN_COMMANDS } from "@/core/commands";
 import { createButtonItem } from "@/core/config/defaults";
 import { mountSettingsApp } from "@/main";
 
+// Mock icon catalog to avoid rendering 2600+ icons in tests
+vi.mock("@/shared/icon-catalog", () => ({
+  ICONPARK_ICON_OPTIONS: [
+    { value: "iconpark:Search", name: "Search", label: "搜索", category: "工具", keywords: ["search"] },
+    { value: "iconpark:Setting", name: "Setting", label: "设置", category: "工具", keywords: ["setting"] },
+    { value: "iconpark:Home", name: "Home", label: "首页", category: "通用", keywords: ["home"] },
+  ],
+  ICONPARK_ICON_MARKUP_MAP: {
+    "iconpark:Search": "<svg>search</svg>",
+    "iconpark:Setting": "<svg>setting</svg>",
+    "iconpark:Home": "<svg>home</svg>",
+  },
+  ICONPARK_CATEGORIES: ["工具", "通用"],
+  COMMON_EMOJI_OPTIONS: ["⚡", "🔍", "⚙️", "📝", "📌", "⭐", "📚", "🧩", "📎"],
+  getDefaultIconParkIcon: () => "iconpark:Setting",
+  getIconParkCategories: () => ["工具", "通用"],
+  filterIconParkIcons: vi.fn().mockReturnValue([
+    { value: "iconpark:Search", name: "Search", label: "搜索", category: "工具", keywords: ["search"] },
+    { value: "iconpark:Setting", name: "Setting", label: "设置", category: "工具", keywords: ["setting"] },
+    { value: "iconpark:Home", name: "Home", label: "首页", category: "通用", keywords: ["home"] },
+  ]),
+  normalizeIconValue: vi.fn().mockReturnValue("iconpark:Setting"),
+  getIconParkMarkup: vi.fn().mockReturnValue("<svg>setting</svg>"),
+  LEGACY_BUILTIN_TO_ICONPARK: {},
+}));
+
+/** 等待所有微任务和宏任务完成 */
+async function flushAll(): Promise<void> {
+  await nextTick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  await nextTick();
+  await new Promise(resolve => setTimeout(resolve, 0));
+}
+
 describe("settings app layout", () => {
   function normalizeLineEndings(value: string): string {
     return value.replace(/\r\n/g, "\n");
@@ -40,7 +74,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     expect(target.textContent).not.toContain("当前预览");
     expect(target.querySelector(".preview-card")).toBeNull();
@@ -102,7 +136,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const sidebarTitle = target.querySelector(".settings-panel--sidebar .panel-title");
     const headerActions = target.querySelector(".settings-header__actions");
@@ -132,13 +166,13 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
     expect(listButtons).toHaveLength(createDefaultConfig().items.length);
 
     listButtons[1]?.click();
-    await nextTick();
+    await flushAll();
 
     const activeItem = target.querySelector(".button-list__item.is-active strong");
     const editorTitle = target.querySelector(".settings-panel--editor .panel-title p");
@@ -165,18 +199,18 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
     listButtons[1]?.click();
-    await nextTick();
+    await flushAll();
 
     expect(onSelectedIdChange).toHaveBeenNthCalledWith(1, expect.any(String));
     expect(onSelectedIdChange).toHaveBeenNthCalledWith(2, expect.any(String));
 
     const secondSelectedId = onSelectedIdChange.mock.calls[1]?.[0];
     unmount();
-    await nextTick();
+    await flushAll();
 
     expect(onSelectedIdChange).toHaveBeenCalledTimes(3);
     expect(onSelectedIdChange).toHaveBeenNthCalledWith(3, secondSelectedId);
@@ -210,7 +244,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const iconTablist = target.querySelector('[role="tablist"][aria-label="图标类型"]');
     const iconTabs = Array.from(iconTablist?.querySelectorAll<HTMLButtonElement>("button") ?? []);
@@ -238,7 +272,7 @@ describe("settings app layout", () => {
     expect(firstIconParkItem?.getAttribute("title")).toContain("·");
 
     emojiTab?.click();
-    await nextTick();
+    await flushAll();
 
     expect(emojiTab?.getAttribute("aria-selected")).toBe("true");
     expect(target.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(emojiTab?.id);
@@ -269,7 +303,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "experimental-shortcut"));
@@ -278,7 +312,7 @@ describe("settings app layout", () => {
     actionTypeSelect!.value = "experimental-shortcut";
     actionTypeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
       .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
@@ -308,7 +342,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const builtinCommandSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "dailyNote"));
@@ -319,7 +353,7 @@ describe("settings app layout", () => {
     builtinCommandSelect!.value = "recentDocs";
     builtinCommandSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig?.items[0]?.actionId).toBe("recentDocs");
@@ -344,7 +378,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const textarea = target.querySelector(".icon-editor textarea.b3-text-field");
     const preview = target.querySelector(".icon-preview");
@@ -373,7 +407,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const preview = target.querySelector(".icon-preview");
     const hint = target.querySelector(".icon-preview__hint");
@@ -401,7 +435,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "experimental-shortcut"));
@@ -410,7 +444,7 @@ describe("settings app layout", () => {
     actionTypeSelect!.value = "experimental-shortcut";
     actionTypeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
       .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
@@ -420,7 +454,7 @@ describe("settings app layout", () => {
     actionTypeSelect!.value = "experimental-click-sequence";
     actionTypeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(target.textContent).toContain("点击步骤");
     expect(target.textContent).toContain("步骤 1");
@@ -466,7 +500,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const step = target.querySelector<HTMLElement>(".click-sequence-step");
     const advancedToggle = Array.from(step?.querySelectorAll<HTMLButtonElement>("button") || [])
@@ -481,7 +515,7 @@ describe("settings app layout", () => {
 
     advancedToggle!.click();
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const valueInput = Array.from(target.querySelectorAll<HTMLInputElement>(".click-sequence-step input.b3-text-field"))
       .find(input => input.placeholder.includes("例如：en_US"));
@@ -502,12 +536,12 @@ describe("settings app layout", () => {
     valueInput!.dispatchEvent(new Event("input"));
     valueInput!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     modeSelect!.value = "text";
     modeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig.items[0].experimentalClickSequence.steps[0].value).toBe("English (en_US)");
@@ -515,7 +549,7 @@ describe("settings app layout", () => {
 
     advancedToggle!.click();
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(step?.textContent).not.toContain("等待超时(ms)");
 
@@ -568,7 +602,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const steps = Array.from(target.querySelectorAll<HTMLElement>(".click-sequence-step"));
     const dragHandle = steps[1]?.querySelector<HTMLElement>(".click-sequence-step__drag");
@@ -582,7 +616,7 @@ describe("settings app layout", () => {
     steps[1].dispatchEvent(new Event("dragstart", { bubbles: true }));
     steps[0].dispatchEvent(new Event("drop", { bubbles: true }));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig.items[0].experimentalClickSequence.steps[0].selector).toBe("second-step");
@@ -622,7 +656,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
       .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
@@ -637,7 +671,7 @@ describe("settings app layout", () => {
       cancelable: true,
     }));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(shortcutInput?.value).toBe("Ctrl+Shift+B");
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
@@ -692,7 +726,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
       .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
@@ -704,7 +738,7 @@ describe("settings app layout", () => {
       cancelable: true,
     }));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(shortcutInput?.value).toBe("");
     expect(onChange).not.toHaveBeenCalled();
@@ -745,7 +779,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const dispatchTargetSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "active-editor") && select.value === "auto");
@@ -755,7 +789,7 @@ describe("settings app layout", () => {
     dispatchTargetSelect!.value = "window";
     dispatchTargetSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig?.items[0]?.experimentalShortcut?.dispatchTarget).toBe("window");
@@ -782,7 +816,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
@@ -808,7 +842,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
@@ -834,7 +868,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const editorPanel = target.querySelector(".settings-panel--editor");
     const sidebarToggles = target.querySelectorAll(".settings-panel--sidebar .switch-button--compact");
@@ -874,7 +908,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
@@ -884,7 +918,7 @@ describe("settings app layout", () => {
     actionTypeSelect!.value = "plugin-command";
     actionTypeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const labels = Array.from(target.querySelectorAll(".settings-panel--editor label"))
       .map(node => node.textContent?.trim());
@@ -928,7 +962,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
@@ -938,7 +972,7 @@ describe("settings app layout", () => {
     actionTypeSelect!.value = "plugin-command";
     actionTypeSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1);
     expect(target.textContent).toContain("文档助手 / Doc Assist");
@@ -1000,7 +1034,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const refreshButton = Array.from(target.querySelectorAll<HTMLButtonElement>(".settings-panel--editor button"))
       .find(button => button.textContent?.trim() === "刷新插件命令");
@@ -1010,7 +1044,7 @@ describe("settings app layout", () => {
 
     refreshButton?.click();
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1);
     expect(target.textContent).toContain("插入最新文档摘要");
@@ -1061,7 +1095,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const providerSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
       .find(select => Array.from(select.options).some(option => option.value === "empty-provider"));
@@ -1071,7 +1105,7 @@ describe("settings app layout", () => {
     providerSelect!.value = "empty-provider";
     providerSelect!.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig?.items[0].actionId).toBe("empty-provider:__unset__");
@@ -1092,7 +1126,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const sidebar = target.querySelector(".settings-panel--sidebar");
     const sidebarSections = Array.from(sidebar?.children ?? []);
@@ -1153,7 +1187,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const exportButton = Array.from(target.querySelectorAll("button"))
       .find(button => button.textContent?.trim() === "导出配置文件");
@@ -1194,7 +1228,7 @@ describe("settings app layout", () => {
 
     fileInput?.dispatchEvent(new Event("change"));
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     await vi.waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -1224,7 +1258,7 @@ describe("settings app layout", () => {
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
-    await nextTick();
+    await flushAll();
 
     const importButton = Array.from(target.querySelectorAll<HTMLButtonElement>("button"))
       .find(button => button.textContent?.trim() === "导入配置文件");
@@ -1254,7 +1288,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const refreshButton = Array.from(target.querySelectorAll<HTMLButtonElement>("button"))
       .find(button => button.textContent?.trim() === "读取当前布局");
@@ -1263,7 +1297,7 @@ describe("settings app layout", () => {
 
     refreshButton?.click();
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(onReadCurrentLayout).toHaveBeenCalledTimes(2);
 
@@ -1295,7 +1329,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const canvasItems = target.querySelector(".workspace-preview__canvas-items");
     const canvasText = canvasItems?.textContent || "";
@@ -1346,7 +1380,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed.is-native") as HTMLButtonElement;
     expect(suppressedChip).not.toBeNull();
@@ -1382,7 +1416,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
     const canvasDropzone = target.querySelector(".workspace-preview__canvas-items") as HTMLElement;
@@ -1391,7 +1425,7 @@ describe("settings app layout", () => {
     canvasDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     expect(onChange).toHaveBeenCalled();
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
@@ -1437,7 +1471,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
     expect(suppressedChip).not.toBeNull();
@@ -1484,7 +1518,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const suppressedButton = target.querySelector(".workspace-preview__statusbar .workspace-chip.is-suppressed") as HTMLButtonElement;
     expect(suppressedButton).not.toBeNull();
@@ -1522,7 +1556,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
     expect(nativeButton.classList.contains("is-suppressed")).toBe(false);
@@ -1553,7 +1587,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
     const setData = vi.fn();
@@ -1600,7 +1634,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
     const setData = vi.fn();
@@ -1666,7 +1700,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const suppressedButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
     expect(suppressedButton).not.toBeNull();
@@ -1713,7 +1747,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const suppressedButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-suppressed") as HTMLButtonElement;
     expect(suppressedButton).not.toBeNull();
@@ -1759,7 +1793,7 @@ describe("settings app layout", () => {
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
+    await flushAll();
 
     const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
     expect(suppressedChip).not.toBeNull();

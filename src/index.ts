@@ -43,6 +43,11 @@ import {
   SETTINGS_UI_STORAGE_NAME,
 } from "@/shared/constants";
 import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
+import {
+  getSiyuanBazaarConfig,
+  getSiyuanKeymap,
+  getSiyuanGlobalPlugins,
+} from "@/types/siyuan-globals";
 
 export default class SiyuanPowerButtonsPlugin extends Plugin {
   private configStore = new ConfigStore(this);
@@ -57,26 +62,14 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     openAppSetting: app => openSetting(app as never),
     openTab: options => openTab(options as never),
     fetchPost: (url, data) => fetchSyncPost(url, data),
-    getBazaarConfig: () => (
-      (window as typeof window & {
-        siyuan?: {
-          config?: {
-            bazaar?: {
-              trust?: boolean;
-              petalDisabled: boolean;
-              [key: string]: unknown;
-            };
-          };
-        };
-      }).siyuan?.config?.bazaar
-    ),
+    getBazaarConfig: () => getSiyuanBazaarConfig(),
     reloadWindow: () => window.location.reload(),
     runBuiltinCommandByDom: targetCommandId => executeBuiltinCommandByDom(targetCommandId, document),
   });
   private readonly experimentalActionRunners = createExperimentalActionRunners({
     getExperimentalSupport: feature => this.getExperimentalSupport(feature),
     showMessage,
-    getKeymap: () => (window as typeof window & { siyuan?: { config?: { keymap?: unknown } } }).siyuan?.config?.keymap,
+    getKeymap: () => getSiyuanKeymap(),
     pluginGlobalCommand: (commandId: string) => {
       const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
       pluginWithGlobal.globalCommand?.(commandId);
@@ -177,25 +170,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     const appPlugins = Array.isArray(this.app?.plugins)
       ? this.app.plugins
       : [];
-    const globalPlugins = Array.isArray((window as Window & {
-      siyuan?: {
-        ws?: {
-          app?: {
-            plugins?: unknown[];
-          };
-        };
-      };
-    }).siyuan?.ws?.app?.plugins)
-      ? (window as Window & {
-          siyuan?: {
-            ws?: {
-              app?: {
-                plugins?: unknown[];
-              };
-            };
-          };
-        }).siyuan!.ws!.app!.plugins
-      : [];
+    const globalPlugins = getSiyuanGlobalPlugins();
 
     return collectInstalledPlugins(appPlugins, globalPlugins);
   }

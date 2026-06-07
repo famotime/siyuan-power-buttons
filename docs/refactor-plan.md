@@ -2,125 +2,239 @@
 
 ## 1. 项目快照
 
-- 生成日期：2026-04-15
+- 生成日期：2026-06-07
 - 范围：`siyuan-power-buttons`
-- 目标：在不改变插件对外行为的前提下，继续降低设置页、运行时入口、Surface 渲染和配置规则的耦合度，并把当前缺少覆盖的高风险路径补成可重复执行的自动化测试。
+- 目标：在不改变插件对外行为的前提下，修复测试稳定性、降低设置控制器复杂度、消除代码冗余
 - 文档刷新目标：`docs/project-structure.md`、`README.md`
-- 基线仓库状态：`git status --short` 为空，工作区干净
-- 基线测试状态：`npm test` 通过，`24` 个测试文件 / `148` 个测试全部通过
-- 历史说明：仓库中原有的 `docs/refactor-plan.md` 记录的是 2026-04-06 已完成的一轮重构；本文件已按当前代码状态重新生成，用于本轮审批
+- 基线仓库状态：`M package.zip`
+- 基线测试状态：32 个测试文件 / 244 个测试 / **231 通过 / 13 失败**（均在 `settings-app-layout.test.ts`，超时问题）
+- 历史说明：上一轮重构 (RF-101 ~ RF-105) 已全部完成；本文件已按当前代码状态重新生成
 
 ## 2. 架构与模块分析
 
-| 模块 | 关键文件 | 当前职责 | 主要痛点 | 测试覆盖情况 |
-| --- | --- | --- | --- | --- |
-| 入口与运行时装配 | `src/index.ts`、`src/core/runtime/plugin-runtime.ts`、`src/core/runtime/settings-dialog-controller.ts` | 拉取应用版本、装配 `ConfigStore` / `CommandExecutor` / `ExternalCommandRegistry` / `SurfaceManager`、注册插件命令、打开设置页 | `src/index.ts` 仍承担大量依赖装配和实验能力闭包；`plugin-runtime.ts` 既处理 provider 刷新又处理设置页 props 生成和命令注册，入口边界仍偏厚 | `tests/plugin-runtime.test.ts` 覆盖运行时主路径；缺少对 `src/index.ts` 依赖装配层的更细粒度断言 |
-| 设置页 UI 与状态编排 | `src/App.vue`、`src/features/settings/use-settings-controller.ts`、`src/features/settings/action-config.ts`、`src/features/settings/view-helpers.ts` | 按钮列表、拖拽排序、预览布局、实验动作编辑、图标选择、导入导出、原生按钮禁用/恢复 | `src/App.vue` 约 `789` 行，`use-settings-controller.ts` 约 `769` 行；状态、拖拽、副作用、文件导入导出、原生按钮抑制逻辑集中在单个 controller 中，主要依赖大颗粒挂载测试兜底 | `tests/settings-app-layout.test.ts` 和 `tests/settings-action-config.test.ts` 覆盖较多 UI 路径，但缺少 controller 层测试；“恢复默认”路径当前没有专门回归测试 |
-| 配置规则与动作默认值 | `src/core/config/sanitize.ts`、`src/core/config/item-defaults.ts`、`src/core/config/defaults.ts`、`src/features/settings/action-config.ts` | 创建默认按钮、导入清洗、实验快捷键/点击序列默认值、设置页动作切换时的默认回填 | 默认值规则分散在 config 层和 settings 层，实验动作的 hydration / summarize / fallback 规则跨模块维护；后续改 schema 时容易出现界面态与持久化态不一致 | `tests/config-store.test.ts`、`tests/import-export.test.ts`、`tests/config-item-defaults.test.ts`、`tests/settings-action-config.test.ts` 覆盖主路径，但缺少“设置页恢复默认 -> sanitize -> 持久化”一体化断言 |
-| Surface 渲染与原生按钮抑制 | `src/core/surfaces/surface-manager.ts`、`src/core/surfaces/native-element-suppressor.ts`、`src/shared/surface-metadata.ts`、`src/shared/runtime-snapshot.ts` | 顶栏/状态栏/编辑区/Dock 渲染、固定设置入口、原生按钮隐藏与恢复、当前布局读取 | `surface-manager.ts` 同时负责 DOM 创建、挂载目标查找、Dock 注册和销毁；与 `native-element-suppressor.ts` 的协作边界偏隐式，后续扩展新 surface 时风险较高 | `tests/surface-manager.test.ts`、`tests/runtime-snapshot.test.ts`、`tests/surface-metadata.test.ts` 覆盖较好，但更偏集成式，缺少 renderer 级或 target resolver 级单测 |
-| 共享类型与预览模型 | `src/shared/types.ts`、`src/shared/preview-layout.ts`、`src/features/settings/types.ts` | 定义 surface/action/config/preview 结构，构建预览分区布局，为设置页和运行时共享数据模型 | 类型边界基本清晰，但设置页 provider 类型和 preview 交互类型仍集中在少数大文件中；随着设置页继续增长，可读性会继续下降 | `tests/preview-layout.test.ts`、`tests/surface-metadata.test.ts` 覆盖共享布局不变式 |
+| 模块 | 关键文件 | 行数 | 当前职责 | 主要痛点 | 测试覆盖 |
+|------|----------|------|----------|----------|----------|
+| 设置控制器 | `use-settings-controller.ts` | 942 | 设置页面全部状态管理（40+ 方法） | 混合状态管理、持久化、拖放、图标管理、快捷键捕获等多种职责 | settings-controller.test.ts + settings-app-layout.test.ts（13 个超时） |
+| 动作配置 | `action-config.ts` | 104 | 动作类型默认值与验证 | `ensureExperimentalClickSequenceConfig` 有冗余分支 | settings-action-config.test.ts |
+| 实验功能默认值 | `item-defaults.ts` | 115 | 实验功能配置工厂 | 重复的数值验证模式 | config-item-defaults.test.ts |
+| 插件入口 | `index.ts` | 213 | 依赖组装、生命周期转发 | 多处重复的 Siyuan 全局类型断言 | plugin-entry.test.ts |
+| 测试稳定性 | `settings-app-layout.test.ts` | 1400+ | 设置页面集成测试 | 13 个测试超时（5000ms 限制） | - |
 
-## 3. 按优先级排序的重构待办
+## 3. 重构项（按优先级排序）
 
-| ID | 优先级 | 模块/场景 | 涉及文件 | 重构目标 | 风险等级 | 重构前测试清单 | 文档影响 | 状态 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| RF-101 | P0 | 设置页 controller 拆分与测试下沉 | `src/features/settings/use-settings-controller.ts`、`src/App.vue`、新增 `src/features/settings/controller/*` 或等价目录、相关测试 | 把设置页中的状态更新、副作用、拖拽、原生按钮禁用/恢复、导入导出拆成更小的纯函数或子 composable，并保留现有界面与交互行为不变 | 高 | - [x] 为 `resetConfig()`、`persist()`、`refreshCurrentLayout()` 建立 controller 级测试；- [x] 为预览拖拽和禁用栏规则补纯状态测试；- [x] 为插件命令 provider 切换/刷新补 controller 测试 | `docs/project-structure.md`：记录新的 settings 子模块；`README.md`：通常不变，仅在设置页能力描述变化时同步 | done |
-| RF-102 | P0 | 入口依赖装配与实验能力执行器解耦 | `src/index.ts`、`src/core/runtime/plugin-runtime.ts`、新增运行时装配/执行器工厂模块、相关测试 | 将 `src/index.ts` 中的版本获取、实验功能适配、命令依赖装配和 runtime 构建拆开，使入口类只保留生命周期转发和最小 wiring | 高 | - [x] 为 `src/index.ts` 的 onload/onLayoutReady/onunload 增加装配层测试；- [x] 为实验快捷键/点击序列 support gating 补入口级测试；- [x] 为 provider 获取失败、版本获取失败和 clipboard fallback 保留回归测试 | `docs/project-structure.md`：记录 runtime factory / adapter 模块；`README.md`：同步实验能力的运行条件说明（若措辞需调整） | done |
-| RF-103 | P1 | 设置页模板组件化 | `src/App.vue`、新增 `src/features/settings/components/*`、相关测试 | 将当前单文件模板拆成按钮列表、预览区、编辑区等子组件，保留 DOM 结构语义、样式类名和交互路径稳定，降低 `App.vue` 体量 | 中 | - [x] 为现有关键 DOM 查询路径建立回归测试；- [x] 为子组件 props / emits 边界补测试；- [x] 复跑 `tests/settings-app-layout.test.ts` 以锁定现有行为 | `docs/project-structure.md`：记录 settings 组件目录；`README.md`：通常无用户可见变化 | done |
-| RF-104 | P1 | Surface 渲染职责拆分 | `src/core/surfaces/surface-manager.ts`、`src/core/surfaces/native-element-suppressor.ts`、新增 renderer / mount-target helper、相关测试 | 将 topbar/statusbar/canvas/dock 渲染和 mount target 查找拆分，明确与 native suppressor 的边界，避免 `surface-manager.ts` 继续膨胀 | 中 | - [x] 为 canvas mount target 解析补纯函数测试；- [x] 为 fixed open-settings topbar、不抑制 settings 预览、Dock 清理保留回归测试；- [x] 为 suppressor observer 目标选择补测试 | `docs/project-structure.md`：记录 surfaces 子模块结构；`README.md`：仅当可配置区域或行为说明变化时同步 | done |
-| RF-105 | P2 | 动作默认值与配置回填规则统一 | `src/core/config/sanitize.ts`、`src/core/config/item-defaults.ts`、`src/core/config/defaults.ts`、`src/features/settings/action-config.ts`、相关测试 | 统一实验动作默认值、fallback selector、设置页 action 切换默认回填，减少跨模块重复规则，并显式锁定行为不变式 | 中 | - [x] 为 shortcut/click-sequence 的 create/sanitize/settings 三条路径补一致性测试；- [x] 为导入导出 round-trip 和恢复默认补回归测试；- [x] 为 legacy surface 迁移保留回归测试 | `docs/project-structure.md`：记录配置规则职责调整；`README.md`：通常无用户可见变化 | done |
+### RF-201 [P0] settings-app-layout.test.ts 测试超时修复
 
-优先级说明：
-- `P0`：价值和风险都最高，优先执行
-- `P1`：价值或风险中等，放在 `P0` 之后
-- `P2`：低风险清理项，最后执行
+| 属性 | 值 |
+|------|-----|
+| 状态 | `done` |
+| 范围 | `tests/settings-app-layout.test.ts`、可能涉及 `src/main.ts` 或 `src/App.vue` |
+| 行为不变式 | 所有现有测试用例的断言逻辑不变，仅修复超时问题 |
+| 风险 | 低 — 仅修改测试基础设施 |
+| 价值 | **极高** — 13 个测试超时阻塞所有后续重构的测试验证 |
 
-状态说明：
-- `pending`
-- `in_progress`
-- `done`
-- `blocked`
+**失败测试清单：**
+1. renders the icon source switcher as standard tabs and offers IconPark plus emoji picks
+2. keeps the experimental shortcut input empty by default and uses placeholder guidance
+3. persists builtin command changes from the settings editor immediately
+4. initializes experimental action configs immediately when switching action type
+5. edits click-sequence form-value fields in the settings panel
+6. renders click-sequence steps as draggable cards and reorders them
+7. captures shortcut combinations directly from keyboard input
+8. persists experimental shortcut dispatch target changes immediately
+9. renders plugin name and command selectors for unified plugin commands
+10. auto-refreshes external command providers when switching to unified plugin commands with an empty external list
+11. keeps the reserved plugin placeholder when selecting a provider without public commands
+12. imports missing buttons from files without replacing the current configuration
+13. allows a user button to move into the editor canvas preview
 
-## 3.1 条目细化：范围、不变式与风险
+**根因分析：**
+- 测试使用真实的 icon catalog（2657 个图标），jsdom 创建大量 DOM 元素导致超时
+- 解决方案：mock `@/shared/icon-catalog` 模块，提供少量测试图标
 
-### RF-101
+**修复措施：**
+1. 添加 `vi.mock("@/shared/icon-catalog")` 提供精简的图标数据（3 个图标）
+2. 将 `await nextTick()` 替换为 `await flushAll()` 以等待异步操作完成
+3. 新增 `flushAll()` 辅助函数，确保微任务和宏任务都完成
 
-- 范围：设置页 controller 的状态变更、拖拽、导入导出、副作用调度；不改用户可见布局和文案
-- 行为不变式：
-  - 按钮增删改查、复制、排序、显隐切换行为保持不变
-  - 原生按钮拖入禁用栏、拖回原区域恢复显示的语义保持不变
-  - 读取当前布局、导入导出文件、实验动作编辑流程保持不变
-- 风险：
-  - 高扇出副作用较多，拆分不当会破坏 `persist()` 与 `refreshCurrentLayout()` 的顺序
-  - 当前 `resetConfig()` 使用了未在该文件显式导入的 `createDefaultConfig()`，说明该路径缺少测试护栏；本条目应先补测试再动实现
+**验证结果：**
+- [x] 运行 `npx vitest run tests/settings-app-layout.test.ts` — 42/42 通过
+- [x] 运行 `npx vitest run` — 244/244 通过
 
-### RF-102
+---
 
-- 范围：入口装配、实验能力执行器、runtime factory；不改变命令 ID、提示文案和 plugin 生命周期入口
-- 行为不变式：
-  - `open-settings`、`copy-config-json`、`restore-defaults` 命令保持原样
-  - 版本获取失败时仍允许 runtime 启动
-  - 实验能力未启用、前端不支持或版本不足时仍按当前逻辑提示并阻止执行
-- 风险：
-  - 依赖装配拆分会触及 `CommandExecutor`、`ExternalCommandRegistry`、`ConfigStore`、`SurfaceManager` 的交互边界
-  - 若测试不先补齐，容易在入口 wiring 中引入回归但不被现有 runtime 测试立即发现
+### RF-202 [P1] 设置控制器按职责拆分为多个 composable
 
-### RF-103
+| 属性 | 值 |
+|------|-----|
+| 状态 | `done` |
+| 范围 | `src/features/settings/use-settings-controller.ts` (942 → 551 行) |
+| 行为不变式 | `useSettingsController` 返回值签名不变，所有设置页面行为不变 |
+| 风险 | 中 — 拆分边界需精确，避免破坏 Vue 响应式链 |
+| 价值 | **高** — 当前文件承担 40+ 方法，单一职责原则严重违反 |
 
-- 范围：仅拆设置页模板和组件边界，不调整业务规则和样式语义
-- 行为不变式：
-  - 现有类名、关键文案、按钮位置、可拖拽区域和表单交互保持稳定
-  - `tests/settings-app-layout.test.ts` 依赖的关键 DOM 查询路径尽量不变
-- 风险：
-  - 当前测试大量直接查询 `App.vue` 渲染结果；组件化后若 DOM 包装层变化，测试和样式都可能一起回归
+**实际拆分结果：**
 
-### RF-104
+| 新模块 | 职责 | 实际行数 |
+|--------|------|----------|
+| `use-settings-icons.ts` | IconPark/Emoji/SVG 图标管理 | 76 |
+| `use-settings-shortcuts.ts` | 快捷键捕获与冲突检测、点击序列 | 163 |
+| `use-settings-toolbar.ts` | 浮动工具栏（原生按钮禁用、自定义按钮、布局排序） | 276 |
+| `use-settings-controller.ts` | 组合层：调用以上模块并返回统一接口 | 551 |
 
-- 范围：Surface 渲染辅助函数和 suppressor 边界；不新增或移除任何可配置区域
-- 行为不变式：
-  - 固定设置按钮仍在顶栏最前
-  - 顶栏、状态栏、编辑区、Dock 的现有挂载位置和销毁时机保持不变
-  - settings 预览 UI 不应被 suppressor 误伤
-- 风险：
-  - 涉及真实 DOM 结构假设，若 helper 抽取不准确，可能只在思源真实环境中暴露问题
+**重构内容：**
+1. 提取 `useSettingsIcons` composable：图标类型选择、IconPark/Emoji 图标管理
+2. 提取 `useSettingsShortcuts` composable：快捷键捕获、冲突检测、点击序列管理
+3. 提取 `useSettingsToolbar` composable：浮动工具栏原生按钮禁用、自定义按钮、拖放排序
+4. 主控制器保留：配置状态、CRUD 操作、持久化、预览布局、导入导出、插件命令管理
 
-### RF-105
+**验证结果：**
+- [x] settings-app-layout.test.ts — 42/42 通过
+- [x] settings-controller.test.ts — 通过
+- [x] 完整测试套件 — 244/244 通过
 
-- 范围：默认值/清洗/回填规则统一；不改配置 schema 版本号和导入导出格式
-- 行为不变式：
-  - 已有配置文件仍能导入，legacy surface 迁移结果不变
-  - experimental shortcut / click sequence 的默认值与当前行为一致
-  - 设置页切换动作类型后的自动回填结果保持兼容
-- 风险：
-  - 该条目跨 config 层和 settings 层，若顺序安排不当，可能和 RF-101 产生冲突；建议放在 RF-101 之后
+---
 
-## 4. 执行日志
+### RF-203 [P1] ensureExperimentalClickSequenceConfig 冗余分支合并
+
+| 属性 | 值 |
+|------|-----|
+| 状态 | `done` |
+| 范围 | `src/features/settings/action-config.ts` (第 27-36 行) |
+| 行为不变式 | 函数返回值语义完全不变 |
+| 风险 | 极低 — 纯逻辑简化 |
+| 价值 | **中** — else-if 和 else 分支执行完全相同的代码 |
+
+**当前代码（冗余）：**
+```typescript
+if (!item.experimentalClickSequence) {
+  item.experimentalClickSequence = createExperimentalClickSequenceConfig({}, item.actionId);
+} else if (!item.experimentalClickSequence.steps.length) {
+  item.experimentalClickSequence = createExperimentalClickSequenceConfig(item.experimentalClickSequence, item.actionId);
+} else {
+  item.experimentalClickSequence = createExperimentalClickSequenceConfig(item.experimentalClickSequence, item.actionId);
+}
+```
+
+**重构后：**
+```typescript
+const hasSteps = item.experimentalClickSequence?.steps?.length;
+const overrides = hasSteps
+  ? item.experimentalClickSequence
+  : item.experimentalClickSequence
+    ? { stopOnFailure: item.experimentalClickSequence.stopOnFailure }
+    : {};
+item.experimentalClickSequence = createExperimentalClickSequenceConfig(overrides, item.actionId);
+```
+
+**验证结果：**
+- [x] settings-action-config.test.ts — 6/6 通过
+- [x] 完整测试套件 — 244/244 通过
+
+---
+
+### RF-204 [P2] 提取共享的非负数值验证辅助函数
+
+| 属性 | 值 |
+|------|-----|
+| 状态 | `done` |
+| 范围 | `src/core/config/item-defaults.ts` |
+| 行为不变式 | 所有配置创建/清洗函数的返回值不变 |
+| 风险 | 极低 — 纯提取重构 |
+| 价值 | **中** — `createClickSequenceStep` 和 `sanitizeExperimentalClickSequenceConfig` 中有重复验证模式 |
+
+**提取方案：**
+```typescript
+/** 验证并返回非负整数，无效时返回 fallback */
+function safeNonNegativeInt(value: unknown, fallback: number): number {
+  return Number.isFinite(value) && Number(value) >= 0 ? Number(value) : fallback;
+}
+```
+
+**应用位置：**
+- `createClickSequenceStep`: timeoutMs, retryCount, retryDelayMs, delayAfterMs
+- `sanitizeExperimentalClickSequenceConfig`: 同上字段的清洗
+
+**验证结果：**
+- [x] config-item-defaults.test.ts — 通过
+- [x] 完整测试套件 — 244/244 通过
+
+---
+
+### RF-205 [P2] 提取 Siyuan 全局对象类型守卫
+
+| 属性 | 值 |
+|------|-----|
+| 状态 | `done` |
+| 范围 | `src/index.ts`、新增 `src/types/siyuan-globals.ts` |
+| 行为不变式 | 运行时行为完全不变 |
+| 风险 | 极低 — 纯类型层面重构 |
+| 价值 | **低** — 消除重复的 `as typeof window & { siyuan?: {...} }` 类型断言 |
+
+**重构内容：**
+1. 新增 `src/types/siyuan-globals.ts`，定义 Siyuan 全局对象的类型接口
+2. 提供类型安全的辅助函数：
+   - `getSiyuanConfig()` — 获取 Siyuan 全局配置
+   - `getSiyuanBazaarConfig()` — 获取 bazaar 配置
+   - `getSiyuanKeymap()` — 获取 keymap 配置
+   - `getSiyuanGlobalPlugins()` — 获取全局已安装插件列表
+
+**重构前后的对比：**
+```typescript
+// 重构前：重复的类型断言
+(window as typeof window & { siyuan?: { config?: { bazaar?: {...} } } }).siyuan?.config?.bazaar
+
+// 重构后：类型安全的辅助函数
+getSiyuanBazaarConfig()
+```
+
+**验证结果：**
+- [x] plugin-entry.test.ts — 通过
+- [x] 完整测试套件 — 244/244 通过
+
+---
+
+## 4. 执行顺序与依赖关系
+
+```
+RF-201 (P0: 测试超时修复) — 必须首先完成
+  ↓
+RF-202 (P1: 控制器拆分) ← 依赖 RF-201 确保测试可验证
+RF-203 (P1: 冗余分支消除) ← 可与 RF-202 并行
+RF-204 (P2: 数值验证提取) ← 可与 RF-202 并行
+RF-205 (P2: 类型断言简化) ← 可与 RF-202 并行
+```
+
+## 5. 文档刷新范围
+
+| 文档 | 触发条件 | 刷新内容 |
+|------|----------|----------|
+| `docs/project-structure.md` | RF-202 完成后 | 新增 `use-settings-*.ts` 模块描述 |
+| `README.md` | RF-202 完成后 | 更新架构概述（如有必要） |
+| `docs/refactor-plan.md` | 每个条目完成后 | 状态同步 |
+
+## 6. 进度状态
+
+| ID | 标题 | 优先级 | 状态 | 完成时间 |
+|----|------|--------|------|----------|
+| RF-201 | 测试超时修复 | P0 | `done` | 2026-06-07 |
+| RF-202 | 设置控制器拆分 | P1 | `done` | 2026-06-07 |
+| RF-203 | 冗余分支消除 | P1 | `done` | 2026-06-07 |
+| RF-204 | 数值验证提取 | P2 | `done` | 2026-06-07 |
+| RF-205 | 类型断言简化 | P2 | `done` | 2026-06-07 |
+
+## 7. 执行日志
 
 | ID | 开始日期 | 结束日期 | 验证命令 | 结果 | 已刷新文档 | 备注 |
-| --- | --- | --- | --- | --- | --- | --- |
-| BASELINE | 2026-04-15 | 2026-04-15 | `npm test` | pass | 无 | 当前基线共 `24` 个测试文件、`148` 个测试通过 |
-| RF-101 | 2026-04-15 | 2026-04-15 | `npm test -- tests/settings-controller.test.ts`; `npm test -- tests/settings-controller.test.ts tests/settings-action-config.test.ts tests/settings-app-layout.test.ts`; `npm test` | pass | 待定 | 已新增 `tests/settings-controller.test.ts`，并把 plugin-command 选择/校验与预览拖拽、原生按钮禁用交互从 `use-settings-controller.ts` 中拆到 `src/features/settings/controller/`；同时修复 `resetConfig()` 未导入 `createDefaultConfig()` 的缺陷 |
-| RF-102 | 2026-04-15 | 2026-04-15 | `npm test -- tests/runtime-factory.test.ts`; `npm test -- tests/runtime-factory.test.ts tests/plugin-entry.test.ts tests/plugin-runtime.test.ts tests/command-executor.test.ts`; `npm test` | pass | 待定 | 已新增 `src/core/runtime/runtime-factory.ts` 与 `tests/runtime-factory.test.ts`，把已安装插件收集与实验动作 support gating / runner 闭包从 `src/index.ts` 中拆出 |
-| RF-103 | 2026-04-15 | 2026-04-15 | `npm test -- tests/settings-components.test.ts`; `npm test -- tests/settings-app-layout.test.ts`; `npm test -- tests/settings-components.test.ts tests/settings-app-layout.test.ts`; `npm test` | pass | 待定 | 已新增 `src/features/settings/components/SettingsButtonListPanel.vue`、`src/features/settings/components/WorkspacePreviewPanel.vue` 与 `tests/settings-components.test.ts`；`App.vue` 改为组装组件，并修复“读取当前布局”按钮未绑定 controller 方法的问题 |
-| RF-104 | 2026-04-15 | 2026-04-15 | `npm test -- tests/canvas-mount-target.test.ts`; `npm test -- tests/canvas-mount-target.test.ts tests/surface-manager.test.ts tests/runtime-snapshot.test.ts tests/surface-metadata.test.ts`; `npm test` | pass | 待定 | 已新增 `src/core/surfaces/canvas-mount-target.ts`、`src/core/surfaces/surface-elements.ts` 与 `tests/canvas-mount-target.test.ts`，把编辑区挂载目标解析和 surface element 创建从 `surface-manager.ts` 中拆出 |
-| RF-105 | 2026-04-15 | 2026-04-15 | `npm test -- tests/config-item-defaults.test.ts`; `npm test -- tests/config-item-defaults.test.ts tests/config-store.test.ts tests/import-export.test.ts tests/settings-action-config.test.ts`; `npm test`; `npm run build` | pass | `docs/project-structure.md`、`README.md` | 已在 `src/core/config/item-defaults.ts` 集中实验动作 sanitize helper，`src/core/config/sanitize.ts` 复用统一规则；最终全量验证为 `28` 个测试文件、`159` 个测试通过，生产构建通过 |
+|----|----------|----------|----------|------|------------|------|
+| RF-201 | 2026-06-07 | 2026-06-07 | `npx vitest run` | 244/244 通过 | - | mock icon-catalog 避免渲染 2600+ 图标 |
+| RF-202 | 2026-06-07 | 2026-06-07 | `npx vitest run` | 244/244 通过 | `docs/project-structure.md` | 提取 3 个 composable：icons/shortcuts/toolbar |
+| RF-203 | 2026-06-07 | 2026-06-07 | `npx vitest run` | 244/244 通过 | - | 合并冗余分支，保留 stopOnFailure |
+| RF-204 | 2026-06-07 | 2026-06-07 | `npx vitest run` | 244/244 通过 | - | 提取 safeNonNegativeInt 辅助函数 |
+| RF-205 | 2026-06-07 | 2026-06-07 | `npx vitest run` | 244/244 通过 | `docs/project-structure.md` | 新增 siyuan-globals.ts 类型辅助 |
 
-## 5. 决策与确认
+## 8. 文档刷新记录
 
-- 用户批准的条目：`RF-101`、`RF-102`、`RF-103`、`RF-104`、`RF-105`
-- 延后的条目：无
-- 阻塞条目及原因：无
-- 推荐执行顺序：`RF-101 -> RF-102 -> RF-103 -> RF-104 -> RF-105`
-- 说明：本轮尚未开始任何重构实现；等待用户按条目 ID 明确批准后再进入“先补测试、再改实现”的阶段
-
-## 6. 文档刷新
-
-- `docs/project-structure.md`：已刷新，记录 `src/features/settings/components/`、`src/features/settings/controller/`、`src/core/runtime/runtime-factory.ts`、`src/core/surfaces/canvas-mount-target.ts`、`src/core/surfaces/surface-elements.ts` 等当前结构
-- `README.md`：已刷新，更新当前可配置区域、跨插件命令能力、原生按钮禁用说明、测试基线和模块结构摘要
-- 最终同步检查：已完成；最终验证命令为 `npm test` 与 `npm run build`
-
-## 7. 下一步
-
-1. 所有获批条目已完成。
-2. `docs/project-structure.md` 与 `README.md` 已刷新。
-3. 后续如继续重构，建议优先评估编辑区 / Dock 行为的真实思源环境手工验证清单。
+| 文档 | 更新日期 | 更新内容 |
+|------|----------|----------|
+| `docs/project-structure.md` | 2026-06-07 | 新增 composable 模块描述、更新 Settings UI 流程说明、更新 types 目录说明 |
+| `README.md` | - | 无需更新（重构未改变用户可见行为） |

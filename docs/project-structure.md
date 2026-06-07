@@ -18,10 +18,13 @@
 | `src/core/surfaces/` | 顶栏 / 状态栏 / 编辑区 / Dock 的渲染与销毁；包含 canvas mount target、surface element 和原生按钮 suppressor 子模块 |
 | `src/core/system/app-version.ts` | 最小化的思源版本查询适配层 |
 | `src/features/settings/` | 设置页 controller、controller 子模块、settings 组件、动作规则、文件导入导出、视图 helper、Props 类型 |
+| `src/features/settings/controller/use-settings-icons.ts` | 图标管理 composable：IconPark/Emoji/SVG 图标选择 |
+| `src/features/settings/controller/use-settings-shortcuts.ts` | 快捷键管理 composable：快捷键捕获、冲突检测、点击序列 |
+| `src/features/settings/controller/use-settings-toolbar.ts` | 浮动工具栏 composable：原生按钮禁用、自定义按钮、拖放排序 |
 | `src/shared/` | 跨模块共享类型、常量、icon 渲染、预览布局、运行时快照、surface 元数据、工具函数 |
 | `src/components/SiyuanTheme/` | 复用的思源风格基础组件 |
 | `src/i18n/` | 多语言资源 |
-| `src/types/` | Siyuan API 与全局类型声明 |
+| `src/types/` | Siyuan API 与全局类型声明，包含 `siyuan-globals.ts` 提供类型安全的全局对象访问 |
 | `src/api.ts` | 兼容导出层，当前仅保留 `version()` 到最小适配模块的转发 |
 
 ## Core Flows
@@ -41,9 +44,13 @@
 ### 2. Settings UI
 
 1. `src/main.ts` 挂载 `src/App.vue`。
-2. `src/features/settings/use-settings-controller.ts` 管理设置页状态总编排；`src/features/settings/controller/` 负责 plugin-command 选择规则、预览拖拽与原生按钮禁用交互。
-3. `src/features/settings/components/` 承载设置页按钮列表和预览 wrapper 等 Vue 子组件。
-4. `src/features/settings/action-config.ts` 与 `src/core/config/item-defaults.ts` 共享实验动作默认值规则。
+2. `src/features/settings/use-settings-controller.ts` 管理设置页状态总编排，内部组合了三个 composable：
+   - `src/features/settings/controller/use-settings-icons.ts` — 图标管理
+   - `src/features/settings/controller/use-settings-shortcuts.ts` — 快捷键与点击序列
+   - `src/features/settings/controller/use-settings-toolbar.ts` — 浮动工具栏
+3. `src/features/settings/controller/` 还包含 plugin-command 选择规则、预览拖拽与原生按钮禁用交互。
+4. `src/features/settings/components/` 承载设置页按钮列表和预览 wrapper 等 Vue 子组件。
+5. `src/features/settings/action-config.ts` 与 `src/core/config/item-defaults.ts` 共享实验动作默认值规则。
 
 ### 3. Config Lifecycle
 

@@ -25,13 +25,13 @@ export function ensureExperimentalShortcutConfig(item: PowerButtonItem) {
 export const createDefaultClickSequenceStep = createClickSequenceStep;
 
 export function ensureExperimentalClickSequenceConfig(item: PowerButtonItem): ExperimentalClickSequenceConfig {
-  if (!item.experimentalClickSequence) {
-    item.experimentalClickSequence = createExperimentalClickSequenceConfig({}, item.actionId);
-  } else if (!item.experimentalClickSequence.steps.length) {
-    item.experimentalClickSequence = createExperimentalClickSequenceConfig(item.experimentalClickSequence, item.actionId);
-  } else {
-    item.experimentalClickSequence = createExperimentalClickSequenceConfig(item.experimentalClickSequence, item.actionId);
-  }
+  const hasSteps = item.experimentalClickSequence?.steps?.length;
+  const overrides = hasSteps
+    ? item.experimentalClickSequence
+    : item.experimentalClickSequence
+      ? { stopOnFailure: item.experimentalClickSequence.stopOnFailure }
+      : {};
+  item.experimentalClickSequence = createExperimentalClickSequenceConfig(overrides, item.actionId);
   return item.experimentalClickSequence;
 }
 

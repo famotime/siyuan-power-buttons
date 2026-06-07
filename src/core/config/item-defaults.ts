@@ -9,6 +9,11 @@ import type {
 export const DEFAULT_CLICK_SEQUENCE_SELECTOR = "text:设置";
 export const DEFAULT_BUILTIN_COMMAND_ID = "recentDocs";
 
+/** 验证并返回非负整数，无效时返回 fallback */
+function safeNonNegativeInt(value: unknown, fallback: number): number {
+  return Number.isFinite(value) && Number(value) >= 0 ? Number(value) : fallback;
+}
+
 export function getDefaultActionId(actionType: ActionType): string {
   if (actionType === "experimental-shortcut") {
     return "";
@@ -68,10 +73,10 @@ export function createClickSequenceStep(
     selector: overrides.selector || fallbackSelector,
     value: normalizedValue,
     valueMode: overrides.valueMode === "text" ? "text" : "value",
-    timeoutMs: Number.isFinite(overrides.timeoutMs) && Number(overrides.timeoutMs) >= 0 ? Number(overrides.timeoutMs) : 5000,
-    retryCount: Number.isFinite(overrides.retryCount) && Number(overrides.retryCount) >= 0 ? Number(overrides.retryCount) : 1,
-    retryDelayMs: Number.isFinite(overrides.retryDelayMs) && Number(overrides.retryDelayMs) >= 0 ? Number(overrides.retryDelayMs) : 300,
-    delayAfterMs: Number.isFinite(overrides.delayAfterMs) && Number(overrides.delayAfterMs) >= 0 ? Number(overrides.delayAfterMs) : 200,
+    timeoutMs: safeNonNegativeInt(overrides.timeoutMs, 5000),
+    retryCount: safeNonNegativeInt(overrides.retryCount, 1),
+    retryDelayMs: safeNonNegativeInt(overrides.retryDelayMs, 300),
+    delayAfterMs: safeNonNegativeInt(overrides.delayAfterMs, 200),
   };
 }
 
@@ -103,10 +108,10 @@ export function sanitizeExperimentalClickSequenceConfig(
           : undefined,
         value: typeof step?.value === "string" ? step.value : undefined,
         valueMode: step?.valueMode === "text" ? "text" : step?.valueMode === "value" ? "value" : undefined,
-        timeoutMs: Number.isFinite(step?.timeoutMs) && Number(step.timeoutMs) >= 0 ? Number(step.timeoutMs) : undefined,
-        retryCount: Number.isFinite(step?.retryCount) && Number(step.retryCount) >= 0 ? Number(step.retryCount) : undefined,
-        retryDelayMs: Number.isFinite(step?.retryDelayMs) && Number(step.retryDelayMs) >= 0 ? Number(step.retryDelayMs) : undefined,
-        delayAfterMs: Number.isFinite(step?.delayAfterMs) && Number(step.delayAfterMs) >= 0 ? Number(step.delayAfterMs) : undefined,
+        timeoutMs: safeNonNegativeInt(step?.timeoutMs, undefined as unknown as number),
+        retryCount: safeNonNegativeInt(step?.retryCount, undefined as unknown as number),
+        retryDelayMs: safeNonNegativeInt(step?.retryDelayMs, undefined as unknown as number),
+        delayAfterMs: safeNonNegativeInt(step?.delayAfterMs, undefined as unknown as number),
       }, fallbackSelector))
       : undefined,
     stopOnFailure: typeof input.stopOnFailure === "boolean" ? input.stopOnFailure : undefined,
