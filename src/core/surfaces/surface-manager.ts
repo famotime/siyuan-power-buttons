@@ -13,6 +13,7 @@ import {
 import type {
   PowerButtonItem,
   PowerButtonsConfig,
+  SelectionToolbarLayoutItem,
 } from "@/shared/types";
 import { findCanvasMountTarget } from "@/core/surfaces/canvas-mount-target";
 import { NativeElementSuppressor } from "@/core/surfaces/native-element-suppressor";
@@ -36,6 +37,7 @@ export class SurfaceManager {
   private disabledToolbarNames = new Set<string>();
   private patchedToolbarItems = new Set<HTMLElement>();
   private customToolbarItems: PowerButtonItem[] = [];
+  private selectionToolbarLayout: SelectionToolbarLayoutItem[] = [];
   private injectedToolbarItems = new Set<HTMLElement>();
 
   constructor(
@@ -132,6 +134,7 @@ export class SurfaceManager {
     this.customToolbarItems = config.items
       .filter(item => item.surface === "selection-toolbar" && item.visible)
       .sort((a, b) => a.order - b.order);
+    this.selectionToolbarLayout = config.selectionToolbarLayout;
     this.patchSelectionToolbar();
   }
 
@@ -148,7 +151,9 @@ export class SurfaceManager {
     this.toolbarPatchObserver = null;
     this.restoreToolbarPatch();
 
-    const needsPatch = this.disabledToolbarNames.size > 0 || this.customToolbarItems.length > 0;
+    const needsPatch = this.disabledToolbarNames.size > 0
+      || this.customToolbarItems.length > 0
+      || this.selectionToolbarLayout.length > 0;
     if (!needsPatch) {
       return;
     }
@@ -193,7 +198,80 @@ export class SurfaceManager {
           toolbar.appendChild(element);
         }
       }
+
+      if (this.selectionToolbarLayout.length > 0) {
+        this.sortSelectionToolbar(toolbar);
+      }
     }
+  }
+
+  private sortSelectionToolbar(toolbar: HTMLElement): void {
+    const itemEntries = Array.from(toolbar.children)
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .map(element => ({
+        element,
+        key: this.getSelectionToolbarElementKey(element),
+      }));
+    const byKey = new Map<string, HTMLElement>();
+    const originalKeys: string[] = [];
+
+    for (const entry of itemEntries) {
+      if (!entry.key) {
+        continue;
+      }
+      byKey.set(entry.key, entry.element);
+      originalKeys.push(entry.key);
+    }
+
+    const ordered: HTMLElement[] = [];
+    const usedKeys = new Set<string>();
+    for (const item of this.selectionToolbarLayout) {
+      const key = `${item.type}:${item.id}`;
+      const element = byKey.get(key);
+      if (!element || usedKeys.has(key)) {
+        continue;
+      }
+      ordered.push(element);
+      usedKeys.add(key);
+    }
+
+    for (const key of originalKeys) {
+      const element = byKey.get(key);
+      if (!element || usedKeys.has(key)) {
+        continue;
+      }
+      ordered.push(element);
+      usedKeys.add(key);
+    }
+
+    const currentOrderedElements = itemEntries
+      .filter(entry => Boolean(entry.key))
+      .map(entry => entry.element);
+    if (
+      currentOrderedElements.length === ordered.length
+      && currentOrderedElements.every((element, index) => element === ordered[index])
+    ) {
+      return;
+    }
+
+    for (const element of ordered) {
+      toolbar.appendChild(element);
+    }
+  }
+
+  private getSelectionToolbarElementKey(element: HTMLElement): string | null {
+    const customId = element.dataset.powerButtonsItemId
+      || element.dataset.type?.replace(/^power-buttons:/, "");
+    if (customId && element.dataset.type?.startsWith("power-buttons:")) {
+      return `custom:${customId}`;
+    }
+
+    const nativeType = element.dataset.type;
+    if (nativeType && !nativeType.startsWith("power-buttons:")) {
+      return `native:${nativeType}`;
+    }
+
+    return null;
   }
 
   /**
@@ -244,6 +322,7 @@ export class SurfaceManager {
     this.restoreToolbarPatch();
     this.disabledToolbarNames.clear();
     this.customToolbarItems = [];
+    this.selectionToolbarLayout = [];
 
     for (const element of this.topbarElements) {
       element.remove();

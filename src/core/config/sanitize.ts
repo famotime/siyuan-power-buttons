@@ -27,7 +27,16 @@ import {
   normalizeItemOrder,
   sortItems,
 } from "@/shared/utils";
-import type { ActionType, DisabledNativeButton, DisabledSelectionToolbarItem, IconType, PowerButtonItem, PowerButtonsConfig, SurfaceType } from "@/shared/types";
+import type {
+  ActionType,
+  DisabledNativeButton,
+  DisabledSelectionToolbarItem,
+  IconType,
+  PowerButtonItem,
+  PowerButtonsConfig,
+  SelectionToolbarLayoutItem,
+  SurfaceType,
+} from "@/shared/types";
 
 const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
   "dock-bottom-left": "statusbar-left",
@@ -142,6 +151,18 @@ function sanitizeDisabledSelectionToolbarItem(value: unknown): DisabledSelection
   };
 }
 
+function sanitizeSelectionToolbarLayoutItem(value: unknown): SelectionToolbarLayoutItem | null {
+  const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
+  const type = raw.type === "native" || raw.type === "custom" ? raw.type : "";
+  const id = typeof raw.id === "string" ? raw.id.trim() : "";
+
+  if (!type || !id) {
+    return null;
+  }
+
+  return { type, id };
+}
+
 function sanitizeItem(value: unknown, index: number): PowerButtonItem {
   const fallback = createButtonItem({ order: index });
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
@@ -204,6 +225,11 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
       .map(sanitizeDisabledSelectionToolbarItem)
       .filter((item): item is DisabledSelectionToolbarItem => Boolean(item))
     : defaults.disabledSelectionToolbarItems;
+  const selectionToolbarLayout = Array.isArray(raw.selectionToolbarLayout)
+    ? raw.selectionToolbarLayout
+      .map(sanitizeSelectionToolbarLayoutItem)
+      .filter((item): item is SelectionToolbarLayoutItem => Boolean(item))
+    : defaults.selectionToolbarLayout;
 
   return {
     version: 2,
@@ -211,6 +237,7 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
     items,
     disabledNativeButtons,
     disabledSelectionToolbarItems,
+    selectionToolbarLayout,
     experimental: {
       nativeToolbarControl: readExperimentalFlag(raw.experimental, "nativeToolbarControl", false),
       internalCommandAdapter: readExperimentalFlag(raw.experimental, "internalCommandAdapter", false),

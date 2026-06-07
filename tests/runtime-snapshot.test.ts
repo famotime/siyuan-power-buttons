@@ -261,6 +261,36 @@ describe("runtime surface snapshot", () => {
     expect(canvasTitles).toEqual(["复制", "更多"]);
   });
 
+  it("reads buttons injected by other plugins into the active selection toolbar", () => {
+    document.body.innerHTML = `
+      <div class="protyle-toolbar">
+        <button data-type="strong" class="protyle-toolbar__item" aria-label="粗体">
+          <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+        </button>
+        <span class="protyle-toolbar__divider" data-toolbar-divider="true"></span>
+        <button data-type="plugin-other-copy" class="protyle-toolbar__item" title="插件复制">
+          <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>
+        </button>
+        <button data-type="siyuan-power-buttons-demo" class="protyle-toolbar__item" aria-label="随心按"></button>
+      </div>
+    `;
+
+    const strongButton = document.querySelector('[data-type="strong"]') as HTMLElement;
+    const pluginButton = document.querySelector('[data-type="plugin-other-copy"]') as HTMLElement;
+    const ownButton = document.querySelector('[data-type="siyuan-power-buttons-demo"]') as HTMLElement;
+
+    mockRect(strongButton, { left: 24, top: 120, width: 20, height: 20, right: 44, bottom: 140 });
+    mockRect(pluginButton, { left: 52, top: 120, width: 20, height: 20, right: 72, bottom: 140 });
+    mockRect(ownButton, { left: 80, top: 120, width: 20, height: 20, right: 100, bottom: 140 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+    const toolbarItems = snapshot.filter(item => item.surface === "selection-toolbar");
+
+    expect(toolbarItems.map(item => item.title)).toEqual(["粗体", "插件复制"]);
+    expect(toolbarItems[1]?.nativeSelectors).toContain('[data-type="plugin-other-copy"]');
+    expect(toolbarItems.map(item => item.title)).not.toContain("随心按");
+  });
+
   it("inlines symbol-based native svg icons so they remain renderable outside the original toolbar", () => {
     document.body.innerHTML = `
       <svg aria-hidden="true" style="display:none">

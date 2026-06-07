@@ -3,6 +3,7 @@ import type {
   DisabledSelectionToolbarItem,
   PowerButtonItem,
   PowerButtonsConfig,
+  SelectionToolbarLayoutItem,
 } from "@/shared/types";
 import { CommandExecutor } from "@/core/commands";
 import { getIconMarkup } from "@/core/surfaces/surface-elements";
@@ -40,6 +41,22 @@ function isDivider(item: ToolbarItem): boolean {
 
 function getItemName(item: ToolbarItem): string {
   return typeof item === "string" ? item : item.name;
+}
+
+function createLayoutKey(item: SelectionToolbarLayoutItem): string {
+  return `${item.type}:${item.id}`;
+}
+
+function getCustomItemKey(item: PowerButtonItem): string {
+  return createLayoutKey({ type: "custom", id: item.id });
+}
+
+function getNativeToolbarItemKey(item: ToolbarItem): string | null {
+  if (isDivider(item)) {
+    return null;
+  }
+  const name = getItemName(item);
+  return name ? createLayoutKey({ type: "native", id: name }) : null;
 }
 
 /**
@@ -97,6 +114,60 @@ export function customizeSelectionToolbar(
   const customItems = config.items
     .filter(item => item.surface === "selection-toolbar" && item.visible)
     .sort((a, b) => a.order - b.order);
+
+  if (config.selectionToolbarLayout.length > 0) {
+    const nativeByKey = new Map<string, ToolbarItem>();
+    const nativeOrder: string[] = [];
+    for (const item of toolbar) {
+      const key = getNativeToolbarItemKey(item);
+      if (!key) {
+        continue;
+      }
+      nativeByKey.set(key, item);
+      nativeOrder.push(key);
+    }
+
+    const customByKey = new Map(customItems.map(item => [getCustomItemKey(item), item]));
+    const ordered: ToolbarItem[] = [];
+    const usedKeys = new Set<string>();
+
+    for (const layoutItem of config.selectionToolbarLayout) {
+      const key = createLayoutKey(layoutItem);
+      if (usedKeys.has(key)) {
+        continue;
+      }
+
+      const nativeItem = nativeByKey.get(key);
+      if (nativeItem) {
+        ordered.push(nativeItem);
+        usedKeys.add(key);
+        continue;
+      }
+
+      const customItem = customByKey.get(key);
+      if (customItem) {
+        ordered.push(createMenuItem(customItem, executor));
+        usedKeys.add(key);
+      }
+    }
+
+    for (const key of nativeOrder) {
+      if (!usedKeys.has(key)) {
+        ordered.push(nativeByKey.get(key)!);
+        usedKeys.add(key);
+      }
+    }
+
+    for (const item of customItems) {
+      const key = getCustomItemKey(item);
+      if (!usedKeys.has(key)) {
+        ordered.push(createMenuItem(item, executor));
+        usedKeys.add(key);
+      }
+    }
+
+    return cleanDividers(ordered);
+  }
 
   if (customItems.length > 0) {
     // 在自定义按钮前添加分隔符，与原生按钮区分开

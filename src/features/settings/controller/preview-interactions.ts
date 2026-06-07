@@ -159,8 +159,11 @@ export function usePreviewInteractions(options: {
     await moveFromPreview(surface, getPreviewInsertIndex(surfaceItems, targetIndex));
   }
 
-  async function onPreviewSurfaceDrop(surface: SurfaceType): Promise<void> {
-    await moveFromPreview(surface, options.config.items.filter(item => item.surface === surface).length);
+  async function onPreviewSurfaceDrop(surface: SurfaceType, targetIndex?: number): Promise<void> {
+    await moveFromPreview(
+      surface,
+      targetIndex ?? options.config.items.filter(item => item.surface === surface).length,
+    );
   }
 
   async function onDisabledNativeDrop(): Promise<void> {

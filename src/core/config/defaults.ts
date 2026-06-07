@@ -264,6 +264,7 @@ export function createDefaultConfig(): PowerButtonsConfig {
     items,
     disabledNativeButtons: [],
     disabledSelectionToolbarItems: [],
+    selectionToolbarLayout: [],
     experimental: {
       nativeToolbarControl: false,
       internalCommandAdapter: false,

@@ -20,6 +20,7 @@ const CANVAS_TOOLBAR_SELECTORS = [
   ".layout__center .protyle .protyle-breadcrumb:not(.protyle-breadcrumb__bar)",
   ".layout__center .protyle-util .block__icons",
 ];
+const SELECTION_TOOLBAR_SELECTORS = [".protyle-toolbar"];
 const WINDOW_CONTROL_IDS = new Set(["minWindow", "maxWindow", "restoreWindow", "closeWindow", "pinWindow"]);
 
 function queryUniqueElements(
@@ -87,6 +88,26 @@ function isCanvasToolbarItem(element: HTMLElement): boolean {
   }
 
   const isButtonLike = element.matches("button, [role='button'], .protyle-breadcrumb__icon, .block__icon, .toolbar__item");
+  const hasBuiltinMarker = element.hasAttribute("data-type") || element.hasAttribute("data-action");
+  const hasLabelOrIcon = Boolean(
+    element.getAttribute("aria-label")
+    || element.getAttribute("title")
+    || element.querySelector("svg")
+    || element.textContent?.trim(),
+  );
+
+  return (isButtonLike || hasBuiltinMarker) && hasLabelOrIcon;
+}
+
+function isSelectionToolbarItem(element: HTMLElement): boolean {
+  if (isPreviewHidden(element) || isPluginOwned(element)) {
+    return false;
+  }
+  if (element.matches(".protyle-toolbar__divider, [data-toolbar-divider]")) {
+    return false;
+  }
+
+  const isButtonLike = element.matches("button, [role='button'], .protyle-toolbar__item");
   const hasBuiltinMarker = element.hasAttribute("data-type") || element.hasAttribute("data-action");
   const hasLabelOrIcon = Boolean(
     element.getAttribute("aria-label")
@@ -259,6 +280,25 @@ function getCanvasToolbarElements(root: ParentNode): HTMLElement[] {
   return [];
 }
 
+function getSelectionToolbarElements(root: ParentNode): HTMLElement[] {
+  for (const selector of SELECTION_TOOLBAR_SELECTORS) {
+    const toolbar = root.querySelector<HTMLElement>(selector);
+    if (!toolbar || isPreviewHidden(toolbar)) {
+      continue;
+    }
+
+    const elements = Array.from(toolbar.children)
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .filter(isSelectionToolbarItem);
+
+    if (elements.length > 0) {
+      return elements;
+    }
+  }
+
+  return [];
+}
+
 export function readNativeSurfaceSnapshot(root: ParentNode = document): PreviewButtonItem[] {
   const topbar = mapElementsToPreview(
     queryUniqueElements(root, TOPBAR_SELECTORS, element => !isIgnoredTopbarElement(element)),
@@ -299,6 +339,11 @@ export function readNativeSurfaceSnapshot(root: ParentNode = document): PreviewB
     () => "canvas",
     "flow-horizontal",
   );
+  const selectionToolbar = mapElementsToPreview(
+    getSelectionToolbarElements(root),
+    () => "selection-toolbar",
+    "flow-horizontal",
+  );
 
   return [
     ...topbar,
@@ -307,5 +352,6 @@ export function readNativeSurfaceSnapshot(root: ParentNode = document): PreviewB
     ...rightDock,
     ...bottomDock,
     ...canvas,
+    ...selectionToolbar,
   ];
 }

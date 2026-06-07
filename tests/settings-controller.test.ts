@@ -196,6 +196,85 @@ describe('settings controller', () => {
     expect(persistedConfig?.items.find((item: { id: string }) => item.id === editableItem.itemId)?.surface).toBe('canvas');
   });
 
+  it('inserts an externally dragged preview button at the targeted selection toolbar position', async () => {
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: 'topbar-item',
+        title: '顶部按钮',
+        surface: 'topbar',
+        order: 0,
+      }),
+      createButtonItem({
+        id: 'selection-first',
+        title: '浮动按钮 A',
+        surface: 'selection-toolbar',
+        order: 1,
+      }),
+      createButtonItem({
+        id: 'selection-second',
+        title: '浮动按钮 B',
+        surface: 'selection-toolbar',
+        order: 2,
+      }),
+    ];
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const controller = useSettingsController(createProps({
+      initialConfig,
+      onChange,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    }));
+
+    await controller.initialize();
+
+    const editableItem = controller.previewLayout.value.topbar[0];
+    const dragTarget = document.createElement('button');
+    document.body.appendChild(dragTarget);
+    controller.onPreviewDragStart(createDragStartEvent(dragTarget), editableItem);
+    await controller.onSelectionToolbarDrop(1);
+
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(
+      persistedConfig?.items
+        .filter((item: { surface: string }) => item.surface === 'selection-toolbar')
+        .map((item: { title: string }) => item.title),
+    ).toEqual(['浮动按钮 A', '顶部按钮', '浮动按钮 B']);
+  });
+
+  it('reorders native selection toolbar buttons and persists the mixed layout', async () => {
+    const initialConfig = createDefaultConfig() as ReturnType<typeof createDefaultConfig> & {
+      selectionToolbarLayout: Array<{ type: 'native' | 'custom'; id: string }>;
+    };
+    initialConfig.selectionToolbarLayout = [
+      { type: 'native', id: 'strong' },
+      { type: 'native', id: 'em' },
+    ];
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const controller = useSettingsController(createProps({
+      initialConfig,
+      onChange,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    })) as ReturnType<typeof useSettingsController> & {
+      selectionToolbarPreviewItems: { value: Array<{ key: string; title: string }> };
+      onSelectionToolbarPreviewDragStart: (event: DragEvent, item: { key: string; title: string }) => void;
+      onSelectionToolbarPreviewDrop: (index: number) => Promise<void>;
+    };
+
+    await controller.initialize();
+
+    const emItem = controller.selectionToolbarPreviewItems.value.find(item => item.key === 'native:em');
+    const dragTarget = document.createElement('button');
+    document.body.appendChild(dragTarget);
+    controller.onSelectionToolbarPreviewDragStart(createDragStartEvent(dragTarget), emItem!);
+    await controller.onSelectionToolbarPreviewDrop(0);
+
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(persistedConfig?.selectionToolbarLayout.slice(0, 2)).toEqual([
+      { type: 'native', id: 'em' },
+      { type: 'native', id: 'strong' },
+    ]);
+  });
+
   it('refreshes external providers and rewrites an invalid plugin command selection', async () => {
     const initialConfig = createDefaultConfig();
     initialConfig.items = [

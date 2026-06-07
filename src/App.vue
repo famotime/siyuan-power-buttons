@@ -292,61 +292,35 @@
                 <span class="workspace-preview__tag"><b>浮动工具栏</b></span>
                 <small class="workspace-preview__selection-toolbar-hint">选中文本后弹出</small>
               </div>
-              <div class="workspace-preview__selection-toolbar-native">
-                <button
-                  v-for="btn in selectionToolbarNativeButtons"
-                  :key="btn.name"
-                  type="button"
-                  class="workspace-preview__native-toggle"
-                  :class="{ 'is-disabled': btn.disabled }"
-                  :title="btn.disabled ? `点击恢复「${btn.label}」` : `点击禁用「${btn.label}」`"
-                  @click="toggleSelectionToolbarNativeButton(btn.name)"
-                >
-                  <span class="workspace-preview__native-icon" v-html="btn.iconMarkup" />
-                </button>
-              </div>
               <div
-                v-if="selectionToolbarCustomItems.length"
                 class="workspace-preview__stack workspace-preview__stack--row workspace-preview__selection-toolbar-custom"
                 @dragover.prevent
-                @drop="onPreviewSurfaceDrop('selection-toolbar')"
+                @drop="onSelectionToolbarPreviewDrop(selectionToolbarPreviewItems.length)"
               >
                 <button
-                  v-for="(item, index) in selectionToolbarCustomItems"
-                  :key="item.id"
+                  v-for="(item, index) in selectionToolbarPreviewItems"
+                  :key="item.key"
                   type="button"
                   class="workspace-chip"
-                  :class="previewChipClass({
-                    id: item.id,
-                    itemId: item.id,
-                    title: item.title,
-                    visible: item.visible,
-                    surface: item.surface,
-                    order: item.order + 1000,
-                    editable: true,
-                    source: 'config',
-                    iconMarkup: renderBuiltinIconMarkup(item),
-                    draggable: true,
-                  })"
+                  :class="{
+                    'is-native': item.type === 'native',
+                    'is-draggable': true,
+                    'is-active': item.type === 'custom' && item.id === selectedId,
+                    'is-disabled': item.disabled,
+                  }"
                   draggable="true"
-                  :title="item.title"
-                  @click="selectItem(item.id)"
-                  @dragstart="(e) => onSelectionToolbarDragStart(e, item)"
-                  @dragend="onSelectionToolbarDragEnd"
+                  :title="item.type === 'native'
+                    ? (item.disabled ? `点击恢复「${item.title}」` : `点击禁用「${item.title}」`)
+                    : item.title"
+                  @click="item.type === 'native' ? toggleSelectionToolbarNativeButton(item.id) : selectItem(item.id)"
+                  @dragstart="(e) => onSelectionToolbarPreviewDragStart(e, item)"
                   @dragover.prevent
-                  @drop.stop="onSelectionToolbarDrop(index)"
+                  @drop.stop="onSelectionToolbarPreviewDrop(index)"
                 >
-                  <span class="workspace-chip__icon" v-html="renderBuiltinIconMarkup(item)" />
+                  <span class="workspace-chip__icon" v-html="item.iconMarkup" />
                   <span class="workspace-chip__label">{{ item.title }}</span>
                 </button>
-              </div>
-              <div
-                v-else
-                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__selection-toolbar-custom"
-                @dragover.prevent
-                @drop="onPreviewSurfaceDrop('selection-toolbar')"
-              >
-                <span class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「浮动工具栏」位置</small></span>
+                <span v-if="!selectionToolbarPreviewItems.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「浮动工具栏」位置</small></span>
               </div>
             </div>
 
@@ -819,9 +793,8 @@ const {
   isRefreshingLayout,
   onListDragStart,
   onListDrop,
-  onSelectionToolbarDragStart,
-  onSelectionToolbarDragEnd,
-  onSelectionToolbarDrop,
+  onSelectionToolbarPreviewDragStart,
+  onSelectionToolbarPreviewDrop,
   onDisabledNativeDrop,
   onPreviewDragStart,
   onPreviewItemDrop,
@@ -841,8 +814,7 @@ const {
   resetConfig,
   refreshExternalProviders,
   restoreDisabledNativeItem,
-  selectionToolbarNativeButtons,
-  selectionToolbarCustomItems,
+  selectionToolbarPreviewItems,
   toggleSelectionToolbarNativeButton,
   setImportFileInput,
   selectedId,

@@ -27,6 +27,7 @@ import {
 } from "@/shared/constants";
 import {
   buildPreviewLayout,
+  movePreviewItem,
 } from "@/shared/preview-layout";
 import {
   NATIVE_TOOLBAR_BUTTON_LABELS,
@@ -51,6 +52,7 @@ import type {
   PowerButtonItem,
   PowerButtonsConfig,
   PreviewButtonItem,
+  SelectionToolbarLayoutItem,
   SurfaceType,
 } from "@/shared/types";
 import {
@@ -96,6 +98,7 @@ function applyConfig(config: PowerButtonsConfig, nextConfig: PowerButtonsConfig)
   config.items = nextConfig.items;
   config.disabledNativeButtons = nextConfig.disabledNativeButtons;
   config.disabledSelectionToolbarItems = nextConfig.disabledSelectionToolbarItems;
+  config.selectionToolbarLayout = nextConfig.selectionToolbarLayout;
   config.experimental = nextConfig.experimental;
 }
 
@@ -112,6 +115,7 @@ export function useSettingsController(props: SettingsAppProps) {
   const selectedId = ref(resolveInitialSelectedId(config, props.initialSelectedButtonId));
   const listDragIndex = ref<number | null>(null);
   const selectionToolbarDragIndex = ref<number | null>(null);
+  const selectionToolbarPreviewDragIndex = ref<number | null>(null);
   const previewDragItem = ref<PreviewButtonItem | null>(null);
   const previewDragCleanup = ref<(() => void) | null>(null);
   const runtimePreviewItems = ref<PreviewButtonItem[]>([]);
@@ -205,6 +209,77 @@ export function useSettingsController(props: SettingsAppProps) {
     return config.items
       .filter(item => item.surface === "selection-toolbar")
       .sort((a, b) => a.order - b.order);
+  });
+
+  type SelectionToolbarPreviewItem = {
+    key: string;
+    type: "native" | "custom";
+    id: string;
+    title: string;
+    iconMarkup: string;
+    disabled: boolean;
+    item?: PowerButtonItem;
+  };
+
+  function createSelectionToolbarLayoutKey(item: SelectionToolbarLayoutItem): string {
+    return `${item.type}:${item.id}`;
+  }
+
+  function toSelectionToolbarLayoutItem(item: SelectionToolbarPreviewItem): SelectionToolbarLayoutItem {
+    return {
+      type: item.type,
+      id: item.id,
+    };
+  }
+
+  const selectionToolbarPreviewItems = computed<SelectionToolbarPreviewItem[]>(() => {
+    const disabledNames = new Set(config.disabledSelectionToolbarItems.map(item => item.name));
+    const nativeItems: SelectionToolbarPreviewItem[] = CONFIGURABLE_NATIVE_NAMES.map(name => {
+      const label = NATIVE_TOOLBAR_BUTTON_LABELS[name] || name;
+      return {
+        key: `native:${name}`,
+        type: "native",
+        id: name,
+        title: label,
+        iconMarkup: getNativeToolbarIcon(name, label),
+        disabled: disabledNames.has(name),
+      };
+    });
+    const customItems: SelectionToolbarPreviewItem[] = selectionToolbarCustomItems.value.map(item => ({
+      key: `custom:${item.id}`,
+      type: "custom",
+      id: item.id,
+      title: item.title || "未命名按钮",
+      iconMarkup: renderSettingsIconMarkup(item),
+      disabled: !item.visible,
+      item,
+    }));
+    const defaultItems = [...nativeItems, ...customItems];
+    const byKey = new Map(defaultItems.map(item => [item.key, item]));
+
+    if (config.selectionToolbarLayout.length === 0) {
+      return defaultItems;
+    }
+
+    const ordered: SelectionToolbarPreviewItem[] = [];
+    const usedKeys = new Set<string>();
+    for (const layoutItem of config.selectionToolbarLayout) {
+      const key = createSelectionToolbarLayoutKey(layoutItem);
+      const item = byKey.get(key);
+      if (!item || usedKeys.has(key)) {
+        continue;
+      }
+      ordered.push(item);
+      usedKeys.add(key);
+    }
+
+    for (const item of defaultItems) {
+      if (!usedKeys.has(item.key)) {
+        ordered.push(item);
+      }
+    }
+
+    return ordered;
   });
 
   /** 切换浮动工具栏原生按钮的禁用状态 */
@@ -616,11 +691,85 @@ export function useSettingsController(props: SettingsAppProps) {
       return;
     }
 
-    // 外部拖入：将项目移动到 selection-toolbar 末尾
+    // 外部拖入：将项目移动到目标 selection-toolbar 位置
     if (previewDragItem.value) {
-      await onPreviewSurfaceDrop("selection-toolbar");
+      await onPreviewSurfaceDrop("selection-toolbar", localIndex);
       return;
     }
+  }
+
+  function persistSelectionToolbarLayout(items: SelectionToolbarPreviewItem[]): void {
+    config.selectionToolbarLayout = items.map(toSelectionToolbarLayoutItem);
+    const customOrder = new Map(
+      items
+        .filter(item => item.type === "custom")
+        .map((item, index) => [item.id, index]),
+    );
+    for (const item of config.items) {
+      const order = customOrder.get(item.id);
+      if (order !== undefined) {
+        item.order = order;
+      }
+    }
+  }
+
+  function onSelectionToolbarPreviewDragStart(
+    event: DragEvent,
+    item: SelectionToolbarPreviewItem,
+  ): void {
+    const index = selectionToolbarPreviewItems.value.findIndex(entry => entry.key === item.key);
+    if (index === -1) {
+      return;
+    }
+    selectionToolbarPreviewDragIndex.value = index;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", item.key);
+    }
+  }
+
+  async function onSelectionToolbarPreviewDrop(targetIndex: number): Promise<void> {
+    const fromIndex = selectionToolbarPreviewDragIndex.value;
+    selectionToolbarPreviewDragIndex.value = null;
+
+    if (fromIndex !== null) {
+      if (fromIndex === targetIndex) {
+        return;
+      }
+      persistSelectionToolbarLayout(moveItem(selectionToolbarPreviewItems.value, fromIndex, targetIndex));
+      await persist();
+      return;
+    }
+
+    const dragItem = previewDragItem.value;
+    if (!dragItem?.editable || !dragItem.itemId) {
+      return;
+    }
+
+    const currentItems = selectionToolbarPreviewItems.value
+      .filter(item => item.key !== `custom:${dragItem.itemId}`);
+    const clampedIndex = Math.max(0, Math.min(targetIndex, currentItems.length));
+    currentItems.splice(clampedIndex, 0, {
+      key: `custom:${dragItem.itemId}`,
+      type: "custom",
+      id: dragItem.itemId,
+      title: dragItem.title || "未命名按钮",
+      iconMarkup: dragItem.iconMarkup || "",
+      disabled: !dragItem.visible,
+      item: config.items.find(item => item.id === dragItem.itemId),
+    });
+
+    const customTargetIndex = currentItems
+      .slice(0, clampedIndex)
+      .filter(item => item.type === "custom")
+      .length;
+    config.items = movePreviewItem(config.items, dragItem.itemId, "selection-toolbar", customTargetIndex);
+    persistSelectionToolbarLayout(currentItems);
+    selectedId.value = dragItem.itemId;
+    previewDragItem.value = null;
+    previewDragCleanup.value?.();
+    previewDragCleanup.value = null;
+    await persist();
   }
   const {
     handlePreviewChipClick,
@@ -745,6 +894,8 @@ export function useSettingsController(props: SettingsAppProps) {
     onSelectionToolbarDragStart,
     onSelectionToolbarDragEnd,
     onSelectionToolbarDrop,
+    onSelectionToolbarPreviewDragStart,
+    onSelectionToolbarPreviewDrop,
     onPreviewDragStart,
     onPreviewItemDrop,
     onPreviewSurfaceDrop,
@@ -756,6 +907,7 @@ export function useSettingsController(props: SettingsAppProps) {
     disabledNativePreviewItems,
     selectionToolbarNativeButtons,
     selectionToolbarCustomItems,
+    selectionToolbarPreviewItems,
     toggleSelectionToolbarNativeButton,
     externalCommandProviders,
     pluginCommandProviders,

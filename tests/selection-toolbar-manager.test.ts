@@ -205,6 +205,31 @@ describe("selection toolbar manager", () => {
       expect(customItems[1].name).toBe("power-buttons:custom-b");
     });
 
+    it("inserts custom buttons between native toolbar buttons when a layout is configured", () => {
+      const config = createDefaultConfig();
+      config.items = [
+        createButtonItem({
+          id: "custom-middle",
+          title: "中间按钮",
+          surface: "selection-toolbar",
+          order: 0,
+        }),
+      ];
+      (config as never as { selectionToolbarLayout: Array<{ type: "native" | "custom"; id: string }> }).selectionToolbarLayout = [
+        { type: "native", id: "strong" },
+        { type: "custom", id: "custom-middle" },
+        { type: "native", id: "em" },
+      ];
+      const executor = createMockExecutor();
+      const result = customizeSelectionToolbar(["strong", "em"], config, executor);
+
+      expect(result.map(item => typeof item === "string" ? item : item.name)).toEqual([
+        "strong",
+        "power-buttons:custom-middle",
+        "em",
+      ]);
+    });
+
     it("ignores invisible selection-toolbar items", () => {
       const config = createDefaultConfig();
       config.items = [

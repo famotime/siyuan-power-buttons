@@ -91,12 +91,18 @@ export interface DisabledSelectionToolbarItem {
   title: string;
 }
 
+export interface SelectionToolbarLayoutItem {
+  type: "native" | "custom";
+  id: string;
+}
+
 export interface PowerButtonsConfig {
   version: 2;
   desktopOnly: boolean;
   items: PowerButtonItem[];
   disabledNativeButtons: DisabledNativeButton[];
   disabledSelectionToolbarItems: DisabledSelectionToolbarItem[];
+  selectionToolbarLayout: SelectionToolbarLayoutItem[];
   experimental: {
     nativeToolbarControl: boolean;
     internalCommandAdapter: boolean;

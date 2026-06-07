@@ -236,6 +236,113 @@ describe("surface manager", () => {
     expect(toolbar.querySelector('[data-type="readonly"]')).toBe(readonlyButton);
   });
 
+  it("orders injected selection toolbar buttons according to the mixed toolbar layout", () => {
+    document.body.innerHTML = `
+      <div class="protyle-toolbar">
+        <button data-type="strong" class="protyle-toolbar__item" type="button">粗体</button>
+        <button data-type="em" class="protyle-toolbar__item" type="button">斜体</button>
+      </div>
+    `;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "custom-middle",
+        title: "中间按钮",
+        surface: "selection-toolbar",
+        order: 0,
+      }),
+    ];
+    config.selectionToolbarLayout = [
+      { type: "native", id: "strong" },
+      { type: "custom", id: "custom-middle" },
+      { type: "native", id: "em" },
+    ];
+
+    manager.render(config);
+
+    const toolbar = document.querySelector(".protyle-toolbar") as HTMLElement;
+    expect(Array.from(toolbar.children).map(child => (child as HTMLElement).dataset.type)).toEqual([
+      "strong",
+      "power-buttons:custom-middle",
+      "em",
+    ]);
+
+    manager.destroy();
+  });
+
+  it("does not keep moving selection toolbar nodes after the mixed layout is applied", async () => {
+    document.body.innerHTML = `
+      <div class="protyle-toolbar">
+        <button data-type="strong" class="protyle-toolbar__item" type="button">粗体</button>
+        <button data-type="power-buttons:custom-middle" data-power-buttons-item-id="custom-middle" class="protyle-toolbar__item" type="button">中间</button>
+        <button data-type="em" class="protyle-toolbar__item" type="button">斜体</button>
+      </div>
+    `;
+
+    const addTopBar = vi.fn(() => document.createElement("button"));
+    const addStatusBar = vi.fn(() => document.createElement("div"));
+    const addDock = vi.fn();
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: {
+        globalCommand: vi.fn(),
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "custom-middle",
+        title: "中间按钮",
+        surface: "selection-toolbar",
+        order: 0,
+      }),
+    ];
+    config.selectionToolbarLayout = [
+      { type: "native", id: "strong" },
+      { type: "custom", id: "custom-middle" },
+      { type: "native", id: "em" },
+    ];
+
+    const toolbar = document.querySelector(".protyle-toolbar") as HTMLElement;
+    const appendSpy = vi.spyOn(toolbar, "appendChild");
+
+    manager.render(config);
+    const callsAfterInitialPatch = appendSpy.mock.calls.length;
+
+    document.body.appendChild(document.createElement("div"));
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    expect(appendSpy).toHaveBeenCalledTimes(callsAfterInitialPatch);
+
+    manager.destroy();
+  });
+
   it("suppresses configured native buttons by hiding them and intercepting click events", () => {
     document.body.innerHTML = `
       <div class="layout__center">
