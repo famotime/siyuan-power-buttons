@@ -569,11 +569,11 @@ export function useSettingsController(props: SettingsAppProps) {
   }
 
   function onSelectionToolbarDragStart(event: DragEvent, item: PowerButtonItem): void {
-    const sourceIndex = config.items.findIndex(i => i.id === item.id);
-    if (sourceIndex === -1) {
+    const localIndex = selectionToolbarCustomItems.value.findIndex(i => i.id === item.id);
+    if (localIndex === -1) {
       return;
     }
-    selectionToolbarDragIndex.value = sourceIndex;
+    selectionToolbarDragIndex.value = localIndex;
     onPreviewDragStart(event, {
       id: item.id,
       itemId: item.id,
@@ -592,15 +592,35 @@ export function useSettingsController(props: SettingsAppProps) {
     selectionToolbarDragIndex.value = null;
   }
 
-  async function onSelectionToolbarDrop(index: number): Promise<void> {
-    const fromIndex = selectionToolbarDragIndex.value;
-    if (fromIndex === null || fromIndex === index) {
-      selectionToolbarDragIndex.value = null;
+  async function onSelectionToolbarDrop(localIndex: number): Promise<void> {
+    const fromLocalIndex = selectionToolbarDragIndex.value;
+    selectionToolbarDragIndex.value = null;
+
+    // 内部重排序：在 selection-toolbar 项之间局部调整顺序
+    if (fromLocalIndex !== null) {
+      if (fromLocalIndex === localIndex) {
+        previewDragItem.value = null;
+        return;
+      }
+
+      const stItems = config.items.filter(item => item.surface === "selection-toolbar");
+      const sorted = [...stItems].sort((a, b) => a.order - b.order);
+      const [moved] = sorted.splice(fromLocalIndex, 1);
+      sorted.splice(localIndex, 0, moved);
+      sorted.forEach((item, i) => { item.order = i; });
+
+      const otherItems = config.items.filter(item => item.surface !== "selection-toolbar");
+      config.items = [...otherItems, ...sorted];
+      previewDragItem.value = null;
+      await persist();
       return;
     }
-    config.items = normalizeItemOrder(moveItem(config.items, fromIndex, index));
-    selectionToolbarDragIndex.value = null;
-    await persist();
+
+    // 外部拖入：将项目移动到 selection-toolbar 末尾
+    if (previewDragItem.value) {
+      await onPreviewSurfaceDrop("selection-toolbar");
+      return;
+    }
   }
   const {
     handlePreviewChipClick,

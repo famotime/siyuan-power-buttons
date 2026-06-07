@@ -35,6 +35,8 @@ export class SurfaceManager {
   private toolbarPatchObserver: MutationObserver | null = null;
   private disabledToolbarNames = new Set<string>();
   private patchedToolbarItems = new Set<HTMLElement>();
+  private customToolbarItems: PowerButtonItem[] = [];
+  private injectedToolbarItems = new Set<HTMLElement>();
 
   constructor(
     private readonly plugin: Plugin,
@@ -88,7 +90,7 @@ export class SurfaceManager {
       }
 
       if (item.surface === "selection-toolbar") {
-        // 浮动工具栏按钮由 updateProtyleToolbar 钩子管理，无需 DOM 操作
+        // 浮动工具栏按钮由 updateProtyleToolbar + patchSelectionToolbar 管理
         continue;
       }
 
@@ -126,11 +128,17 @@ export class SurfaceManager {
     this.disabledToolbarNames = new Set(
       config.disabledSelectionToolbarItems.map(item => item.name),
     );
+    // 缓存浮动工具栏自定义按钮，供 DOM 注入使用
+    this.customToolbarItems = config.items
+      .filter(item => item.surface === "selection-toolbar" && item.visible)
+      .sort((a, b) => a.order - b.order);
     this.patchSelectionToolbar();
   }
 
   /**
-   * 直接 patch 浮动工具栏 DOM，隐藏被禁用的原生按钮。
+   * 直接 patch 浮动工具栏 DOM：
+   * 1. 隐藏被禁用的原生按钮
+   * 2. 注入自定义按钮（如果尚未存在）
    *
    * siyuan 的 updateProtyleToolbar 仅在 protyle 初始化时调用一次，
    * 已打开的编辑器不会因配置变更而刷新。此方法通过 DOM 操作弥补。
@@ -140,7 +148,8 @@ export class SurfaceManager {
     this.toolbarPatchObserver = null;
     this.restoreToolbarPatch();
 
-    if (this.disabledToolbarNames.size === 0) {
+    const needsPatch = this.disabledToolbarNames.size > 0 || this.customToolbarItems.length > 0;
+    if (!needsPatch) {
       return;
     }
 
@@ -157,26 +166,75 @@ export class SurfaceManager {
   }
 
   private applyToolbarPatch(): void {
-    if (this.disabledToolbarNames.size === 0) {
-      return;
-    }
+    const needsNativePatch = this.disabledToolbarNames.size > 0;
+    const needsCustomInject = this.customToolbarItems.length > 0;
+
     for (const toolbar of document.querySelectorAll<HTMLElement>(".protyle-toolbar")) {
-      for (const item of toolbar.querySelectorAll<HTMLElement>("[data-type]")) {
-        const type = item.dataset.type;
-        if (!type || !this.disabledToolbarNames.has(type)) continue;
-        if (this.patchedToolbarItems.has(item)) continue;
-        item.style.display = "none";
-        this.patchedToolbarItems.add(item);
+      // 隐藏被禁用的原生按钮
+      if (needsNativePatch) {
+        for (const item of toolbar.querySelectorAll<HTMLElement>("[data-type]")) {
+          const type = item.dataset.type;
+          if (!type || !this.disabledToolbarNames.has(type)) continue;
+          if (this.patchedToolbarItems.has(item)) continue;
+          item.style.display = "none";
+          this.patchedToolbarItems.add(item);
+        }
+      }
+
+      // 注入自定义按钮（如果尚未存在）
+      // 同时检查 data-power-buttons-item-id（DOM 注入）和 data-type（updateProtyleToolbar hook 注入）
+      // 因为 IMenuItem.name 在 SiYuan 中渲染为 data-type 属性
+      if (needsCustomInject) {
+        for (const config of this.customToolbarItems) {
+          const selector = `[data-power-buttons-item-id="${config.id}"], [data-type="power-buttons:${config.id}"]`;
+          if (toolbar.querySelector(selector)) continue;
+          const element = this.createCustomToolbarButton(config);
+          this.injectedToolbarItems.add(element);
+          toolbar.appendChild(element);
+        }
       }
     }
   }
 
-  /** 恢复所有被 patch 过的工具栏按钮的显示状态 */
+  /**
+   * 恢复所有被 patch 过的工具栏按钮的显示状态，
+   * 并移除所有自定义按钮（包括 DOM 注入和 updateProtyleToolbar hook 注入的）。
+   */
   private restoreToolbarPatch(): void {
     for (const item of this.patchedToolbarItems) {
       item.style.display = "";
     }
     this.patchedToolbarItems.clear();
+
+    // 移除所有自定义按钮——同时处理 DOM 注入和 hook 注入两种来源
+    // hook 注入的按钮通过 SiYuan 渲染为 data-type="power-buttons:xxx"
+    // DOM 注入的按钮同时拥有 data-power-buttons-owned 和 data-type
+    for (const toolbar of document.querySelectorAll<HTMLElement>(".protyle-toolbar")) {
+      const customButtons = toolbar.querySelectorAll<HTMLElement>(
+        'button[data-type^="power-buttons:"]',
+      );
+      for (const btn of customButtons) {
+        btn.remove();
+      }
+    }
+    this.injectedToolbarItems.clear();
+  }
+
+  private createCustomToolbarButton(config: PowerButtonItem): HTMLElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "protyle-toolbar__item b3-tooltips b3-tooltips__n";
+    button.setAttribute("aria-label", config.tooltip || config.title);
+    button.dataset.powerButtonsOwned = "true";
+    button.dataset.powerButtonsItemId = config.id;
+    // 同时设置 data-type，与 updateProtyleToolbar hook 注入的按钮保持一致
+    button.dataset.type = `power-buttons:${config.id}`;
+    button.innerHTML = getIconMarkup(config);
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      void this.executor.execute(config);
+    });
+    return button;
   }
 
   destroy(): void {
@@ -185,6 +243,7 @@ export class SurfaceManager {
     this.toolbarPatchObserver = null;
     this.restoreToolbarPatch();
     this.disabledToolbarNames.clear();
+    this.customToolbarItems = [];
 
     for (const element of this.topbarElements) {
       element.remove();
