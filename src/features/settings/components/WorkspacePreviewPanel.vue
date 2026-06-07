@@ -3,7 +3,7 @@
     <div class="surface-summary__header">
       <div>
         <h3>位置预览</h3>
-        <p>自定义按钮可拖动至底栏或顶栏；原生按钮可拖到禁用栏隐藏</p>
+        <p>自定义按钮可拖动至底栏或顶栏；原生按钮点击可切换禁用</p>
       </div>
       <div class="surface-summary__controls">
         <label class="surface-summary__toggle">

@@ -121,7 +121,7 @@ describe('settings controller', () => {
     expect(controller.selectedId.value).toBe(persistedConfig?.items[0]?.id);
   });
 
-  it('moves a native preview button into the disabled tray and persists the suppression rule', async () => {
+  it('clicking a native preview button toggles suppression and persists the rule', async () => {
     const initialConfig = createDefaultConfig();
     initialConfig.disabledNativeButtons = [];
     const onChange = vi.fn().mockResolvedValue(undefined);
@@ -147,11 +147,10 @@ describe('settings controller', () => {
 
     const nativeItem = controller.previewLayout.value.canvas[0];
     expect(nativeItem?.editable).toBe(false);
+    expect(nativeItem?.suppressed).toBe(false);
 
-    const dragTarget = document.createElement('button');
-    document.body.appendChild(dragTarget);
-    controller.onPreviewDragStart(createDragStartEvent(dragTarget), nativeItem);
-    await controller.onDisabledNativeDrop();
+    // 点击禁用
+    await controller.handlePreviewChipClick(nativeItem);
 
     const persistedConfig = onChange.mock.calls.at(-1)?.[0];
     expect(persistedConfig?.disabledNativeButtons).toEqual([
@@ -163,6 +162,18 @@ describe('settings controller', () => {
         iconMarkup: '<svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>',
       },
     ]);
+
+    // 禁用后仍显示在预览中，但标记为 suppressed
+    const suppressedItem = controller.previewLayout.value.canvas.find(
+      (item: { id: string }) => item.id === 'native-canvas-pin-preview',
+    );
+    expect(suppressedItem?.suppressed).toBe(true);
+
+    // 再次点击恢复
+    await controller.handlePreviewChipClick(suppressedItem);
+
+    const restoredConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(restoredConfig?.disabledNativeButtons).toEqual([]);
   });
 
   it('moves an editable preview button to a different surface and persists the new location', async () => {

@@ -174,22 +174,6 @@ export function useSettingsController(props: SettingsAppProps) {
     }));
   });
 
-  const disabledNativePreviewItems = computed<PreviewButtonItem[]>(() => {
-    return config.disabledNativeButtons.map((item, index) => ({
-      id: item.id,
-      title: item.title,
-      visible: true,
-      surface: item.surface,
-      order: index,
-      editable: false,
-      source: "disabled-native",
-      iconMarkup: item.iconMarkup,
-      nativeSelectors: item.selectors,
-      draggable: true,
-      suppressed: true,
-    }));
-  });
-
   /** 浮动工具栏原生按钮列表（含禁用状态和图标） */
   const selectionToolbarNativeButtons = computed(() => {
     const disabledNames = new Set(config.disabledSelectionToolbarItems.map(item => item.name));
@@ -295,18 +279,35 @@ export function useSettingsController(props: SettingsAppProps) {
   }
 
   const activeRuntimePreviewItems = computed<PreviewButtonItem[]>(() => {
-    return runtimePreviewItems.value
-      .map(item => ({
-        ...item,
-        draggable: item.draggable ?? Boolean(item.nativeSelectors?.length),
-      }))
-      .filter(item => {
-        if (!item.nativeSelectors?.length) {
-          return true;
-        }
+    const runtime = runtimePreviewItems.value.map(item => ({
+      ...item,
+      draggable: item.draggable ?? Boolean(item.nativeSelectors?.length),
+      suppressed: item.nativeSelectors?.length
+        ? config.disabledNativeButtons.some(suppressed => isSameNativeButton(item, suppressed))
+        : false,
+    }));
 
-        return !config.disabledNativeButtons.some(suppressed => isSameNativeButton(item, suppressed));
-      });
+    // 补回被 native-element-suppressor 从 DOM 中隐藏、导致快照丢失的禁用项
+    const runtimeIds = new Set(runtime.map(item => item.id));
+    for (const rule of config.disabledNativeButtons) {
+      if (!runtimeIds.has(rule.id) && !runtime.some(item => isSameNativeButton(item, rule))) {
+        runtime.push({
+          id: rule.id,
+          title: rule.title,
+          visible: true,
+          surface: rule.surface,
+          order: 9999,
+          editable: false,
+          source: "native",
+          iconMarkup: rule.iconMarkup,
+          nativeSelectors: rule.selectors,
+          draggable: true,
+          suppressed: true,
+        });
+      }
+    }
+
+    return runtime;
   });
 
   const previewLayout = computed(() => {
@@ -773,11 +774,9 @@ export function useSettingsController(props: SettingsAppProps) {
   }
   const {
     handlePreviewChipClick,
-    onDisabledNativeDrop,
     onPreviewDragStart,
     onPreviewItemDrop,
     onPreviewSurfaceDrop,
-    restoreDisabledNativeItem,
   } = usePreviewInteractions({
     config,
     selectedId,
@@ -899,12 +898,9 @@ export function useSettingsController(props: SettingsAppProps) {
     onPreviewDragStart,
     onPreviewItemDrop,
     onPreviewSurfaceDrop,
-    onDisabledNativeDrop,
     openImportFilePicker: triggerImportFilePicker,
     persist,
     pluginCommands,
-    restoreDisabledNativeItem,
-    disabledNativePreviewItems,
     selectionToolbarNativeButtons,
     selectionToolbarCustomItems,
     selectionToolbarPreviewItems,

@@ -302,7 +302,8 @@
   background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
 }
 
-.workspace-preview__native-toggle.is-disabled {
+.workspace-preview__native-toggle.is-disabled,
+.workspace-chip.is-disabled {
   opacity: 0.2;
 }
 
@@ -326,73 +327,8 @@
   align-content: flex-start;
 }
 
-.workspace-preview__disabled {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 68px;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px dashed color-mix(in srgb, var(--b3-theme-error) 40%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--b3-theme-error) 8%, transparent), transparent 55%),
-    color-mix(in srgb, var(--b3-theme-background) 72%, transparent);
-}
 
-.workspace-preview__disabled-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
 
-.workspace-preview__disabled-header small {
-  font-size: 12px;
-  line-height: 1.45;
-  opacity: 0.72;
-}
-
-.workspace-preview__disabled-items {
-  min-height: 34px;
-  align-content: flex-start;
-}
-
-.workspace-preview__disabled-items > div {
-  position: relative;
-  display: inline-flex;
-}
-
-.workspace-preview__disabled-chip {
-  padding-right: 24px;
-}
-
-.workspace-preview__disabled-items .workspace-chip {
-  color: var(--b3-theme-on-background);
-  background: color-mix(in srgb, var(--b3-theme-surface) 86%, transparent);
-}
-
-.workspace-chip__restore {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--b3-theme-error) 45%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--b3-theme-surface) 96%, transparent);
-  color: var(--b3-theme-error);
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-}
-
-.workspace-chip__restore:hover {
-  background: color-mix(in srgb, var(--b3-theme-error) 12%, transparent);
-}
 
 .workspace-preview__topbar,
 .workspace-preview__statusbar {
@@ -530,8 +466,8 @@
 }
 
 .workspace-chip.is-suppressed {
-  border-color: color-mix(in srgb, var(--b3-theme-error) 34%, transparent);
-  background: color-mix(in srgb, var(--b3-theme-error) 8%, transparent);
+  opacity: 0.2;
+  border-style: dashed;
 }
 
 .workspace-chip__icon {

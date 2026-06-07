@@ -324,44 +324,6 @@
               </div>
             </div>
 
-            <div
-              class="workspace-preview__disabled"
-              @dragover.prevent
-              @drop="onDisabledNativeDrop"
-            >
-              <div class="workspace-preview__disabled-header">
-                <span class="workspace-preview__tag"><b>禁用栏</b></span>
-              </div>
-              <div class="workspace-preview__stack workspace-preview__stack--row workspace-preview__disabled-items">
-                <div
-                  v-for="item in disabledNativePreviewItems"
-                  :key="`disabled-${item.id}`"
-                >
-                  <button
-                    type="button"
-                    class="workspace-chip workspace-preview__disabled-chip"
-                    :class="previewChipClass(item)"
-                    :draggable="item.draggable ?? item.editable"
-                    :title="previewChipTitle(item)"
-                    :aria-label="item.title"
-                    @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart($event, item)"
-                  >
-                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                  </button>
-                  <button
-                    type="button"
-                    class="workspace-chip__restore"
-                    title="恢复显示"
-                    aria-label="恢复显示"
-                    @click.stop="restoreDisabledNativeItem(item)"
-                  >
-                    ×
-                  </button>
-                </div>
-                <span v-if="!disabledNativePreviewItems.length" class="surface-summary__empty"><small>拖入原生按钮以隐藏入口</small></span>
-              </div>
-            </div>
         </WorkspacePreviewPanel>
 
         <ConfigTransferPanel
@@ -777,7 +739,6 @@ const {
   captureSelectedShortcut,
   commonEmojiOptions,
   config,
-  disabledNativePreviewItems,
   duplicateItem,
   exportConfigFile,
   pluginCommandProviders,
@@ -795,7 +756,6 @@ const {
   onListDrop,
   onSelectionToolbarPreviewDragStart,
   onSelectionToolbarPreviewDrop,
-  onDisabledNativeDrop,
   onPreviewDragStart,
   onPreviewItemDrop,
   onPreviewSurfaceDrop,
@@ -813,7 +773,6 @@ const {
   renderSvgPreviewState,
   resetConfig,
   refreshExternalProviders,
-  restoreDisabledNativeItem,
   selectionToolbarPreviewItems,
   toggleSelectionToolbarNativeButton,
   setImportFileInput,

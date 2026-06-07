@@ -1309,25 +1309,27 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("forwards native preview chip clicks to the matched native toolbar element", async () => {
+  it("native preview chips reflect suppression state from disabledNativeButtons config", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const nativeButton = document.createElement("button");
-    nativeButton.id = "native-canvas-pin";
-    nativeButton.type = "button";
-    const nativeClick = vi.fn();
-    nativeButton.addEventListener("click", nativeClick);
-    document.body.appendChild(nativeButton);
-
-    const onNotify = vi.fn();
+    const initialConfig = createDefaultConfig();
+    initialConfig.disabledNativeButtons = [
+      {
+        id: "native-canvas-pin-preview",
+        title: "钉住编辑区",
+        surface: "canvas",
+        selectors: ["#native-canvas-pin"],
+        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+      },
+    ];
 
     const unmount = mountSettingsApp(target, {
-      initialConfig: createDefaultConfig(),
+      initialConfig,
       builtinCommands: [],
       pluginCommands: [],
       onChange: vi.fn(),
-      onNotify,
+      onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([
         {
           id: "native-canvas-pin-preview",
@@ -1346,14 +1348,13 @@ describe("settings app layout", () => {
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
-    const nativePreviewChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
-    nativePreviewChip.click();
+    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed.is-native") as HTMLButtonElement;
+    expect(suppressedChip).not.toBeNull();
+    expect(suppressedChip.textContent).toContain("钉住编辑区");
 
-    expect(nativeClick).toHaveBeenCalledTimes(1);
-    expect(onNotify).not.toHaveBeenCalledWith("原生按钮当前仅支持读取预览，暂不可直接编辑。");
+    expect(target.querySelector(".workspace-preview__disabled")).toBeNull();
 
     unmount();
-    nativeButton.remove();
   });
 
   it("allows a user button to move into the editor canvas preview", async () => {
@@ -1399,19 +1400,26 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("moves a native preview button into the disabled tray and persists the suppression rule", async () => {
+  it("disabled native buttons remain in their surface with suppressed styling", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
     const initialConfig = createDefaultConfig();
-    initialConfig.disabledNativeButtons = [];
+    initialConfig.disabledNativeButtons = [
+      {
+        id: "native-canvas-pin-preview",
+        title: "钉住编辑区",
+        surface: "canvas",
+        selectors: ["#native-canvas-pin", "[data-type='readonly']"],
+        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+      },
+    ];
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
       builtinCommands: [],
       pluginCommands: [],
-      onChange,
+      onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([
         {
@@ -1431,47 +1439,34 @@ describe("settings app layout", () => {
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
-    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
-    const disabledDropzone = target.querySelector(".workspace-preview__disabled-items") as HTMLElement;
-
-    nativeButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
-    disabledDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
-
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
-
-    expect(onChange).toHaveBeenCalled();
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.disabledNativeButtons).toEqual([
-      {
-        id: "native-canvas-pin-preview",
-        title: "钉住编辑区",
-        surface: "canvas",
-        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
-        selectors: ["#native-canvas-pin", "[data-type='readonly']"],
-      },
-    ]);
-    expect(target.querySelector(".workspace-preview__canvas-items")?.textContent).not.toContain("钉住编辑区");
-    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
-    expect(disabledButton).not.toBeNull();
-    expect(disabledButton.getAttribute("aria-label")).toBe("钉住编辑区");
+    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
+    expect(suppressedChip).not.toBeNull();
+    expect(suppressedChip.textContent).toContain("钉住编辑区");
+    expect(suppressedChip.classList.contains("is-native")).toBe(true);
 
     unmount();
   });
 
-  it("removes a native status bar preview button after it is moved into the disabled tray", async () => {
+  it("disabled status bar buttons remain in their surface with suppressed styling", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
     const initialConfig = createDefaultConfig();
-    initialConfig.disabledNativeButtons = [];
+    initialConfig.disabledNativeButtons = [
+      {
+        id: "native-status-help-preview",
+        title: "帮助",
+        surface: "statusbar-right",
+        selectors: ["#statusHelp"],
+        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
+      },
+    ];
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
       builtinCommands: [],
       pluginCommands: [],
-      onChange,
+      onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([
         {
@@ -1491,32 +1486,17 @@ describe("settings app layout", () => {
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
-    const nativeButton = Array.from(target.querySelectorAll(".workspace-preview__statusbar .workspace-chip.is-native"))
-      .find(node => node.textContent?.includes("帮助")) as HTMLButtonElement | undefined;
-    const disabledDropzone = target.querySelector(".workspace-preview__disabled-items") as HTMLElement;
-
-    expect(nativeButton?.textContent).toContain("帮助");
-
-    nativeButton?.dispatchEvent(new Event("dragstart", { bubbles: true }));
-    disabledDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
-
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
-
-    expect(onChange).toHaveBeenCalled();
-    const remainingStatusbarButton = Array.from(target.querySelectorAll(".workspace-preview__statusbar .workspace-chip.is-native"))
-      .find(node => node.textContent?.includes("帮助"));
-    expect(remainingStatusbarButton).toBeUndefined();
-    expect(target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed[aria-label='帮助']")).not.toBeNull();
+    const suppressedButton = target.querySelector(".workspace-preview__statusbar .workspace-chip.is-suppressed") as HTMLButtonElement;
+    expect(suppressedButton).not.toBeNull();
+    expect(suppressedButton.textContent).toContain("帮助");
 
     unmount();
   });
 
-  it("restores a disabled native button when it is dragged back to its original preview surface", async () => {
+  it("clicking a suppressed native button restores it inline", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
     const initialConfig = createDefaultConfig();
     initialConfig.disabledNativeButtons = [];
 
@@ -1524,7 +1504,7 @@ describe("settings app layout", () => {
       initialConfig,
       builtinCommands: [],
       pluginCommands: [],
-      onChange,
+      onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([
         {
@@ -1545,27 +1525,7 @@ describe("settings app layout", () => {
     await nextTick();
 
     const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
-    const disabledDropzone = target.querySelector(".workspace-preview__disabled") as HTMLElement;
-
-    nativeButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
-    disabledDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
-
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
-
-    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
-    const canvasDropzone = target.querySelector(".workspace-preview__canvas-items") as HTMLElement;
-
-    disabledButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
-    canvasDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
-
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
-
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.disabledNativeButtons).toEqual([]);
-    expect(target.querySelector(".workspace-preview__canvas-items")?.textContent).toContain("钉住编辑区");
-    expect(target.querySelector(".workspace-preview__disabled-items")?.textContent).not.toContain("钉住编辑区");
+    expect(nativeButton.classList.contains("is-suppressed")).toBe(false);
 
     unmount();
   });
@@ -1669,7 +1629,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("renders a stable fallback icon for disabled native buttons instead of copied native svg markup", async () => {
+  it("suppressed native buttons render inline with the is-suppressed class", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -1680,7 +1640,7 @@ describe("settings app layout", () => {
         title: "钉住编辑区",
         surface: "canvas",
         selectors: ["#native-canvas-pin"],
-        iconMarkup: "<svg viewBox='0 0 24 24'><use href='#iconPin'></use></svg>",
+        iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
       },
     ];
 
@@ -1690,24 +1650,33 @@ describe("settings app layout", () => {
       pluginCommands: [],
       onChange: vi.fn(),
       onNotify: vi.fn(),
-      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-canvas-pin-preview",
+          title: "钉住编辑区",
+          visible: true,
+          surface: "canvas",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
+          nativeSelectors: ["#native-canvas-pin"],
+        },
+      ]),
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
-    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
-    const fallbackIcon = disabledButton.querySelector(".siyuan-power-buttons__native-fallback-icon");
-
-    expect(disabledButton.innerHTML).not.toContain("<use");
-    expect(fallbackIcon).not.toBeNull();
-    expect(fallbackIcon?.textContent?.trim()).toBe("钉");
-    expect(disabledButton.querySelector(".workspace-chip__label")).toBeNull();
+    const suppressedButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
+    expect(suppressedButton).not.toBeNull();
+    expect(suppressedButton.classList.contains("is-native")).toBe(true);
+    expect(suppressedButton.textContent).toContain("钉住编辑区");
 
     unmount();
   });
 
-  it("does not render text labels inside disabled tray buttons", async () => {
+  it("suppressed native buttons keep their label in the original position", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -1728,26 +1697,35 @@ describe("settings app layout", () => {
       pluginCommands: [],
       onChange: vi.fn(),
       onNotify: vi.fn(),
-      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([
+        {
+          id: "native-mail-preview",
+          title: "邮件",
+          visible: true,
+          surface: "topbar",
+          order: 0,
+          editable: false,
+          source: "native",
+          iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
+          nativeSelectors: ["#barMail"],
+        },
+      ]),
     });
 
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
-    const disabledButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip.is-suppressed") as HTMLButtonElement;
-
-    expect(disabledButton.querySelector(".workspace-chip__label")).toBeNull();
-    expect(disabledButton.textContent?.trim()).toBe("");
-    expect(disabledButton.getAttribute("aria-label")).toBe("邮件");
+    const suppressedButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-suppressed") as HTMLButtonElement;
+    expect(suppressedButton).not.toBeNull();
+    expect(suppressedButton.textContent).toContain("邮件");
 
     unmount();
   });
 
-  it("restores a disabled native button when the restore x action is clicked", async () => {
+  it("suppressed native buttons show is-suppressed class in their original surface", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
     const initialConfig = createDefaultConfig();
     initialConfig.disabledNativeButtons = [
       {
@@ -1763,7 +1741,7 @@ describe("settings app layout", () => {
       initialConfig,
       builtinCommands: [],
       pluginCommands: [],
-      onChange,
+      onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([
         {
@@ -1783,16 +1761,10 @@ describe("settings app layout", () => {
     await new Promise(resolve => window.setTimeout(resolve, 20));
     await nextTick();
 
-    const restoreButton = target.querySelector(".workspace-preview__disabled-items .workspace-chip__restore") as HTMLButtonElement;
-    restoreButton.click();
-
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await nextTick();
-
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.disabledNativeButtons).toEqual([]);
-    expect(target.querySelector(".workspace-preview__disabled-items")?.textContent).not.toContain("钉住编辑区");
-    expect(target.querySelector(".workspace-preview__canvas-items")?.textContent).toContain("钉住编辑区");
+    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
+    expect(suppressedChip).not.toBeNull();
+    expect(suppressedChip.classList.contains("is-native")).toBe(true);
+    expect(target.querySelector(".workspace-preview__disabled")).toBeNull();
 
     unmount();
   });

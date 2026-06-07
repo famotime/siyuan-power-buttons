@@ -99,10 +99,10 @@ export function buildPreviewChipClass(item: PreviewButtonItem, selectedId: strin
 
 export function getPreviewChipTitle(item: PreviewButtonItem): string {
   if (item.suppressed) {
-    return `${item.title} — 已禁用，可拖回`;
+    return `${item.title} — 点击恢复`;
   }
   if (!item.editable) {
-    return `${item.title} — 可拖到禁用栏`;
+    return `${item.title} — 点击禁用`;
   }
   return `${item.title} — ${item.visible ? "显示中" : "隐藏中"}`;
 }

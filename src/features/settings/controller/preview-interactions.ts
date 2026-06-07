@@ -1,5 +1,4 @@
 import type { Ref } from 'vue';
-import { triggerElementBySmartSelectors } from '@/core/commands';
 import { movePreviewItem } from '@/shared/preview-layout';
 import { CONFIGURABLE_SURFACES } from '@/shared/types';
 import type {
@@ -210,16 +209,36 @@ export function usePreviewInteractions(options: {
     await options.persist();
   }
 
+  async function toggleNativeButtonDisabled(item: PreviewButtonItem): Promise<void> {
+    if (item.suppressed) {
+      // 恢复：从禁用列表中移除
+      options.config.disabledNativeButtons = options.config.disabledNativeButtons.filter(
+        entry => !isSameNativeButton(item, entry),
+      );
+    } else if (item.nativeSelectors?.length) {
+      // 禁用：添加到禁用列表
+      const selectors = normalizeSelectors(item.nativeSelectors);
+      const nextRule: DisabledNativeButton = {
+        id: item.id,
+        title: item.title,
+        surface: item.surface,
+        selectors,
+        iconMarkup: item.iconMarkup,
+      };
+      options.config.disabledNativeButtons = [
+        ...options.config.disabledNativeButtons.filter(entry => !isSameNativeButton(item, entry)),
+        nextRule,
+      ];
+    } else {
+      return;
+    }
+    await options.persist();
+  }
+
   function handlePreviewChipClick(item: PreviewButtonItem): void {
     if (!item.editable || !item.itemId) {
-      if (item.suppressed) {
-        options.notify('该原生按钮已禁用；拖回原区域即可恢复显示。');
-        return;
-      }
-      if (item.nativeSelectors?.length && triggerElementBySmartSelectors(item.nativeSelectors, document)) {
-        return;
-      }
-      options.notify('原生按钮当前仅支持读取预览，暂不可直接编辑。');
+      // 原生按钮：点击切换禁用/恢复，与浮动工具栏逻辑一致
+      toggleNativeButtonDisabled(item);
       return;
     }
     options.selectedId.value = item.itemId;
