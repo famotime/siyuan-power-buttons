@@ -22,6 +22,7 @@ export class CommandExecutor {
   constructor(private readonly options: {
     plugin: PluginLike;
     notify?: Notify;
+    t?: (key: string, replacements?: Record<string, string>) => string;
     pluginCommands: Map<string, CommandHandler>;
     externalCommands?: ExternalCommandRegistryLike;
     openUrl: (url: string) => void | Promise<void>;
@@ -30,6 +31,14 @@ export class CommandExecutor {
     runExperimentalClickSequence?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalClickSequence">) => boolean | Promise<boolean>;
     sourcePluginVersion?: string;
   }) {}
+
+  private notify(message: string, type?: string): void {
+    this.options.notify?.(message, type);
+  }
+
+  private t(key: string, replacements?: Record<string, string>): string {
+    return this.options.t?.(key, replacements) ?? key;
+  }
 
   async execute(
     item: Pick<PowerButtonItem, "id" | "surface" | "actionType" | "actionId" | "experimentalShortcut" | "experimentalClickSequence">,
@@ -46,17 +55,17 @@ export class CommandExecutor {
           this.options.plugin.globalCommand(item.actionId);
           return;
         }
-        await this.options.notify?.(`内置命令当前无法执行：${item.actionId}`, "error");
+        await this.notify(this.t("builtinCommandFailed", { commandId: item.actionId }), "error");
         return;
       case "plugin-command": {
         const parsed = parseExternalCommandActionId(item.actionId);
         if (!parsed) {
-          await this.options.notify?.(`插件命令配置无效：${item.actionId}`, "error");
+          await this.notify(this.t("pluginCommandInvalid", { actionId: item.actionId }), "error");
           return;
         }
 
         if (parsed.commandId === "__unset__") {
-          await this.options.notify?.(`插件命令配置无效：${item.actionId}`, "error");
+          await this.notify(this.t("pluginCommandInvalid", { actionId: item.actionId }), "error");
           return;
         }
 
@@ -71,14 +80,14 @@ export class CommandExecutor {
             await this.options.externalCommands?.refresh?.();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            await this.options.notify?.(`读取插件命令失败：${message}`, "error");
+            await this.notify(this.t("pluginCommandLoadFailed", { message }), "error");
             return;
           }
           provider = this.options.externalCommands?.getProvider(parsed.providerId) || null;
         }
 
         if (!provider) {
-          await this.options.notify?.(`未检测到插件：${parsed.providerId}`, "error");
+          await this.notify(this.t("pluginNotFound", { providerId: parsed.providerId }), "error");
           return;
         }
 
@@ -92,16 +101,16 @@ export class CommandExecutor {
           });
 
           if (!result.ok && !result.alreadyNotified) {
-            await this.options.notify?.(result.message || `插件命令执行失败：${parsed.commandId}`, "error");
+            await this.notify(result.message || this.t("pluginCommandFailed", { commandId: parsed.commandId }), "error");
             return;
           }
 
           if (result.ok && result.message && !result.alreadyNotified) {
-            await this.options.notify?.(result.message, "info");
+            await this.notify(result.message, "info");
           }
           return;
         } catch {
-          await this.options.notify?.(`插件命令执行失败：${parsed.commandId}`, "error");
+          await this.notify(this.t("pluginCommandFailed", { commandId: parsed.commandId }), "error");
           return;
         }
       }
@@ -112,13 +121,13 @@ export class CommandExecutor {
         if (await this.options.runExperimentalShortcut?.(item)) {
           return;
         }
-        await this.options.notify?.(`实验快捷键当前无法执行：${item.actionId}`, "error");
+        await this.notify(this.t("experimentalShortcutFailed", { actionId: item.actionId }), "error");
         return;
       case "experimental-click-sequence":
         if (await this.options.runExperimentalClickSequence?.(item)) {
           return;
         }
-        await this.options.notify?.(`实验点击序列当前无法执行：${item.actionId}`, "error");
+        await this.notify(this.t("experimentalClickSequenceFailed", { actionId: item.actionId }), "error");
         return;
       default:
         return;

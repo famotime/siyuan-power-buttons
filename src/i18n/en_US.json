@@ -1,3 +1,13 @@
 {
-  "addTopBarIcon": "Siyuan Power Buttons"
+  "addTopBarIcon": "Power Buttons",
+  "pluginCommandLoadFailed": "Failed to load plugin commands: {message}",
+  "pluginCommandFailed": "Plugin command failed: {commandId}",
+  "builtinCommandFailed": "Built-in command not available: {commandId}",
+  "pluginCommandInvalid": "Plugin command invalid: {actionId}",
+  "pluginNotFound": "Plugin not found: {providerId}",
+  "experimentalShortcutFailed": "Experimental shortcut not available: {actionId}",
+  "experimentalClickSequenceFailed": "Experimental click sequence not available: {actionId}",
+  "experimentalShortcutUnavailable": "Experimental shortcut adapter is not available.",
+  "experimentalClickSequenceUnavailable": "Experimental click sequence adapter is not available.",
+  "uninstallDataRemoveFailed": "uninstall [{name}] remove data [{storageName}] fail: {message}"
 }

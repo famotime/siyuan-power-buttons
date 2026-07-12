@@ -2,11 +2,14 @@
   "name": "siyuan-power-buttons",
   "author": "Quincy Zou",
   "url": "https://github.com/famotime/siyuan-power-buttons",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "minAppVersion": "3.5.7",
   "disabledInPublish": true,
   "backends": [
-    "all"
+    "windows",
+    "linux",
+    "darwin",
+    "docker"
   ],
   "frontends": [
     "desktop",

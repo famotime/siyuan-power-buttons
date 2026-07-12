@@ -69,6 +69,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private readonly experimentalActionRunners = createExperimentalActionRunners({
     getExperimentalSupport: feature => this.getExperimentalSupport(feature),
     showMessage,
+    t: (key: string, replacements?: Record<string, string>) => this.t(key, replacements),
     getKeymap: () => getSiyuanKeymap(),
     pluginGlobalCommand: (commandId: string) => {
       const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
@@ -86,6 +87,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     notify: (message, type = "info") => {
       showMessage(message, 5000, type);
     },
+    t: (key: string, replacements?: Record<string, string>) => this.t(key, replacements),
     pluginCommands: this.pluginCommandHandlers,
     externalCommands: this.externalCommands,
     openUrl: (url: string) => {
@@ -114,6 +116,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     clipboard: navigator.clipboard,
     getFrontend,
     showMessage,
+    t: (key: string, replacements?: Record<string, string>) => this.t(key, replacements),
     readCurrentLayout: () => readNativeSurfaceSnapshot(document),
   });
 
@@ -161,7 +164,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       if (result.status === "rejected") {
         const storageName = index === 0 ? CONFIG_STORAGE_NAME : SETTINGS_UI_STORAGE_NAME;
         const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
-        showMessage(`uninstall [${this.name}] remove data [${storageName}] fail: ${message}`, 5000, "error");
+        showMessage(this.t("uninstallDataRemoveFailed", { name: this.name, storageName, message }), 5000, "error");
       }
     });
   }

@@ -1,3 +1,14 @@
 {
-  "addTopBarIcon": "随心按"
+  "addTopBarIcon": "随心按",
+  "pluginCommandLoadFailed": "读取插件命令失败：{message}",
+  "pluginCommandFailed": "插件命令执行失败：{commandId}",
+  "builtinCommandFailed": "内置命令当前无法执行：{commandId}",
+  "pluginCommandInvalid": "插件命令配置无效：{actionId}",
+  "pluginNotFound": "未检测到插件：{providerId}",
+  "experimentalShortcutFailed": "实验快捷键当前无法执行：{actionId}",
+  "experimentalClickSequenceFailed": "实验点击序列当前无法执行：{actionId}",
+  "experimentalShortcutUnavailable": "实验快捷键适配当前不可用。",
+  "experimentalClickSequenceUnavailable": "实验点击序列当前不可用。",
+  "clickSequenceStepFailed": "点击序列第 {step} 步失败：{selector}",
+  "uninstallDataRemoveFailed": "卸载插件时删除数据失败：{name} / {storageName} / {message}"
 }

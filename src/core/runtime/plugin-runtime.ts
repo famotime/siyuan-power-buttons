@@ -83,6 +83,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     clipboard: ClipboardLike;
     getFrontend: () => SurfaceFrontend;
     showMessage: (message: string, duration?: number, type?: "info" | "error") => void;
+    t?: (key: string, replacements?: Record<string, string>) => string;
     readCurrentLayout: NonNullable<SettingsAppProps["onReadCurrentLayout"]>;
   }) {}
 
@@ -112,6 +113,10 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     this.options.settingsDialog.destroy();
   }
 
+  private t(key: string, replacements?: Record<string, string>): string {
+    return this.options.t?.(key, replacements) ?? key;
+  }
+
   private canRenderSurfaces(): boolean {
     const config = this.options.configStore.getConfig();
     const frontend = this.options.getFrontend();
@@ -137,7 +142,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.options.showMessage(`读取插件命令失败：${message}`, 5000, "error");
+      this.options.showMessage(this.t("pluginCommandLoadFailed", { message }), 5000, "error");
     }
 
     return this.externalCommandProviders;
@@ -180,17 +185,15 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       const serialized = this.options.exportConfigAsJson(this.options.configStore.snapshot());
       try {
         await this.options.clipboard.writeText(serialized);
-        this.options.showMessage("快捷按钮配置已复制。");
       } catch {
         await this.openSetting();
-        this.options.showMessage("复制失败，已自动打开设置界面。", 5000, "error");
+        this.options.showMessage(this.t("copyConfigFailed"), 5000, "error");
       }
     });
     this.options.pluginCommandHandlers.set("restore-defaults", async () => {
       const config = await this.options.configStore.reset();
       this.options.settingsDialog.refresh(this.createSettingsAppProps());
       this.surfaceManager?.render(config);
-      this.options.showMessage("已恢复默认按钮配置。");
     });
 
     for (const command of this.options.pluginCommands) {

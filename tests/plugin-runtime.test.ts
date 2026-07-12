@@ -249,6 +249,13 @@ describe("plugin runtime", () => {
     const pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
     const addCommand = vi.fn();
     const showMessage = vi.fn();
+    const t = (key: string, replacements?: Record<string, string>): string => {
+      const map: Record<string, string> = {
+        pluginCommandLoadFailed: `读取插件命令失败：${replacements?.message ?? ""}`,
+        copyConfigFailed: "复制失败，已自动打开设置界面。",
+      };
+      return map[key] ?? key;
+    };
     const runtime = new PowerButtonsRuntime({
       plugin: {
         addCommand,
@@ -270,6 +277,7 @@ describe("plugin runtime", () => {
       },
       getFrontend: () => options.frontend ?? "desktop",
       showMessage,
+      t,
       readCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
@@ -300,7 +308,7 @@ describe("plugin runtime", () => {
     await copyConfigCommand?.callback();
 
     expect(state.addCommand).toHaveBeenCalledTimes(PLUGIN_COMMANDS.length);
-    expect(state.showMessage).toHaveBeenCalledWith("快捷按钮配置已复制。");
+    expect(state.showMessage).not.toHaveBeenCalled();
     expect(state.settingsDialog.open).not.toHaveBeenCalled();
   });
 

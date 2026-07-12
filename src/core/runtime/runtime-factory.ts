@@ -32,6 +32,7 @@ export function collectInstalledPlugins(
 export function createExperimentalActionRunners(options: {
   getExperimentalSupport: (feature: ExperimentalFeatureKey) => { supported: boolean; reason?: string };
   showMessage: (message: string, duration?: number, type?: 'info' | 'error') => void;
+  t: (key: string, replacements?: Record<string, string>) => string;
   getKeymap: () => unknown;
   pluginGlobalCommand?: (command: string) => void;
   pluginCommandHandlers: Map<string, () => void | Promise<void>>;
@@ -62,7 +63,7 @@ export function createExperimentalActionRunners(options: {
     ): boolean | Promise<boolean> => {
       const support = options.getExperimentalSupport('shortcutAdapter');
       if (!support.supported) {
-        options.showMessage(support.reason || '实验快捷键适配当前不可用。', 5000, 'error');
+        options.showMessage(support.reason || options.t('experimentalShortcutUnavailable'), 5000, 'error');
         return true;
       }
 
@@ -84,7 +85,7 @@ export function createExperimentalActionRunners(options: {
     ): boolean | Promise<boolean> => {
       const support = options.getExperimentalSupport('clickSequenceAdapter');
       if (!support.supported) {
-        options.showMessage(support.reason || '实验点击序列当前不可用。', 5000, 'error');
+        options.showMessage(support.reason || options.t('experimentalClickSequenceUnavailable'), 5000, 'error');
         return true;
       }
 
@@ -93,7 +94,7 @@ export function createExperimentalActionRunners(options: {
         root: options.document,
         windowTarget: options.windowTarget,
         onStepError: ({ index, selector }) => {
-          options.showMessage(`点击序列第 ${index + 1} 步失败：${selector}`, 5000, 'error');
+          options.showMessage(options.t('clickSequenceStepFailed', { step: index + 1, selector }), 5000, 'error');
         },
       });
     },

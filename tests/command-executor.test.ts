@@ -5,6 +5,19 @@ import {
 } from "@/core/commands";
 import type { PowerButtonItem } from "@/shared/types";
 
+const t = (key: string, replacements?: Record<string, string>): string => {
+  const map: Record<string, string> = {
+    builtinCommandFailed: `内置命令当前无法执行：${replacements?.commandId ?? ""}`,
+    pluginCommandInvalid: `插件命令配置无效：${replacements?.actionId ?? ""}`,
+    pluginCommandLoadFailed: `读取插件命令失败：${replacements?.message ?? ""}`,
+    pluginNotFound: `未检测到插件：${replacements?.providerId ?? ""}`,
+    pluginCommandFailed: `插件命令执行失败：${replacements?.commandId ?? ""}`,
+    experimentalShortcutFailed: `实验快捷键当前无法执行：${replacements?.actionId ?? ""}`,
+    experimentalClickSequenceFailed: `实验点击序列当前无法执行：${replacements?.actionId ?? ""}`,
+  };
+  return map[key] ?? key;
+};
+
 describe("command executor", () => {
   const createItem = (overrides: Partial<PowerButtonItem>): PowerButtonItem => ({
     id: "item-1",
@@ -39,6 +52,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify: vi.fn(),
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand,
@@ -57,6 +71,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
@@ -74,6 +89,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify: vi.fn(),
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand,
@@ -93,6 +109,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
@@ -112,6 +129,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
@@ -130,6 +148,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: {} as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
@@ -146,6 +165,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
+      t,
       openUrl,
       pluginCommands: new Map([["open-help", pluginAction]]),
       runBuiltinCommand: vi.fn(),
@@ -169,6 +189,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
@@ -209,6 +230,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
@@ -233,6 +255,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
@@ -255,6 +278,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
@@ -282,6 +306,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
@@ -307,6 +332,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
@@ -340,6 +366,7 @@ describe("command executor", () => {
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
+      t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
