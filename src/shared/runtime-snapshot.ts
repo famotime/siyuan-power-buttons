@@ -130,7 +130,10 @@ function getElementLabel(element: HTMLElement, index: number): string {
     || element.textContent?.trim()
     || element.id
     || `原生按钮 ${index + 1}`;
-  return stripHtmlTags(raw);
+
+  const cleaned = stripHtmlTags(raw.replace(/<br\s*\/?>/gi, "\n"));
+  const firstLine = cleaned.split(/[\r\n]+/)[0]?.trim() || "";
+  return firstLine || `原生按钮 ${index + 1}`;
 }
 
 function getElementIconMarkup(element: HTMLElement): string | undefined {

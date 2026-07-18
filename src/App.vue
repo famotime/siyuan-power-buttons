@@ -6,7 +6,21 @@
         <p>快捷按钮随心按，常用功能一键达</p>
       </div>
       <div class="settings-header__actions">
-        <button class="b3-button b3-button--outline" @click="resetConfig">恢复默认</button>
+        <button
+          class="b3-button b3-button--outline b3-tooltips b3-tooltips__sw"
+          style="margin-right: 8px;"
+          aria-label="擦除思源主界面保存的 Dock 按钮拖拽缓存，恢复为插件设置的预设顺序（不修改插件配置数据）"
+          @click="resetSiyuanDockLayout"
+        >
+          重置思源 Dock 布局
+        </button>
+        <button
+          class="b3-button b3-button--outline b3-tooltips b3-tooltips__sw"
+          aria-label="将随心按插件的所有按钮、图标与开关重置为初始默认状态（会清空您新建的按钮）"
+          @click="resetConfig"
+        >
+          恢复默认
+        </button>
       </div>
     </header>
 
@@ -83,6 +97,10 @@
                   >
                     <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
                     <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
                   </button>
                   <span v-if="!previewLayout.leftDockTop.length" class="surface-summary__empty">空</span>
                 </div>
@@ -106,6 +124,10 @@
                   >
                     <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
                     <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
                   </button>
                   <span v-if="!previewLayout.leftDockBottom.length" class="surface-summary__empty">空</span>
                 </div>
@@ -159,6 +181,10 @@
                     >
                       <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
                       <span class="workspace-chip__label">{{ item.title }}</span>
+                      <span
+                        v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                        style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                      >🔒</span>
                     </button>
                   </div>
                   <div
@@ -181,6 +207,10 @@
                     >
                       <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
                       <span class="workspace-chip__label">{{ item.title }}</span>
+                      <span
+                        v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                        style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                      >🔒</span>
                     </button>
                   </div>
                 </div>
@@ -208,6 +238,10 @@
                   >
                     <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
                     <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
                   </button>
                   <span v-if="!previewLayout.rightDockTop.length" class="surface-summary__empty">空</span>
                 </div>
@@ -231,6 +265,10 @@
                   >
                     <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
                     <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
                   </button>
                   <span v-if="!previewLayout.rightDockBottom.length" class="surface-summary__empty">空</span>
                 </div>
@@ -721,6 +759,8 @@ import WorkspacePreviewPanel from "@/features/settings/components/WorkspacePrevi
 import type { SettingsAppProps } from "@/features/settings/types";
 import { useSettingsController } from "@/features/settings/use-settings-controller";
 import { moveItem } from "@/shared/utils";
+import { checkHasSiyuanDockLayout, isDockSurface } from "@/shared/surface-metadata";
+import { fetchSyncPost } from "siyuan";
 
 const props = withDefaults(defineProps<SettingsAppProps>(), {
   builtinCommands: () => BUILTIN_COMMANDS,
@@ -763,7 +803,7 @@ const {
   persist,
   pluginCommands,
   previewChipClass,
-  previewChipTitle,
+  previewChipTitle: originalPreviewChipTitle,
   previewIconMarkup,
   previewLayout,
   removeClickSequenceStep,
@@ -854,6 +894,70 @@ watch(selectedId, () => {
   clickSequenceStepDragIndex.value = null;
   clickSequenceStepDropIndex.value = null;
 });
+
+const layoutVersion = ref(0);
+
+function checkHasSiyuanDockLayoutWrapper(itemId: string): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  layoutVersion.value;
+  return checkHasSiyuanDockLayout(itemId);
+}
+
+const previewChipTitle = (item: any): string => {
+  let title = originalPreviewChipTitle(item);
+  if (item.editable && isDockSurface(item.surface) && checkHasSiyuanDockLayoutWrapper(item.id)) {
+    title += "\n(⚠️ 思源已缓存此按钮位置，此处排序可能不生效，可点击上方重置。)";
+  }
+  return title;
+};
+
+async function resetSiyuanDockLayout(): Promise<void> {
+  const uiLayout = (window as any).siyuan?.config?.uiLayout;
+  if (!uiLayout) {
+    props.onNotify("无法读取思源布局配置，重置失败。", "error");
+    return;
+  }
+
+  const cleanDockData = (data: any[]) => {
+    if (!Array.isArray(data)) return data;
+    return data.map((group) => {
+      if (!Array.isArray(group)) return group;
+      return group.filter((tab) => {
+        return !tab?.type?.startsWith("siyuan-power-buttons-");
+      });
+    }).filter((group) => group.length > 0);
+  };
+
+  const clonedLayout = JSON.parse(JSON.stringify(uiLayout));
+  if (clonedLayout.left) {
+    clonedLayout.left.data = cleanDockData(clonedLayout.left.data);
+  }
+  if (clonedLayout.right) {
+    clonedLayout.right.data = cleanDockData(clonedLayout.right.data);
+  }
+  if (clonedLayout.bottom) {
+    clonedLayout.bottom.data = cleanDockData(clonedLayout.bottom.data);
+  }
+
+  try {
+    const response = await fetchSyncPost("/api/system/setUILayout", {
+      layout: clonedLayout,
+    });
+    
+    if (response?.code === 0) {
+      if ((window as any).siyuan?.config) {
+        (window as any).siyuan.config.uiLayout = clonedLayout;
+      }
+      layoutVersion.value++;
+      props.onNotify("已成功重置本插件所有的 Dock 按钮布局记录！思源将在下次启动或重新挂载时恢复默认顺序。");
+      await props.onChange(config);
+    } else {
+      props.onNotify(response?.msg || "更新思源布局失败。", "error");
+    }
+  } catch (err) {
+    props.onNotify(err instanceof Error ? err.message : String(err), "error");
+  }
+}
 
 onMounted(() => {
   void initialize();

@@ -70,6 +70,21 @@ describe("runtime surface snapshot", () => {
     expect(snapshot.every(item => item.editable === false)).toBe(true);
   });
 
+  it("truncates multiline aria-labels to only the first line title", () => {
+    document.body.innerHTML = `
+      <div id="dockLeft">
+        <button class="dock__item" data-type="plugin" aria-label="脉络镜&#10;单击 展开/最小化&#10;右键/拖拽 调整位置"></button>
+      </div>
+    `;
+    const dockLeft = document.getElementById("dockLeft");
+    const [dockPlugin] = Array.from(document.querySelectorAll("#dockLeft .dock__item"));
+    mockRect(dockLeft!, { top: 0, bottom: 200, height: 200 });
+    mockRect(dockPlugin, { top: 10, bottom: 30, height: 20 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+    expect(snapshot[0].title).toBe("脉络镜");
+  });
+
   it("keeps topbar buttons in row-major order when the toolbar wraps", () => {
     document.body.innerHTML = `
       <div id="toolbar">

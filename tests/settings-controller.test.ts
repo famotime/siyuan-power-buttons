@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest';
+import { fetchSyncPost } from 'siyuan';
 import { formatExternalCommandActionId } from '@/core/commands';
 import { createButtonItem, createDefaultConfig } from '@/core/config/defaults';
 import { useSettingsController } from '@/features/settings/use-settings-controller';
@@ -205,6 +206,54 @@ describe('settings controller', () => {
 
     const persistedConfig = onChange.mock.calls.at(-1)?.[0];
     expect(persistedConfig?.items.find((item: { id: string }) => item.id === editableItem.itemId)?.surface).toBe('canvas');
+  });
+
+  it('moves a native dock tab to a target dock surface and calls setUILayout', async () => {
+    (window as any).siyuan = {
+      config: {
+        uiLayout: {
+          left: {
+            data: [
+              [{ type: 'file', title: '文件' }, { type: 'outline', title: '大纲' }],
+              [{ type: 'bookmark', title: '书签' }],
+            ],
+          },
+        },
+      },
+    };
+
+    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onNotify = vi.fn();
+    const controller = useSettingsController(createProps({
+      initialConfig,
+      onChange,
+      onNotify,
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    }));
+
+    await controller.initialize();
+
+    const nativeDockItem = {
+      id: 'native:dock-left-top:outline',
+      title: '大纲',
+      visible: true,
+      surface: 'dock-left-top' as const,
+      order: 1,
+      editable: false,
+      draggable: true,
+      source: 'native' as const,
+      nativeSelectors: ['[data-type="outline"]'],
+    };
+
+    (fetchSyncPost as any).mockResolvedValue({ code: 0 });
+    const dragTarget = document.createElement('button');
+    document.body.appendChild(dragTarget);
+    controller.onPreviewDragStart(createDragStartEvent(dragTarget), nativeDockItem);
+    await controller.onPreviewSurfaceDrop('dock-left-bottom', 0);
+
+    expect(fetchSyncPost).toHaveBeenCalledWith('/api/system/setUILayout', expect.anything());
+    expect((window as any).siyuan.config.uiLayout.left.data[1][0].type).toBe('outline');
   });
 
   it('inserts an externally dragged preview button at the targeted selection toolbar position', async () => {

@@ -129,6 +129,23 @@ describe("config store model", () => {
     ]);
   });
 
+  it("preserves dock surfaces for version 2 configs", () => {
+    const config = sanitizeConfig({
+      version: 2,
+      desktopOnly: true,
+      items: [
+        createButtonItem({
+          id: "dock-left",
+          title: "左侧 Dock",
+          surface: "dock-left-top",
+        }),
+      ],
+      experimental: null,
+    });
+
+    expect(config.items[0].surface).toBe("dock-left-top");
+  });
+
   it("preserves experimental shortcut items and adapter flags", () => {
     const config = sanitizeConfig({
       version: 2,

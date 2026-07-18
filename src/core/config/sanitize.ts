@@ -47,7 +47,13 @@ const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
   "dock-right-top": "statusbar-right",
 };
 
-function ensureSurface(value: unknown): SurfaceType {
+function ensureSurface(value: unknown, isLegacy: boolean): SurfaceType {
+  if (isLegacy) {
+    // 历史版本配置（version < 2），强制将 Dock surfaces 迁移至 statusbar-left / statusbar-right
+    if (typeof value === "string" && LEGACY_SURFACE_MIGRATIONS[value]) {
+      return LEGACY_SURFACE_MIGRATIONS[value];
+    }
+  }
   if (CONFIGURABLE_SURFACES.includes(value as typeof CONFIGURABLE_SURFACES[number])) {
     return value as SurfaceType;
   }
@@ -163,7 +169,7 @@ function sanitizeSelectionToolbarLayoutItem(value: unknown): SelectionToolbarLay
   return { type, id };
 }
 
-function sanitizeItem(value: unknown, index: number): PowerButtonItem {
+function sanitizeItem(value: unknown, index: number, isLegacy: boolean): PowerButtonItem {
   const fallback = createButtonItem({ order: index });
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
   const safeTitle = typeof raw.title === "string" && raw.title.trim()
@@ -191,7 +197,7 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
       typeof raw.iconType === "string" ? raw.iconType : "iconpark",
       typeof raw.iconValue === "string" && raw.iconValue.trim() ? raw.iconValue : DEFAULT_ICONPARK_ICON,
     ),
-    surface: ensureSurface(raw.surface),
+    surface: ensureSurface(raw.surface, isLegacy),
     order: Number.isFinite(raw.order) ? Number(raw.order) : index,
     actionType,
     actionId,
@@ -212,8 +218,9 @@ function sanitizeItem(value: unknown, index: number): PowerButtonItem {
 export function sanitizeConfig(input: unknown): PowerButtonsConfig {
   const defaults = createDefaultConfig();
   const raw = (input && typeof input === "object") ? input as Record<string, unknown> : {};
+  const isLegacy = typeof raw.version === "number" && raw.version < 2;
   const items = Array.isArray(raw.items)
-    ? normalizeItemOrder(sortItems(raw.items.map((item, index) => sanitizeItem(item, index))))
+    ? normalizeItemOrder(sortItems(raw.items.map((item, index) => sanitizeItem(item, index, isLegacy))))
     : defaults.items;
   const disabledNativeButtons = Array.isArray(raw.disabledNativeButtons)
     ? raw.disabledNativeButtons
