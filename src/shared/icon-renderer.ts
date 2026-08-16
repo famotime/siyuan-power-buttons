@@ -38,35 +38,51 @@ function createSpriteIconMarkup(iconName: string): string {
   return `<svg class="siyuan-power-buttons__icon" aria-hidden="true"><use xlink:href="#${escapeAttribute(iconName)}"></use></svg>`;
 }
 
-function hardenStrokeOnlySvgFill(svg: string): string {
-  // SiYuan applies a global `svg { fill: currentColor; }`, so stroke-only IconPark
-  // markup needs explicit `fill:none` on shapes to avoid turning into solid blocks.
-  return svg.replace(STROKED_SHAPE_TAGS, (match, tag: string, attrs: string, selfClosing: string) => {
-    const hasFill = /\bfill="/.test(attrs);
-    const fillIsNone = /\bfill="none"/.test(attrs);
-    const hasStyle = /\bstyle="/.test(attrs);
-    const styleDefinesFill = /\bstyle="[^"]*\bfill\s*:/.test(attrs);
+const SHAPE_TAGS = /<(path|circle|rect|ellipse|polygon|polyline|line)\b([^>]*?)(\/?)>/gi;
 
-    if (hasFill && !fillIsNone) {
+export function hardenStrokeOnlySvgFill(svg: string): string {
+  const trimmed = svg.trim();
+  if (!trimmed || !trimmed.startsWith("<svg")) {
+    return svg;
+  }
+
+  const isRootFillNone = /<svg\b[^>]*\bfill="none"[^>]*>/i.test(trimmed);
+
+  return trimmed.replace(SHAPE_TAGS, (match, tag: string, attrs: string, selfClosing: string) => {
+    const hasFill = /\bfill="/i.test(attrs);
+    const fillIsNone = /\bfill="none"/i.test(attrs);
+    const hasStyle = /\bstyle="/i.test(attrs);
+    const styleDefinesFill = /\bstyle="[^"]*\bfill\s*:/i.test(attrs);
+    const styleFillIsNone = /\bstyle="[^"]*\bfill\s*:\s*none/i.test(attrs);
+    const hasStroke = /\bstroke(?:-width)?="[^"]+"/i.test(attrs) || /\bstyle="[^"]*\bstroke/i.test(attrs);
+
+    const hasExplicitFill = (hasFill && !fillIsNone) || (styleDefinesFill && !styleFillIsNone);
+    if (hasExplicitFill) {
+      return match;
+    }
+
+    if (!fillIsNone && !hasStroke && !isRootFillNone) {
       return match;
     }
 
     let nextAttrs = attrs;
     if (!hasFill) {
-      nextAttrs += " fill=\"none\"";
+      nextAttrs += ' fill="none"';
     }
 
     if (hasStyle) {
       if (styleDefinesFill) {
-        return `<${tag}${nextAttrs}${selfClosing}>`;
+        if (styleFillIsNone) {
+          return `<${tag}${nextAttrs}${selfClosing}>`;
+        }
+        return match;
       }
-      nextAttrs = nextAttrs.replace(/\bstyle="([^"]*)"/, (_, style: string) => {
+      nextAttrs = nextAttrs.replace(/\bstyle="([^"]*)"/i, (_, style: string) => {
         const normalized = style.trim().endsWith(";") ? style.trim() : `${style.trim()};`;
         return `style="${normalized}fill:none"`;
       });
-    }
-    else {
-      nextAttrs += " style=\"fill:none\"";
+    } else {
+      nextAttrs += ' style="fill:none"';
     }
 
     return `<${tag}${nextAttrs}${selfClosing}>`;
@@ -101,7 +117,8 @@ export function renderIconMarkup(
   }
 
   if (item.iconType === "svg") {
-    return item.iconValue.trim() || renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
+    const raw = item.iconValue.trim();
+    return raw ? hardenStrokeOnlySvgFill(raw, root) : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
   }
 
   const normalizedIcon = normalizeIconValue(item.iconType, item.iconValue);

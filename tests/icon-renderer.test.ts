@@ -72,4 +72,23 @@ describe("builtin icon renderer", () => {
     expect(markup).toContain("fill=\"currentColor\"");
     expect(markup).toContain("style=\"fill:none\"");
   });
+
+  it("hardens custom svg icons with stroke-only shapes", () => {
+    const markup = renderIconMarkup({
+      iconType: "svg",
+      iconValue: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="2"/><path d="M10 16l6-6" stroke="currentColor"/></svg>`,
+    }, document);
+
+    expect(markup).toContain('style="fill:none"');
+    expect(markup).toContain('fill="none"');
+  });
+
+  it("hardens shapes inside root svg with fill=none", () => {
+    const markup = renderIconMarkup({
+      iconType: "svg",
+      iconValue: `<svg viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="4"/></svg>`,
+    }, document);
+
+    expect(markup).toContain('style="fill:none"');
+  });
 });

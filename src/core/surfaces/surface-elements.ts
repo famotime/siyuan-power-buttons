@@ -1,6 +1,6 @@
 import type { Dock, Plugin } from 'siyuan';
 import { DEFAULT_ICONPARK_ICON, DEFAULT_PLUGIN_COMMAND } from '@/shared/constants';
-import { renderIconMarkup } from '@/shared/icon-renderer';
+import { hardenStrokeOnlySvgFill, renderIconMarkup } from '@/shared/icon-renderer';
 import type { PowerButtonItem } from '@/shared/types';
 import { CommandExecutor } from '@/core/commands';
 import type { CanvasMountTarget } from '@/core/surfaces/canvas-mount-target';
@@ -24,7 +24,7 @@ function escapeAttribute(value: string): string {
 
 function createIconSvg(icon: string): string {
   if (icon.trim().startsWith('<svg')) {
-    return icon;
+    return hardenStrokeOnlySvgFill(icon, document);
   }
   return renderIconMarkup({
     iconType: 'iconpark',

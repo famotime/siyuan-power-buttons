@@ -1,5 +1,5 @@
 import { DEFAULT_ICONPARK_ICON, SURFACE_LABELS } from "@/shared/constants";
-import { renderIconMarkup } from "@/shared/icon-renderer";
+import { hardenStrokeOnlySvgFill, renderIconMarkup } from "@/shared/icon-renderer";
 import {
   createNativeFallbackIconMarkup,
   resolveNativeIconMarkup,
@@ -26,7 +26,8 @@ export function renderSettingsIconMarkup(
     return `<span class="emoji-icon">${item.iconValue || "⚡"}</span>`;
   }
   if (item.iconType === "svg") {
-    return item.iconValue || renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
+    const raw = item.iconValue?.trim();
+    return raw ? hardenStrokeOnlySvgFill(raw, ownerDocument) : renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
   }
   return renderIconMarkup(item, ownerDocument);
 }
@@ -74,7 +75,7 @@ export function resolveSvgPreviewState(
   }
 
   return {
-    markup: trimmed,
+    markup: hardenStrokeOnlySvgFill(trimmed, ownerDocument),
     invalid: false,
   };
 }
@@ -84,7 +85,8 @@ export function renderPreviewIconMarkup(item: PreviewButtonItem, ownerDocument: 
     return resolveNativeIconMarkup(item.iconMarkup, ownerDocument)
       || createNativeFallbackIconMarkup(item.title);
   }
-  return item.iconMarkup || renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
+  const markup = item.iconMarkup || renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
+  return resolveNativeIconMarkup(markup, ownerDocument) || markup;
 }
 
 export function buildPreviewChipClass(item: PreviewButtonItem, selectedId: string): Record<string, boolean> {

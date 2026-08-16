@@ -1,3 +1,5 @@
+import { hardenStrokeOnlySvgFill } from "@/shared/icon-renderer";
+
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 function getUseHref(element: Element): string {
@@ -14,7 +16,7 @@ function inlineSymbolUses(svg: SVGElement, ownerDocument: Document): string | un
   const uses = Array.from(clone.querySelectorAll("use"));
 
   if (!uses.length) {
-    return clone.outerHTML;
+    return hardenStrokeOnlySvgFill(clone.outerHTML);
   }
 
   for (const use of uses) {
@@ -29,6 +31,12 @@ function inlineSymbolUses(svg: SVGElement, ownerDocument: Document): string | un
     }
 
     const group = ownerDocument.createElementNS(SVG_NAMESPACE, "g");
+    for (const attribute of Array.from(symbol.attributes)) {
+      if (attribute.name === "id" || attribute.name === "viewBox") {
+        continue;
+      }
+      group.setAttribute(attribute.name, attribute.value);
+    }
     for (const attribute of Array.from(use.attributes)) {
       if (attribute.name === "href" || attribute.name === "xlink:href") {
         continue;
@@ -50,7 +58,7 @@ function inlineSymbolUses(svg: SVGElement, ownerDocument: Document): string | un
     use.replaceWith(group);
   }
 
-  return clone.outerHTML;
+  return hardenStrokeOnlySvgFill(clone.outerHTML);
 }
 
 export function getNativeToolbarIcon(name: string, label: string, ownerDocument: Document = document): string {

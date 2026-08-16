@@ -333,4 +333,32 @@ describe("runtime surface snapshot", () => {
     expect(readonlyItem?.iconMarkup).toContain("<path");
     expect(readonlyItem?.iconMarkup).not.toContain("<use");
   });
+
+  it("preserves symbol attributes and hardens stroke-only shapes with style=fill:none against host overrides", () => {
+    document.body.innerHTML = `
+      <svg aria-hidden="true" style="display:none">
+        <symbol id="iconBack" viewBox="0 0 32 32" fill="none" stroke="currentColor">
+          <circle cx="16" cy="16" r="14" stroke-width="2"></circle>
+          <path d="M18 10L12 16L18 22" stroke-width="2" stroke-linecap="round"></path>
+        </symbol>
+      </svg>
+      <div id="toolbar">
+        <button id="barBack" class="toolbar__item" aria-label="后退">
+          <svg><use xlink:href="#iconBack"></use></svg>
+        </button>
+      </div>
+    `;
+
+    const backButton = document.getElementById("barBack") as HTMLElement;
+    mockRect(backButton, { left: 10, top: 10, width: 24, height: 24, right: 34, bottom: 34 });
+
+    const snapshot = readNativeSurfaceSnapshot(document);
+    const backItem = snapshot.find(item => item.title === "后退");
+
+    expect(backItem?.iconMarkup).toBeDefined();
+    expect(backItem?.iconMarkup).toContain('style="fill:none"');
+    expect(backItem?.iconMarkup).toContain('stroke-width="2"');
+    expect(backItem?.iconMarkup).toContain("<circle");
+    expect(backItem?.iconMarkup).not.toContain("<use");
+  });
 });
