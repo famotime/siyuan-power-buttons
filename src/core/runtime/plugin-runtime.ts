@@ -84,6 +84,7 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     getFrontend: () => SurfaceFrontend;
     showMessage: (message: string, duration?: number, type?: "info" | "error") => void;
     t?: (key: string, replacements?: Record<string, string>) => string;
+    openInBrowser?: () => void | Promise<void>;
     readCurrentLayout: NonNullable<SettingsAppProps["onReadCurrentLayout"]>;
   }) {}
 
@@ -195,6 +196,12 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       this.options.settingsDialog.refresh(this.createSettingsAppProps());
       this.surfaceManager?.render(config);
     });
+    this.options.pluginCommandHandlers.set("open-in-browser", () => {
+      if (this.options.openInBrowser) {
+        return this.options.openInBrowser();
+      }
+      openCurrentWorkspaceInBrowser();
+    });
 
     for (const command of this.options.pluginCommands) {
       this.options.plugin.addCommand({
@@ -208,3 +215,14 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
     }
   }
 }
+
+/**
+ * 在系统外部默认浏览器中打开思源笔记当前工作空间的伺服网页端。
+ * 在桌面端 Electron 运行环境下，window.open 会被全局拦截并通过 shell.openExternal 调用系统默认浏览器。
+ */
+export function openCurrentWorkspaceInBrowser(windowTarget: Window = window): void {
+  const port = windowTarget.location.port || "6806";
+  const url = `http://127.0.0.1:${port}`;
+  windowTarget.open(url, "_blank", "noopener,noreferrer");
+}
+

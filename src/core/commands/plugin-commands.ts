@@ -17,6 +17,11 @@ export const PLUGIN_COMMANDS: PluginCommandDefinition[] = [
     description: "将当前配置复制到剪贴板。",
   },
   {
+    id: "open-in-browser",
+    title: "在浏览器打开",
+    description: "在系统默认浏览器中打开当前工作空间伺服地址。",
+  },
+  {
     id: "restore-defaults",
     title: "恢复默认按钮",
     description: "恢复到默认预设。",

@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { PLUGIN_COMMANDS } from "@/core/commands";
 import { createDefaultConfig } from "@/core/config";
-import { PowerButtonsRuntime } from "@/core/runtime/plugin-runtime";
+import { PowerButtonsRuntime, openCurrentWorkspaceInBrowser } from "@/core/runtime/plugin-runtime";
 import { SettingsDialogController } from "@/core/runtime/settings-dialog-controller";
 import { mountSettingsApp } from "@/main";
 
@@ -200,6 +200,7 @@ describe("plugin runtime", () => {
       listProviders: () => Array<{ providerId: string; providerName: string; providerVersion?: string }>;
       listCommands: (providerId: string) => Promise<Array<{ id: string; title: string; description?: string; category?: string }>>;
     };
+    openInBrowser?: () => void | Promise<void>;
   } = {}) {
     const config = createDefaultConfig();
     config.desktopOnly = options.desktopOnly ?? true;
@@ -278,6 +279,7 @@ describe("plugin runtime", () => {
       getFrontend: () => options.frontend ?? "desktop",
       showMessage,
       t,
+      openInBrowser: options.openInBrowser,
       readCurrentLayout: vi.fn().mockResolvedValue([]),
     });
 
@@ -332,6 +334,45 @@ describe("plugin runtime", () => {
 
     expect(state.pluginCommandHandlers.has("open-settings")).toBe(true);
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
+  });
+
+  it("registers open-in-browser plugin command and invokes openInBrowser option", async () => {
+    const openInBrowser = vi.fn();
+    const state = createRuntime({ openInBrowser });
+
+    await state.runtime.onload();
+    const openBrowserCommand = state.addCommand.mock.calls.find(call => call[0].langKey === "power-buttons-open-in-browser")?.[0];
+
+    expect(openBrowserCommand).toBeDefined();
+    await openBrowserCommand?.callback();
+    expect(openInBrowser).toHaveBeenCalledTimes(1);
+
+    await state.pluginCommandHandlers.get("open-in-browser")?.();
+    expect(openInBrowser).toHaveBeenCalledTimes(2);
+  });
+
+  it("openCurrentWorkspaceInBrowser opens 127.0.0.1 with current port", () => {
+    const openSpy = vi.fn();
+    const mockWindow = {
+      location: { port: "7621" },
+      open: openSpy,
+    } as unknown as Window;
+
+    openCurrentWorkspaceInBrowser(mockWindow);
+
+    expect(openSpy).toHaveBeenCalledWith("http://127.0.0.1:7621", "_blank", "noopener,noreferrer");
+  });
+
+  it("openCurrentWorkspaceInBrowser falls back to 6806 when port is empty", () => {
+    const openSpy = vi.fn();
+    const mockWindow = {
+      location: { port: "" },
+      open: openSpy,
+    } as unknown as Window;
+
+    openCurrentWorkspaceInBrowser(mockWindow);
+
+    expect(openSpy).toHaveBeenCalledWith("http://127.0.0.1:6806", "_blank", "noopener,noreferrer");
   });
 
   it("passes discovered external providers into the settings app props", async () => {

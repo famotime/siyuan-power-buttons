@@ -141,6 +141,16 @@ export function createDefaultConfig(): PowerButtonsConfig {
       tooltip: "",
     }),
     createButtonItem({
+      id: "pb-b695ca42-26cb-4028-98e3-5121b6d0e625",
+      title: "在浏览器打开",
+      iconType: "iconpark",
+      iconValue: "iconpark:Browser",
+      surface: "statusbar-right",
+      actionType: "plugin-command",
+      actionId: "siyuan-power-buttons:open-in-browser",
+      tooltip: "",
+    }),
+    createButtonItem({
       id: "pb-72370934-8420-4c2b-abfa-928764ca6d84",
       title: "切换到英文",
       iconType: "iconpark",

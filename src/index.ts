@@ -28,7 +28,7 @@ import {
   executeBuiltinCommandStable,
   PLUGIN_COMMANDS,
 } from "@/core/commands";
-import { PowerButtonsRuntime } from "@/core/runtime/plugin-runtime";
+import { PowerButtonsRuntime, openCurrentWorkspaceInBrowser } from "@/core/runtime/plugin-runtime";
 import {
   collectInstalledPlugins,
   createExperimentalActionRunners,
@@ -116,6 +116,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     clipboard: navigator.clipboard,
     getFrontend,
     showMessage,
+    openInBrowser: () => openCurrentWorkspaceInBrowser(window),
     t: (key: string, replacements?: Record<string, string>) => this.t(key, replacements),
     readCurrentLayout: () => readNativeSurfaceSnapshot(document),
   });
