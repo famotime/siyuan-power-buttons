@@ -9,6 +9,7 @@ import {
 } from "siyuan";
 import type { IMenuItem } from "siyuan";
 import pluginInfo from "@/../plugin.json";
+import defaultI18n from "@/i18n/zh_CN.json";
 import {
   ConfigStore,
   exportConfigAsJson,
@@ -138,6 +139,19 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
 
   openSetting(): void {
     void this.runtime.openSetting();
+  }
+
+  t(key: string, replacements?: Record<string, string>): string {
+    const raw = (typeof this.i18n === "object" && this.i18n !== null && typeof this.i18n[key] === "string")
+      ? (this.i18n[key] as string)
+      : (defaultI18n as Record<string, string>)[key] || key;
+    let text = raw;
+    if (replacements) {
+      for (const [placeholder, value] of Object.entries(replacements)) {
+        text = text.replaceAll(`{${placeholder}}`, value);
+      }
+    }
+    return text;
   }
 
   onunload(): void {

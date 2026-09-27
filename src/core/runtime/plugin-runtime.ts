@@ -196,11 +196,30 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       this.options.settingsDialog.refresh(this.createSettingsAppProps());
       this.surfaceManager?.render(config);
     });
-    this.options.pluginCommandHandlers.set("open-in-browser", () => {
-      if (this.options.openInBrowser) {
-        return this.options.openInBrowser();
-      }
-      openCurrentWorkspaceInBrowser();
+    this.options.pluginCommandHandlers.set("open-in-browser", async () => {
+      const url = getCurrentWorkspaceServerUrl();
+      const openPromise = (async () => {
+        try {
+          if (this.options.openInBrowser) {
+            await this.options.openInBrowser();
+          } else {
+            openCurrentWorkspaceInBrowser();
+          }
+        } catch (error) {
+          console.error("Failed to open browser:", error);
+        }
+      })();
+
+      const copyPromise = (async () => {
+        try {
+          await this.options.clipboard.writeText(url);
+          this.options.showMessage(this.t("copiedServerUrlToClipboard"), 3000, "info");
+        } catch {
+          this.options.showMessage(this.t("copyServerUrlFailed"), 5000, "error");
+        }
+      })();
+
+      await Promise.all([openPromise, copyPromise]);
     });
 
     for (const command of this.options.pluginCommands) {
@@ -217,12 +236,20 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
 }
 
 /**
+ * 获取思源笔记当前工作空间的本地伺服网址（形如 http://127.0.0.1:6806）。
+ */
+export function getCurrentWorkspaceServerUrl(windowTarget?: Window): string {
+  const target = windowTarget ?? (typeof window !== "undefined" ? window : undefined);
+  const port = target?.location?.port || "6806";
+  return `http://127.0.0.1:${port}`;
+}
+
+/**
  * 在系统外部默认浏览器中打开思源笔记当前工作空间的伺服网页端。
  * 在桌面端 Electron 运行环境下，window.open 会被全局拦截并通过 shell.openExternal 调用系统默认浏览器。
  */
 export function openCurrentWorkspaceInBrowser(windowTarget: Window = window): void {
-  const port = windowTarget.location.port || "6806";
-  const url = `http://127.0.0.1:${port}`;
+  const url = getCurrentWorkspaceServerUrl(windowTarget);
   windowTarget.open(url, "_blank", "noopener,noreferrer");
 }
 

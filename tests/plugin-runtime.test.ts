@@ -3,7 +3,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { PLUGIN_COMMANDS } from "@/core/commands";
 import { createDefaultConfig } from "@/core/config";
-import { PowerButtonsRuntime, openCurrentWorkspaceInBrowser } from "@/core/runtime/plugin-runtime";
+import {
+  PowerButtonsRuntime,
+  openCurrentWorkspaceInBrowser,
+  getCurrentWorkspaceServerUrl,
+} from "@/core/runtime/plugin-runtime";
 import { SettingsDialogController } from "@/core/runtime/settings-dialog-controller";
 import { mountSettingsApp } from "@/main";
 
@@ -254,8 +258,15 @@ describe("plugin runtime", () => {
       const map: Record<string, string> = {
         pluginCommandLoadFailed: `读取插件命令失败：${replacements?.message ?? ""}`,
         copyConfigFailed: "复制失败，已自动打开设置界面。",
+        copiedServerUrlToClipboard: "伺服地址已复制到剪贴板",
+        copyServerUrlFailed: "复制伺服地址失败",
       };
       return map[key] ?? key;
+    };
+    const clipboard = {
+      writeText: options.clipboardShouldFail
+        ? vi.fn().mockRejectedValue(new Error("clipboard denied"))
+        : vi.fn().mockResolvedValue(undefined),
     };
     const runtime = new PowerButtonsRuntime({
       plugin: {
@@ -271,11 +282,7 @@ describe("plugin runtime", () => {
       createSurfaceManager: vi.fn(() => surfaceManager),
       executor: {} as never,
       exportConfigAsJson: vi.fn(() => "{\n  \"version\": 2\n}\n"),
-      clipboard: {
-        writeText: options.clipboardShouldFail
-          ? vi.fn().mockRejectedValue(new Error("clipboard denied"))
-          : vi.fn().mockResolvedValue(undefined),
-      },
+      clipboard,
       getFrontend: () => options.frontend ?? "desktop",
       showMessage,
       t,
@@ -285,6 +292,7 @@ describe("plugin runtime", () => {
 
     return {
       addCommand,
+      clipboard,
       config,
       configListener: () => configListener,
       configStore,
@@ -336,7 +344,7 @@ describe("plugin runtime", () => {
     expect(state.settingsDialog.open).toHaveBeenCalledTimes(1);
   });
 
-  it("registers open-in-browser plugin command and invokes openInBrowser option", async () => {
+  it("registers open-in-browser plugin command and invokes openInBrowser option while copying url to clipboard", async () => {
     const openInBrowser = vi.fn();
     const state = createRuntime({ openInBrowser });
 
@@ -346,9 +354,49 @@ describe("plugin runtime", () => {
     expect(openBrowserCommand).toBeDefined();
     await openBrowserCommand?.callback();
     expect(openInBrowser).toHaveBeenCalledTimes(1);
+    expect(state.clipboard.writeText).toHaveBeenCalledTimes(1);
+    expect(state.clipboard.writeText).toHaveBeenCalledWith(expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/));
+    expect(state.showMessage).toHaveBeenCalledWith("伺服地址已复制到剪贴板", 3000, "info");
 
     await state.pluginCommandHandlers.get("open-in-browser")?.();
     expect(openInBrowser).toHaveBeenCalledTimes(2);
+    expect(state.clipboard.writeText).toHaveBeenCalledTimes(2);
+  });
+
+  it("still invokes openInBrowser and reports error toast when clipboard writeText fails", async () => {
+    const openInBrowser = vi.fn();
+    const state = createRuntime({ openInBrowser, clipboardShouldFail: true });
+
+    await state.runtime.onload();
+    await state.pluginCommandHandlers.get("open-in-browser")?.();
+
+    expect(openInBrowser).toHaveBeenCalledTimes(1);
+    expect(state.clipboard.writeText).toHaveBeenCalledTimes(1);
+    expect(state.showMessage).toHaveBeenCalledWith("复制伺服地址失败", 5000, "error");
+  });
+
+  it("still copies url to clipboard when openInBrowser throws error", async () => {
+    const openInBrowser = vi.fn().mockRejectedValue(new Error("window.open failed"));
+    const state = createRuntime({ openInBrowser });
+
+    await state.runtime.onload();
+    await state.pluginCommandHandlers.get("open-in-browser")?.();
+
+    expect(openInBrowser).toHaveBeenCalledTimes(1);
+    expect(state.clipboard.writeText).toHaveBeenCalledTimes(1);
+    expect(state.showMessage).toHaveBeenCalledWith("伺服地址已复制到剪贴板", 3000, "info");
+  });
+
+  it("getCurrentWorkspaceServerUrl extracts port from window location or defaults to 6806", () => {
+    const mockWindowWithPort = {
+      location: { port: "4853" },
+    } as unknown as Window;
+    expect(getCurrentWorkspaceServerUrl(mockWindowWithPort)).toBe("http://127.0.0.1:4853");
+
+    const mockWindowWithoutPort = {
+      location: { port: "" },
+    } as unknown as Window;
+    expect(getCurrentWorkspaceServerUrl(mockWindowWithoutPort)).toBe("http://127.0.0.1:6806");
   });
 
   it("openCurrentWorkspaceInBrowser opens 127.0.0.1 with current port", () => {

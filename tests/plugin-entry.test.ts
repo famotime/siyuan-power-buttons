@@ -120,4 +120,22 @@ describe('plugin fixed settings entry', () => {
     expect(plugin.removeData).toHaveBeenNthCalledWith(1, 'settings.json');
     expect(plugin.removeData).toHaveBeenNthCalledWith(2, 'settings-ui.json');
   });
+
+  it('translates keys using this.i18n, fallbacks to zh_CN or key, and replaces placeholders', async () => {
+    const { default: SiyuanPowerButtonsPlugin } = await import('@/index');
+    const plugin = new SiyuanPowerButtonsPlugin();
+
+    // 1. Without this.i18n, fallback to embedded zh_CN.json
+    expect(plugin.t('copiedServerUrlToClipboard')).toBe('伺服地址已复制到剪贴板');
+    expect(plugin.t('pluginCommandFailed', { commandId: 'test-cmd' })).toBe('插件命令执行失败：test-cmd');
+    expect(plugin.t('nonExistentKey')).toBe('nonExistentKey');
+
+    // 2. With this.i18n provided by Siyuan host
+    plugin.i18n = {
+      copiedServerUrlToClipboard: 'Server URL copied to clipboard',
+      customGreeting: 'Hello {name}!',
+    };
+    expect(plugin.t('copiedServerUrlToClipboard')).toBe('Server URL copied to clipboard');
+    expect(plugin.t('customGreeting', { name: 'World' })).toBe('Hello World!');
+  });
 });

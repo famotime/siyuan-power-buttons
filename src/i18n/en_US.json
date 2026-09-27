@@ -9,5 +9,7 @@
   "experimentalClickSequenceFailed": "Experimental click sequence not available: {actionId}",
   "experimentalShortcutUnavailable": "Experimental shortcut adapter is not available.",
   "experimentalClickSequenceUnavailable": "Experimental click sequence adapter is not available.",
-  "uninstallDataRemoveFailed": "uninstall [{name}] remove data [{storageName}] fail: {message}"
+  "uninstallDataRemoveFailed": "uninstall [{name}] remove data [{storageName}] fail: {message}",
+  "copiedServerUrlToClipboard": "Server URL copied to clipboard",
+  "copyServerUrlFailed": "Failed to copy server URL to clipboard"
 }
