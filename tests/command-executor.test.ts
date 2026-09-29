@@ -42,8 +42,16 @@ describe("command executor", () => {
       "riffCard",
       "syncNow",
       "restartPlugins",
+      "switchLeftDock",
+      "switchRightDock",
+      "switchBottomDock",
+      "switchAllDock",
     ]);
     expect(BUILTIN_COMMANDS.every(command => command.title.length > 0)).toBe(true);
+    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchLeftDock")?.title).toBe("左面板浮动切换");
+    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchRightDock")?.title).toBe("右面板浮动切换");
+    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchBottomDock")?.title).toBe("底栏浮动切换");
+    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchAllDock")?.title).toBe("全部面板浮动切换");
   });
 
   it("dispatches built-in global commands through the plugin API", async () => {
@@ -141,6 +149,26 @@ describe("command executor", () => {
 
     expect(globalCommand).not.toHaveBeenCalled();
     expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：restartPlugins", "error");
+  });
+
+  it("does not silently fall back to the undocumented plugin global command for switchAllDock", async () => {
+    const globalCommand = vi.fn();
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand } as never,
+      notify,
+      t,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(() => false),
+    });
+
+    await executor.execute(createItem({
+      actionId: "switchAllDock",
+    }));
+
+    expect(globalCommand).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：switchAllDock", "error");
   });
 
   it("notifies instead of failing silently when a builtin command cannot be executed", async () => {

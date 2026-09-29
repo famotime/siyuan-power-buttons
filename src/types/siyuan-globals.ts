@@ -27,11 +27,27 @@ export interface SiyuanGlobalWs {
   app?: SiyuanGlobalApp;
 }
 
+/** Siyuan Dock 对象类型接口 */
+export interface SiyuanDockLike {
+  togglePin?: () => void;
+  isFloating?: () => boolean;
+  pin?: boolean;
+}
+
+/** Siyuan 全局布局对象接口 */
+export interface SiyuanGlobalLayout {
+  leftDock?: SiyuanDockLike;
+  rightDock?: SiyuanDockLike;
+  bottomDock?: SiyuanDockLike;
+  [key: string]: unknown;
+}
+
 /** Siyuan 全局 window 扩展 */
 export interface SiyuanGlobalWindow {
   siyuan?: {
     config?: SiyuanGlobalConfig;
     ws?: SiyuanGlobalWs;
+    layout?: SiyuanGlobalLayout;
   };
 }
 
@@ -55,3 +71,9 @@ export function getSiyuanGlobalPlugins(): unknown[] {
   const plugins = (window as unknown as SiyuanGlobalWindow).siyuan?.ws?.app?.plugins;
   return Array.isArray(plugins) ? plugins : [];
 }
+
+/** 获取 Siyuan 全局布局对象 */
+export function getSiyuanLayout(): SiyuanGlobalLayout | undefined {
+  return (window as unknown as SiyuanGlobalWindow).siyuan?.layout;
+}
+

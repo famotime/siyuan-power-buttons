@@ -46,8 +46,9 @@ import {
 import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
 import {
   getSiyuanBazaarConfig,
-  getSiyuanKeymap,
   getSiyuanGlobalPlugins,
+  getSiyuanKeymap,
+  getSiyuanLayout,
 } from "@/types/siyuan-globals";
 
 export default class SiyuanPowerButtonsPlugin extends Plugin {
@@ -64,6 +65,15 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     openTab: options => openTab(options as never),
     fetchPost: (url, data) => fetchSyncPost(url, data),
     getBazaarConfig: () => getSiyuanBazaarConfig(),
+    getLayout: () => getSiyuanLayout(),
+    globalCommand: command => {
+      const pluginWithGlobal = this as Plugin & { globalCommand?: (cmd: string) => void };
+      if (typeof pluginWithGlobal.globalCommand === "function") {
+        pluginWithGlobal.globalCommand(command);
+        return true;
+      }
+      return false;
+    },
     reloadWindow: () => window.location.reload(),
     runBuiltinCommandByDom: targetCommandId => executeBuiltinCommandByDom(targetCommandId, document),
   });

@@ -15,7 +15,7 @@ type ExternalCommandRegistryLike = {
 };
 
 function shouldFallbackToUndocumentedGlobalCommand(commandId: string): boolean {
-  return commandId !== "dailyNote" && commandId !== "restartPlugins";
+  return commandId !== "dailyNote" && commandId !== "restartPlugins" && commandId !== "switchAllDock";
 }
 
 export class CommandExecutor {

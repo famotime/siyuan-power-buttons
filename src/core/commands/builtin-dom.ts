@@ -40,6 +40,28 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
     "syncNow",
     "sync",
   ],
+  switchLeftDock: [
+    "[data-id='switchLeftDock']",
+    "#dockLeft .dock__item[data-id='switchLeftDock']",
+    "switchLeftDock",
+    "menuSwitchLeftDock",
+  ],
+  switchRightDock: [
+    "[data-id='switchRightDock']",
+    "#dockRight .dock__item[data-id='switchRightDock']",
+    "switchRightDock",
+    "menuSwitchRightDock",
+  ],
+  switchBottomDock: [
+    "[data-id='switchBottomDock']",
+    "#dockBottom .dock__item[data-id='switchBottomDock']",
+    "switchBottomDock",
+    "menuSwitchBottomDock",
+  ],
+  switchAllDock: [
+    "[data-id='switchAllDock']",
+    "switchAllDock",
+  ],
 };
 
 function getBuiltinCommandQueries(commandId: string): string[] {

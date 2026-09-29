@@ -132,18 +132,130 @@ async function openDailyNoteByApi(options: {
   return false;
 }
 
+export type SiyuanDockLike = {
+  togglePin?: () => void;
+  isFloating?: () => boolean;
+  pin?: boolean;
+};
+
+export type SiyuanLayoutLike = {
+  leftDock?: SiyuanDockLike;
+  rightDock?: SiyuanDockLike;
+  bottomDock?: SiyuanDockLike;
+};
+
+export function isDockFloating(dock: SiyuanDockLike): boolean {
+  if (typeof dock.isFloating === "function") {
+    return Boolean(dock.isFloating());
+  }
+  if (typeof dock.pin === "boolean") {
+    return !dock.pin;
+  }
+  return false;
+}
+
+export function toggleAllDocks(layout: SiyuanLayoutLike): boolean {
+  const docks = [layout.leftDock, layout.rightDock, layout.bottomDock].filter(
+    (dock): dock is SiyuanDockLike & { togglePin: () => void } =>
+      typeof dock?.togglePin === "function",
+  );
+
+  if (docks.length === 0) {
+    return false;
+  }
+
+  const allFloating = docks.every(dock => isDockFloating(dock));
+  if (allFloating) {
+    for (const dock of docks) {
+      dock.togglePin();
+    }
+  } else {
+    for (const dock of docks) {
+      if (!isDockFloating(dock)) {
+        dock.togglePin();
+      }
+    }
+  }
+
+  return true;
+}
+
 export async function executeBuiltinCommandStable(commandId: string, options: {
   app?: unknown;
   openAppSetting?: (app: unknown) => void;
   openTab?: (options: { app: unknown; doc: { id: string } }) => void;
   fetchPost?: FetchPost;
   getBazaarConfig?: () => BazaarConfig | null | undefined;
+  getLayout?: () => SiyuanLayoutLike | null | undefined;
+  globalCommand?: (command: string) => boolean | void;
   reloadWindow?: () => void;
   runBuiltinCommandByDom: (commandId: string) => boolean | Promise<boolean>;
 }): Promise<boolean> {
   if (commandId === "config" && options.app && options.openAppSetting) {
     options.openAppSetting(options.app);
     return true;
+  }
+
+  if (commandId === "switchLeftDock") {
+    const layout = options.getLayout?.();
+    if (layout?.leftDock && typeof layout.leftDock.togglePin === "function") {
+      layout.leftDock.togglePin();
+      return true;
+    }
+    if (options.globalCommand?.("switchLeftDock")) {
+      return true;
+    }
+    if (await options.runBuiltinCommandByDom(commandId)) {
+      return true;
+    }
+    return false;
+  }
+
+  if (commandId === "switchRightDock") {
+    const layout = options.getLayout?.();
+    if (layout?.rightDock && typeof layout.rightDock.togglePin === "function") {
+      layout.rightDock.togglePin();
+      return true;
+    }
+    if (options.globalCommand?.("switchRightDock")) {
+      return true;
+    }
+    if (await options.runBuiltinCommandByDom(commandId)) {
+      return true;
+    }
+    return false;
+  }
+
+  if (commandId === "switchBottomDock") {
+    const layout = options.getLayout?.();
+    if (layout?.bottomDock && typeof layout.bottomDock.togglePin === "function") {
+      layout.bottomDock.togglePin();
+      return true;
+    }
+    if (options.globalCommand?.("switchBottomDock")) {
+      return true;
+    }
+    if (await options.runBuiltinCommandByDom(commandId)) {
+      return true;
+    }
+    return false;
+  }
+
+  if (commandId === "switchAllDock") {
+    const layout = options.getLayout?.();
+    if (layout && toggleAllDocks(layout)) {
+      return true;
+    }
+    if (options.globalCommand) {
+      options.globalCommand("switchLeftDock");
+      options.globalCommand("switchRightDock");
+      options.globalCommand("switchBottomDock");
+      return true;
+    }
+    if (await options.runBuiltinCommandByDom(commandId)) {
+      return true;
+    }
+    return false;
   }
 
   if (commandId === "restartPlugins" && options.fetchPost) {

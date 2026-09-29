@@ -106,4 +106,45 @@ describe("builtin dom command runner", () => {
     expect(executeBuiltinCommandByDom("dailyNote", document)).toBe(false);
     expect(pluginOwnedClick).not.toHaveBeenCalled();
   });
+
+  it("clicks matching native controls for dock floating switch commands", () => {
+    document.body.innerHTML = `
+      <div id="dockLeft">
+        <button class="dock__item" data-id="switchLeftDock" type="button"></button>
+      </div>
+      <div id="dockRight">
+        <button class="dock__item" data-id="switchRightDock" type="button"></button>
+      </div>
+      <div id="dockBottom">
+        <button class="dock__item" data-id="switchBottomDock" type="button"></button>
+      </div>
+      <button data-id="switchAllDock" type="button"></button>
+    `;
+
+    const leftButton = document.querySelector<HTMLButtonElement>("[data-id='switchLeftDock']")!;
+    const rightButton = document.querySelector<HTMLButtonElement>("[data-id='switchRightDock']")!;
+    const bottomButton = document.querySelector<HTMLButtonElement>("[data-id='switchBottomDock']")!;
+    const allButton = document.querySelector<HTMLButtonElement>("[data-id='switchAllDock']")!;
+
+    const leftClick = vi.fn();
+    const rightClick = vi.fn();
+    const bottomClick = vi.fn();
+    const allClick = vi.fn();
+
+    leftButton.addEventListener("click", leftClick);
+    rightButton.addEventListener("click", rightClick);
+    bottomButton.addEventListener("click", bottomClick);
+    allButton.addEventListener("click", allClick);
+
+    expect(executeBuiltinCommandByDom("switchLeftDock", document)).toBe(true);
+    expect(executeBuiltinCommandByDom("switchRightDock", document)).toBe(true);
+    expect(executeBuiltinCommandByDom("switchBottomDock", document)).toBe(true);
+    expect(executeBuiltinCommandByDom("switchAllDock", document)).toBe(true);
+
+    expect(leftClick).toHaveBeenCalledTimes(1);
+    expect(rightClick).toHaveBeenCalledTimes(1);
+    expect(bottomClick).toHaveBeenCalledTimes(1);
+    expect(allClick).toHaveBeenCalledTimes(1);
+  });
 });
+

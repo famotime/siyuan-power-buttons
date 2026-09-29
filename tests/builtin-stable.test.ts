@@ -326,4 +326,121 @@ describe('builtin stable runner', () => {
       },
     });
   });
+
+  it('toggles left, right, and bottom dock layout via layout togglePin', async () => {
+    const leftTogglePin = vi.fn();
+    const rightTogglePin = vi.fn();
+    const bottomTogglePin = vi.fn();
+
+    const layout = {
+      leftDock: { togglePin: leftTogglePin, isFloating: () => false },
+      rightDock: { togglePin: rightTogglePin, isFloating: () => false },
+      bottomDock: { togglePin: bottomTogglePin, isFloating: () => false },
+    };
+
+    const leftResult = await executeBuiltinCommandStable('switchLeftDock', {
+      getLayout: () => layout,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+    expect(leftResult).toBe(true);
+    expect(leftTogglePin).toHaveBeenCalledTimes(1);
+
+    const rightResult = await executeBuiltinCommandStable('switchRightDock', {
+      getLayout: () => layout,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+    expect(rightResult).toBe(true);
+    expect(rightTogglePin).toHaveBeenCalledTimes(1);
+
+    const bottomResult = await executeBuiltinCommandStable('switchBottomDock', {
+      getLayout: () => layout,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+    expect(bottomResult).toBe(true);
+    expect(bottomTogglePin).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to globalCommand when dock layout is not available', async () => {
+    const globalCommand = vi.fn(() => true);
+
+    const result = await executeBuiltinCommandStable('switchLeftDock', {
+      globalCommand,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(true);
+    expect(globalCommand).toHaveBeenCalledWith('switchLeftDock');
+  });
+
+  it('falls back to DOM runner when layout and globalCommand are not available', async () => {
+    const runBuiltinCommandByDom = vi.fn(() => true);
+
+    const result = await executeBuiltinCommandStable('switchLeftDock', {
+      runBuiltinCommandByDom,
+    });
+
+    expect(result).toBe(true);
+    expect(runBuiltinCommandByDom).toHaveBeenCalledWith('switchLeftDock');
+  });
+
+  it('handles switchAllDock by making all docks floating when some are fixed', async () => {
+    const leftTogglePin = vi.fn();
+    const rightTogglePin = vi.fn();
+    const bottomTogglePin = vi.fn();
+
+    const layout = {
+      leftDock: { togglePin: leftTogglePin, isFloating: () => true },
+      rightDock: { togglePin: rightTogglePin, isFloating: () => false },
+      bottomDock: { togglePin: bottomTogglePin, isFloating: () => false },
+    };
+
+    const result = await executeBuiltinCommandStable('switchAllDock', {
+      getLayout: () => layout,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(true);
+    // Left was already floating, so it should not be toggled
+    expect(leftTogglePin).not.toHaveBeenCalled();
+    // Right and bottom were fixed, so they should be toggled to floating
+    expect(rightTogglePin).toHaveBeenCalledTimes(1);
+    expect(bottomTogglePin).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles switchAllDock by toggling all docks to fixed when all are floating', async () => {
+    const leftTogglePin = vi.fn();
+    const rightTogglePin = vi.fn();
+    const bottomTogglePin = vi.fn();
+
+    const layout = {
+      leftDock: { togglePin: leftTogglePin, isFloating: () => true },
+      rightDock: { togglePin: rightTogglePin, isFloating: () => true },
+      bottomDock: { togglePin: bottomTogglePin, isFloating: () => true },
+    };
+
+    const result = await executeBuiltinCommandStable('switchAllDock', {
+      getLayout: () => layout,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(true);
+    expect(leftTogglePin).toHaveBeenCalledTimes(1);
+    expect(rightTogglePin).toHaveBeenCalledTimes(1);
+    expect(bottomTogglePin).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles switchAllDock fallback to globalCommand when layout is absent', async () => {
+    const globalCommand = vi.fn();
+
+    const result = await executeBuiltinCommandStable('switchAllDock', {
+      globalCommand,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+
+    expect(result).toBe(true);
+    expect(globalCommand).toHaveBeenCalledWith('switchLeftDock');
+    expect(globalCommand).toHaveBeenCalledWith('switchRightDock');
+    expect(globalCommand).toHaveBeenCalledWith('switchBottomDock');
+  });
 });
+
