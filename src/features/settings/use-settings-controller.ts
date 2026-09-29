@@ -11,6 +11,9 @@ import {
   mergeImportedButtonsWithStats,
 } from "@/core/config";
 import {
+  DEFAULT_BUILTIN_COMMAND_ID,
+} from "@/core/config/item-defaults";
+import {
   ACTION_TYPE_LABELS,
   INTERNAL_PLUGIN_PROVIDER_ID,
   INTERNAL_PLUGIN_PROVIDER_NAME,
@@ -94,6 +97,7 @@ function resolveInitialSelectedId(config: PowerButtonsConfig, initialSelectedBut
 export function useSettingsController(props: SettingsAppProps) {
   const config = reactive<PowerButtonsConfig>(cloneConfig(props.initialConfig));
   const selectedId = ref(resolveInitialSelectedId(config, props.initialSelectedButtonId));
+  const customTitleIds = ref<Set<string>>(new Set(config.items.map(item => item.id)));
   const listDragIndex = ref<number | null>(null);
   const previewDragItem = ref<PreviewButtonItem | null>(null);
   const previewDragCleanup = ref<(() => void) | null>(null);
@@ -127,6 +131,68 @@ export function useSettingsController(props: SettingsAppProps) {
   const selectedPluginCommand = computed(() => {
     return findSelectedPluginCommand(selectedItem.value, selectedPluginProvider.value);
   });
+
+  function isTitleAutoUpdatable(item: PowerButtonItem | undefined): boolean {
+    if (!item) {
+      return false;
+    }
+    if (!customTitleIds.value.has(item.id)) {
+      return true;
+    }
+    if (!item.title.trim()) {
+      return true;
+    }
+    return false;
+  }
+
+  function resolveCurrentActionTitle(item: PowerButtonItem): string | undefined {
+    if (item.actionType === "builtin-global-command") {
+      const cmd = builtinCommands.value.find(c => c.id === item.actionId);
+      return cmd?.title;
+    }
+    if (item.actionType === "plugin-command") {
+      const parsed = parseExternalCommandActionId(item.actionId);
+      if (parsed) {
+        const provider = pluginCommandProviders.value.find(p => p.providerId === parsed.providerId);
+        const cmd = provider?.commands.find(c => c.id === parsed.commandId);
+        return cmd?.title;
+      }
+    }
+    return undefined;
+  }
+
+  function syncActionTitleToButton(item: PowerButtonItem | undefined): void {
+    if (!item || !isTitleAutoUpdatable(item)) {
+      return;
+    }
+    const actionTitle = resolveCurrentActionTitle(item);
+    if (actionTitle) {
+      item.title = actionTitle;
+    }
+  }
+
+  function handleTitleInput(): void {
+    if (!selectedItem.value) {
+      return;
+    }
+    const value = selectedItem.value.title;
+    if (value && value.trim()) {
+      customTitleIds.value.add(selectedItem.value.id);
+    } else {
+      customTitleIds.value.delete(selectedItem.value.id);
+    }
+  }
+
+  async function handleTitleChange(): Promise<void> {
+    if (!selectedItem.value) {
+      return;
+    }
+    if (!selectedItem.value.title.trim()) {
+      customTitleIds.value.delete(selectedItem.value.id);
+      syncActionTitleToButton(selectedItem.value);
+    }
+    await persist();
+  }
 
   const configPreviewItems = computed<PreviewButtonItem[]>(() => {
     return config.items.map(item => ({
@@ -200,12 +266,14 @@ export function useSettingsController(props: SettingsAppProps) {
   }
 
   async function addItem(): Promise<void> {
+    const defaultActionTitle = builtinCommands.value.find(c => c.id === DEFAULT_BUILTIN_COMMAND_ID)?.title || "最近文档";
     const item = createButtonItem({
-      title: `按钮 ${config.items.length + 1}`,
+      title: defaultActionTitle,
       order: config.items.length,
     });
     config.items.push(item);
     selectedId.value = item.id;
+    // 新建按钮不加入 customTitleIds，保持默认名称状态随动作设置变化
     await persist();
   }
 
@@ -221,6 +289,7 @@ export function useSettingsController(props: SettingsAppProps) {
     });
     config.items.push(item);
     selectedId.value = item.id;
+    customTitleIds.value.add(item.id);
     await persist();
   }
 
@@ -235,6 +304,7 @@ export function useSettingsController(props: SettingsAppProps) {
     }
     const index = config.items.findIndex(item => item.id === itemId);
     config.items.splice(index, 1);
+    customTitleIds.value.delete(itemId);
     if (selectedId.value === itemId) {
       selectedId.value = config.items[0]?.id || "";
     }
@@ -247,6 +317,7 @@ export function useSettingsController(props: SettingsAppProps) {
     }
     applyConfig(config, createDefaultConfig());
     selectedId.value = config.items[0]?.id || "";
+    customTitleIds.value = new Set(config.items.map(item => item.id));
     await persist();
   }
 
@@ -264,6 +335,15 @@ export function useSettingsController(props: SettingsAppProps) {
       return;
     }
     selectedId.value = itemId;
+  }
+
+  async function setSelectedBuiltinCommand(commandId: string): Promise<void> {
+    if (!selectedItem.value || selectedItem.value.actionType !== "builtin-global-command") {
+      return;
+    }
+    selectedItem.value.actionId = commandId;
+    syncActionTitleToButton(selectedItem.value);
+    await persist();
   }
 
   async function applyActionDefaults(): Promise<void> {
@@ -292,6 +372,8 @@ export function useSettingsController(props: SettingsAppProps) {
       }
     }
 
+    syncActionTitleToButton(selectedItem.value);
+
     await persist();
   }
 
@@ -316,6 +398,7 @@ export function useSettingsController(props: SettingsAppProps) {
       pluginCommands.value,
       externalCommandProviders.value,
     );
+    syncActionTitleToButton(selectedItem.value);
     await persist();
   }
 
@@ -329,6 +412,7 @@ export function useSettingsController(props: SettingsAppProps) {
     selectedItem.value.actionId = provider && commandId
       ? formatExternalCommandActionId(provider.providerId, commandId)
       : formatExternalCommandActionId(providerId, "__unset__");
+    syncActionTitleToButton(selectedItem.value);
     await persist();
   }
 
@@ -343,6 +427,7 @@ export function useSettingsController(props: SettingsAppProps) {
     }
 
     selectedItem.value.actionId = formatExternalCommandActionId(parsed.providerId, commandId);
+    syncActionTitleToButton(selectedItem.value);
     await persist();
   }
 
@@ -421,6 +506,7 @@ export function useSettingsController(props: SettingsAppProps) {
       );
       applyConfig(config, mergeResult.config);
       selectedId.value = config.items[0]?.id || "";
+      customTitleIds.value = new Set(config.items.map(item => item.id));
       await persist();
       props.onNotify(`已导入 ${mergeResult.importedCount} 个新按钮，跳过 ${mergeResult.skippedCount} 个已存在按钮。`);
     } catch (error) {
@@ -489,6 +575,8 @@ export function useSettingsController(props: SettingsAppProps) {
     filteredIconParkIcons: icons.filteredIconParkIcons,
     handleImportFile,
     handlePreviewChipClick,
+    handleTitleChange,
+    handleTitleInput,
     iconCategory: icons.iconCategory,
     iconKeyword: icons.iconKeyword,
     iconParkCategories: icons.iconParkCategories,
@@ -533,6 +621,7 @@ export function useSettingsController(props: SettingsAppProps) {
     selectedPluginProvider,
     selectedItem,
     selectItem,
+    setSelectedBuiltinCommand,
     setSelectedPluginCommand,
     setSelectedPluginProvider,
     selectIconParkIcon: icons.selectIconParkIcon,

@@ -387,7 +387,13 @@
             <div class="form-grid">
               <label>
                 <span>按钮名称</span>
-                <input v-model="selectedItem.title" class="b3-text-field" placeholder="例如：全局搜索" @change="persist" />
+                <input
+                  v-model="selectedItem.title"
+                  class="b3-text-field"
+                  placeholder="例如：全局搜索"
+                  @input="handleTitleInput"
+                  @change="handleTitleChange"
+                />
               </label>
               <label>
                 <span>提示文字</span>
@@ -414,7 +420,11 @@
 
               <label v-if="selectedItem.actionType === 'builtin-global-command'">
                 <span>内置命令</span>
-                <select v-model="selectedItem.actionId" class="b3-select" @change="persist">
+                <select
+                  class="b3-select"
+                  :value="selectedItem.actionId"
+                  @change="setSelectedBuiltinCommand(($event.target as HTMLSelectElement).value)"
+                >
                   <option v-for="command in builtinCommands" :key="command.id" :value="command.id">
                     {{ command.category }} · {{ command.title }}
                   </option>
@@ -785,6 +795,8 @@ const {
   filteredIconParkIcons,
   handleImportFile,
   handlePreviewChipClick,
+  handleTitleChange,
+  handleTitleInput,
   iconCategory,
   iconKeyword,
   iconParkCategories,
@@ -821,6 +833,7 @@ const {
   selectedPluginProvider,
   selectedItem,
   selectItem,
+  setSelectedBuiltinCommand,
   setSelectedPluginCommand,
   setSelectedPluginProvider,
   selectIconParkIcon,

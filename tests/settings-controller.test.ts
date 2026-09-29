@@ -373,4 +373,132 @@ describe('settings controller', () => {
       formatExternalCommandActionId('siyuan-doc-assist', 'insert-doc-summary'),
     );
   });
+
+  describe('new button title auto-synchronization', () => {
+    const builtinCommands = [
+      { id: 'recentDocs', title: '最近文档', category: '全局' },
+      { id: 'dailyNote', title: '今日日记', category: '全局' },
+      { id: 'search', title: '全局搜索', category: '全局' },
+    ];
+    const pluginCommands = [
+      { id: 'open-in-browser', title: '在浏览器打开', description: 'desc' },
+      { id: 'open-settings', title: '随心按设置', description: 'desc' },
+    ];
+    const externalCommandProviders = [
+      {
+        providerId: 'siyuan-doc-assist',
+        providerName: '文档助手',
+        commands: [
+          { id: 'export-current', title: '仅导出当前文档' },
+        ],
+      },
+    ];
+
+    it('newly created button defaults to the action name and tracks builtin command changes', async () => {
+      const initialConfig = createDefaultConfig();
+      const onChange = vi.fn().mockResolvedValue(undefined);
+      const controller = useSettingsController(createProps({
+        initialConfig,
+        builtinCommands,
+        pluginCommands,
+        externalCommandProviders,
+        onChange,
+      }));
+
+      // 新建按钮
+      await controller.addItem();
+      expect(controller.selectedItem.value?.title).toBe('最近文档');
+
+      // 切换内置命令
+      await controller.setSelectedBuiltinCommand('dailyNote');
+      expect(controller.selectedItem.value?.title).toBe('今日日记');
+
+      await controller.setSelectedBuiltinCommand('search');
+      expect(controller.selectedItem.value?.title).toBe('全局搜索');
+    });
+
+    it('syncs title when switching action type to plugin-command and changing plugin command', async () => {
+      const initialConfig = createDefaultConfig();
+      const onChange = vi.fn().mockResolvedValue(undefined);
+      const controller = useSettingsController(createProps({
+        initialConfig,
+        builtinCommands,
+        pluginCommands,
+        externalCommandProviders,
+        onChange,
+      }));
+
+      await controller.addItem();
+      expect(controller.selectedItem.value?.title).toBe('最近文档');
+
+      // 切换动作类型为插件命令
+      controller.selectedItem.value!.actionType = 'plugin-command';
+      await controller.applyActionDefaults();
+      expect(controller.selectedItem.value?.title).toBe('在浏览器打开');
+
+      // 切换插件 provider
+      await controller.setSelectedPluginProvider('siyuan-doc-assist');
+      expect(controller.selectedItem.value?.title).toBe('仅导出当前文档');
+    });
+
+    it('does not overwrite title when user has manually edited the title', async () => {
+      const initialConfig = createDefaultConfig();
+      const onChange = vi.fn().mockResolvedValue(undefined);
+      const controller = useSettingsController(createProps({
+        initialConfig,
+        builtinCommands,
+        pluginCommands,
+        externalCommandProviders,
+        onChange,
+      }));
+
+      await controller.addItem();
+      expect(controller.selectedItem.value?.title).toBe('最近文档');
+
+      // 用户手动输入自定义名称
+      controller.selectedItem.value!.title = '我的自定义快捷按钮';
+      controller.handleTitleInput();
+      await controller.handleTitleChange();
+
+      // 切换动作，标题不应被覆盖
+      await controller.setSelectedBuiltinCommand('dailyNote');
+      expect(controller.selectedItem.value?.title).toBe('我的自定义快捷按钮');
+
+      controller.selectedItem.value!.actionType = 'plugin-command';
+      await controller.applyActionDefaults();
+      expect(controller.selectedItem.value?.title).toBe('我的自定义快捷按钮');
+    });
+
+    it('resumes title synchronization when user clears the manual title', async () => {
+      const initialConfig = createDefaultConfig();
+      const onChange = vi.fn().mockResolvedValue(undefined);
+      const controller = useSettingsController(createProps({
+        initialConfig,
+        builtinCommands,
+        pluginCommands,
+        externalCommandProviders,
+        onChange,
+      }));
+
+      await controller.addItem();
+
+      // 用户手动编辑
+      controller.selectedItem.value!.title = '自定义名称';
+      controller.handleTitleInput();
+      await controller.handleTitleChange();
+
+      // 用户清空输入框
+      controller.selectedItem.value!.title = '';
+      controller.handleTitleInput();
+      await controller.handleTitleChange();
+
+      // 自动恢复为当前动作名称
+      expect(controller.selectedItem.value?.title).toBe('最近文档');
+
+      // 切换动作继续跟随
+      await controller.setSelectedBuiltinCommand('dailyNote');
+      expect(controller.selectedItem.value?.title).toBe('今日日记');
+    });
+  });
 });
+
