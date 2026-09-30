@@ -1014,6 +1014,12 @@
         height: 16px;
       }
     }
+
+    .siyuan-power-buttons__dock-settings-btn {
+      opacity: 1 !important;
+      visibility: visible !important;
+      display: inline-flex !important;
+    }
   }
 
   .siyuan-power-buttons__dock-content {

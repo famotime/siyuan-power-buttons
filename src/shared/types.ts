@@ -20,12 +20,6 @@ export const CONFIGURABLE_SURFACES = [
   "canvas",
   "selection-toolbar",
   "dock-panel",
-  "dock-left-top",
-  "dock-left-bottom",
-  "dock-right-top",
-  "dock-right-bottom",
-  "dock-bottom-left",
-  "dock-bottom-right",
 ] as const;
 
 export const ACTION_TYPES = [

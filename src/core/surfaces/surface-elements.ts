@@ -140,7 +140,7 @@ export function renderStandaloneDockPanel(
       <span>${escapeAttribute(title)}</span>
     </div>
     <span class="fn__flex-1"></span>
-    <span class="block__icon b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-settings-btn" aria-label="${escapeAttribute(settingsLabel)}">
+    <span class="block__icon block__icon--show b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-settings-btn" aria-label="${escapeAttribute(settingsLabel)}">
       ${settingsIcon}
     </span>
   `;

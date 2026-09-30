@@ -32,6 +32,6 @@ describe("surface metadata", () => {
     expect(isConfigurableSurface("statusbar-left")).toBe(true);
     expect(isConfigurableSurface("selection-toolbar")).toBe(true);
     expect(isConfigurableSurface("dock-panel")).toBe(true);
-    expect(isConfigurableSurface("dock-left-top")).toBe(true);
+    expect(isConfigurableSurface("dock-left-top")).toBe(false);
   });
 });

@@ -30,6 +30,9 @@ import {
 } from "@/core/surfaces/surface-elements";
 
 export const STANDALONE_DOCK_TYPE = "siyuan-power-buttons-dock-panel";
+export const STANDALONE_DOCK_ICON_SYMBOL = "iconPowerButtonsDock";
+
+const ASTERISK_KEY_SYMBOL_SVG = `<svg style="display:none;" id="siyuan-power-buttons-symbols"><symbol id="${STANDALONE_DOCK_ICON_SYMBOL}" viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 16V32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.447 19.4114L30.5535 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M30.5532 19.4114L17.4468 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>`;
 
 export class SurfaceManager {
   private topbarElements: HTMLElement[] = [];
@@ -338,6 +341,13 @@ export class SurfaceManager {
       return;
     }
 
+    const pluginWithAddIcons = this.plugin as Plugin & { addIcons?: (svg: string) => void };
+    if (typeof pluginWithAddIcons.addIcons === "function") {
+      pluginWithAddIcons.addIcons(ASTERISK_KEY_SYMBOL_SVG);
+    } else if (typeof document !== "undefined" && !document.getElementById("siyuan-power-buttons-symbols")) {
+      document.body.insertAdjacentHTML("afterbegin", ASTERISK_KEY_SYMBOL_SVG);
+    }
+
     const title = this.t("dockPanelTitle", "随心按");
     const registration = this.plugin.addDock({
       type: STANDALONE_DOCK_TYPE,
@@ -345,17 +355,7 @@ export class SurfaceManager {
       config: {
         position: "RightTop",
         size: { width: 320, height: null },
-        icon: getIconMarkup({
-          id: STANDALONE_DOCK_TYPE,
-          title,
-          visible: true,
-          iconType: "iconpark",
-          iconValue: "iconpark:AsteriskKey",
-          surface: "dock-panel",
-          order: 0,
-          actionType: "plugin-command",
-          actionId: DEFAULT_PLUGIN_COMMAND,
-        }),
+        icon: STANDALONE_DOCK_ICON_SYMBOL,
         title,
         index: 0,
         show: true,
@@ -375,9 +375,25 @@ export class SurfaceManager {
         model: registration.model,
       };
     }
+
+    this.syncStandaloneDockIcon();
+  }
+
+  private syncStandaloneDockIcon(): void {
+    if (typeof document === "undefined") {
+      return;
+    }
+    const dockItem = document.querySelector<HTMLElement>(`.dock__item[data-type="${STANDALONE_DOCK_TYPE}"]`);
+    if (dockItem) {
+      const use = dockItem.querySelector("svg use");
+      if (use && use.getAttribute("xlink:href") !== `#${STANDALONE_DOCK_ICON_SYMBOL}`) {
+        use.setAttribute("xlink:href", `#${STANDALONE_DOCK_ICON_SYMBOL}`);
+      }
+    }
   }
 
   private renderStandaloneDock(): void {
+    this.syncStandaloneDockIcon();
     if (!this.standaloneDockHost || !this.currentConfig) {
       return;
     }

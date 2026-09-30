@@ -100,7 +100,7 @@ describe("config store model", () => {
     expect(config.items[0].iconValue).toBe("iconpark:Search");
   });
 
-  it("migrates legacy dock surfaces into configurable statusbar surfaces", () => {
+  it("migrates legacy dock surfaces into dock-panel surface", () => {
     const config = sanitizeConfig({
       version: 1,
       desktopOnly: true,
@@ -125,13 +125,13 @@ describe("config store model", () => {
     });
 
     expect(config.items.map(item => item.surface)).toEqual([
-      "statusbar-left",
-      "statusbar-right",
-      "statusbar-left",
+      "dock-panel",
+      "dock-panel",
+      "dock-panel",
     ]);
   });
 
-  it("preserves dock surfaces for version 2 configs", () => {
+  it("migrates deprecated dock surfaces for version 2 configs into dock-panel", () => {
     const config = sanitizeConfig({
       version: 2,
       desktopOnly: true,
@@ -145,7 +145,7 @@ describe("config store model", () => {
       experimental: null,
     });
 
-    expect(config.items[0].surface).toBe("dock-left-top");
+    expect(config.items[0].surface).toBe("dock-panel");
   });
 
   it("preserves experimental shortcut items and adapter flags", () => {

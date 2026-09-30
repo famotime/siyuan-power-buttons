@@ -39,12 +39,12 @@ import type {
 } from "@/shared/types";
 
 const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
-  "dock-bottom-left": "statusbar-left",
-  "dock-bottom-right": "statusbar-right",
-  "dock-left-bottom": "statusbar-left",
-  "dock-left-top": "statusbar-left",
-  "dock-right-bottom": "statusbar-right",
-  "dock-right-top": "statusbar-right",
+  "dock-bottom-left": "dock-panel",
+  "dock-bottom-right": "dock-panel",
+  "dock-left-bottom": "dock-panel",
+  "dock-left-top": "dock-panel",
+  "dock-right-bottom": "dock-panel",
+  "dock-right-top": "dock-panel",
 };
 
 function ensureSurface(value: unknown, isLegacy: boolean): SurfaceType {

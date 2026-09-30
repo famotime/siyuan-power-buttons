@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createDefaultConfig } from "@/core/config";
 import { CommandExecutor } from "@/core/commands";
 import { createButtonItem } from "@/core/config/defaults";
-import { SurfaceManager } from "@/core/surfaces";
+import { SurfaceManager, STANDALONE_DOCK_ICON_SYMBOL } from "@/core/surfaces";
 import * as commands from "@/core/commands";
 import { renderIconMarkup } from "@/shared/icon-renderer";
 
@@ -645,6 +645,9 @@ describe("surface manager", () => {
 
     expect(addDock).toHaveBeenCalledWith(expect.objectContaining({
       type: "siyuan-power-buttons-dock-panel",
+      config: expect.objectContaining({
+        icon: STANDALONE_DOCK_ICON_SYMBOL,
+      }),
     }));
 
     const host = document.createElement("div");

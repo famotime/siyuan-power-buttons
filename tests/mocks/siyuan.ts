@@ -8,6 +8,7 @@ export class Plugin {
   addTopBar = vi.fn();
   addStatusBar = vi.fn();
   addDock = vi.fn();
+  addIcons = vi.fn();
 
   openSetting(): void {}
 }
