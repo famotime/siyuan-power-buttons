@@ -362,6 +362,36 @@
               </div>
             </div>
 
+            <div class="workspace-preview__dock-panel">
+              <div class="workspace-preview__dock-panel-header">
+                <span class="workspace-preview__tag"><b>独立侧面板</b></span>
+                <small class="workspace-preview__dock-panel-hint">点击右侧栏插件图标展开</small>
+              </div>
+              <div
+                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__dock-panel-items"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('dock-panel')"
+              >
+                <button
+                  v-for="(item, index) in previewLayout.dockPanel"
+                  :key="item.id"
+                  type="button"
+                  class="workspace-chip"
+                  :class="previewChipClass(item)"
+                  :draggable="item.draggable ?? item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
+                >
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+                <span v-if="!previewLayout.dockPanel.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「独立侧面板」位置</small></span>
+              </div>
+            </div>
+
         </WorkspacePreviewPanel>
 
         <ConfigTransferPanel

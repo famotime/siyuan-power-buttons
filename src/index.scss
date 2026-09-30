@@ -254,6 +254,34 @@
   border: 1px solid color-mix(in srgb, var(--b3-border-color) 84%, transparent);
 }
 
+.workspace-preview__dock-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 68px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--b3-theme-primary) 40%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--b3-theme-primary) 8%, transparent), transparent 55%),
+    color-mix(in srgb, var(--b3-theme-background) 72%, transparent);
+}
+
+.workspace-preview__dock-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspace-preview__dock-panel-hint {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.workspace-preview__dock-panel-items {
+  min-height: 38px;
+}
+
 .workspace-preview__selection-toolbar {
   display: flex;
   flex-direction: column;

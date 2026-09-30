@@ -1802,4 +1802,90 @@ describe("settings app layout", () => {
 
     unmount();
   });
+
+  it("allows a user button to move into the independent side panel preview area", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "topbar-preview-item",
+        title: "最近文档",
+        surface: "topbar",
+        order: 0,
+      }),
+    ];
+
+    const onChange = vi.fn();
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await flushAll();
+
+    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
+    const dockPanelDropzone = target.querySelector(".workspace-preview__dock-panel-items") as HTMLElement;
+
+    expect(target.querySelector(".workspace-preview__dock-panel")).not.toBeNull();
+    expect(target.querySelector(".workspace-preview__dock-panel-header")?.textContent).toContain("独立侧面板");
+
+    topbarButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    dockPanelDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+
+    await new Promise(resolve => window.setTimeout(resolve, 20));
+    await flushAll();
+
+    expect(onChange).toHaveBeenCalled();
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.items.find((item: { title: string }) => item.title === "最近文档")?.surface).toBe("dock-panel");
+
+    unmount();
+  });
+
+  it("provides independent side panel option in surface select dropdown", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "test-btn",
+        title: "测试按钮",
+        surface: "topbar",
+        order: 0,
+      }),
+    ];
+
+    const onChange = vi.fn();
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await flushAll();
+
+    const surfaceSelect = target.querySelector(".settings-panel--editor select.b3-select") as HTMLSelectElement;
+    const options = Array.from(surfaceSelect.options).map(opt => ({ value: opt.value, label: opt.textContent?.trim() }));
+    expect(options).toContainEqual({ value: "dock-panel", label: "独立侧面板" });
+
+    surfaceSelect.value = "dock-panel";
+    surfaceSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    await flushAll();
+
+    const latestConfig = onChange.mock.calls.at(-1)?.[0];
+    expect(latestConfig?.items.find((item: { id: string }) => item.id === "test-btn")?.surface).toBe("dock-panel");
+
+    unmount();
+  });
 });
