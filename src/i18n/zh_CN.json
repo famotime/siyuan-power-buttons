@@ -12,5 +12,9 @@
   "clickSequenceStepFailed": "点击序列第 {step} 步失败：{selector}",
   "uninstallDataRemoveFailed": "卸载插件时删除数据失败：{name} / {storageName} / {message}",
   "copiedServerUrlToClipboard": "伺服地址已复制到剪贴板",
-  "copyServerUrlFailed": "复制伺服地址失败"
+  "copyServerUrlFailed": "复制伺服地址失败",
+  "dockPanelTitle": "随心按",
+  "dockPanelSettings": "设置",
+  "dockPanelEmpty": "暂未放置快捷按钮",
+  "dockPanelGoToSettings": "前往设置添加"
 }

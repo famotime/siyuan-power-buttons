@@ -20,15 +20,18 @@ describe("surface metadata", () => {
     expect(getPreviewLayoutKey("statusbar-right")).toBe("statusbarRight");
     expect(getPreviewLayoutKey("canvas")).toBe("canvas");
     expect(getPreviewLayoutKey("selection-toolbar")).toBe("selectionToolbar");
+    expect(getPreviewLayoutKey("dock-panel")).toBe("dockPanel");
   });
 
   it("exposes dock positions and surface group predicates from one place", () => {
     expect(getDockPosition("dock-left-top")).toBe("LeftTop");
     expect(getDockPosition("dock-bottom-right")).toBe("BottomRight");
     expect(isDockSurface("dock-right-bottom")).toBe(true);
+    expect(isDockSurface("dock-panel" as any)).toBe(false);
     expect(isStatusBarSurface("statusbar-right")).toBe(true);
     expect(isConfigurableSurface("statusbar-left")).toBe(true);
     expect(isConfigurableSurface("selection-toolbar")).toBe(true);
+    expect(isConfigurableSurface("dock-panel")).toBe(true);
     expect(isConfigurableSurface("dock-left-top")).toBe(true);
   });
 });

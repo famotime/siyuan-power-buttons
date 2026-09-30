@@ -115,4 +115,29 @@ describe("preview layout", () => {
     expect(layout.topbar).toHaveLength(0);
     expect(layout.statusbarRight.map(item => item.title)).toEqual(["帮助", "最近文档"]);
   });
+
+  it("maps and moves buttons into dock-panel layout region", () => {
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "side-panel-1",
+        title: "面板按钮1",
+        surface: "dock-panel",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "side-panel-2",
+        title: "面板按钮2",
+        surface: "dock-panel",
+        order: 1,
+      }),
+    ];
+
+    const layout = buildPreviewLayout(config.items);
+    expect(layout.dockPanel.map(item => item.title)).toEqual(["面板按钮1", "面板按钮2"]);
+
+    const moved = movePreviewItem(config.items, "side-panel-2", "dock-panel", 0);
+    const updatedLayout = buildPreviewLayout(moved);
+    expect(updatedLayout.dockPanel.map(item => item.title)).toEqual(["面板按钮2", "面板按钮1"]);
+  });
 });

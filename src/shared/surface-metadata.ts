@@ -13,7 +13,8 @@ export type PreviewLayoutKey =
   | "statusbarLeft"
   | "statusbarRight"
   | "canvas"
-  | "selectionToolbar";
+  | "selectionToolbar"
+  | "dockPanel";
 
 const PREVIEW_LAYOUT_KEYS: Record<PreviewSurfaceType, PreviewLayoutKey> = {
   topbar: "topbar",
@@ -27,9 +28,18 @@ const PREVIEW_LAYOUT_KEYS: Record<PreviewSurfaceType, PreviewLayoutKey> = {
   "statusbar-right": "statusbarRight",
   canvas: "canvas",
   "selection-toolbar": "selectionToolbar",
+  "dock-panel": "dockPanel",
 };
 
-const DOCK_POSITIONS: Record<Extract<SurfaceType, `dock-${string}`>, TPluginDockPosition> = {
+export type SingleDockPositionSurface =
+  | "dock-left-top"
+  | "dock-left-bottom"
+  | "dock-right-top"
+  | "dock-right-bottom"
+  | "dock-bottom-left"
+  | "dock-bottom-right";
+
+const DOCK_POSITIONS: Record<SingleDockPositionSurface, TPluginDockPosition> = {
   "dock-left-top": "LeftTop",
   "dock-left-bottom": "LeftBottom",
   "dock-right-top": "RightTop",
@@ -42,8 +52,12 @@ export function getPreviewLayoutKey(surface: PreviewSurfaceType): PreviewLayoutK
   return PREVIEW_LAYOUT_KEYS[surface];
 }
 
-export function isDockSurface(surface: SurfaceType): surface is Extract<SurfaceType, `dock-${string}`> {
-  return surface.startsWith("dock-");
+export function isDockSurface(surface: SurfaceType): surface is SingleDockPositionSurface {
+  return surface in DOCK_POSITIONS;
+}
+
+export function isDockPanelSurface(surface: SurfaceType): surface is "dock-panel" {
+  return surface === "dock-panel";
 }
 
 export function isStatusBarSurface(surface: SurfaceType): surface is Extract<SurfaceType, `statusbar-${string}`> {
@@ -54,7 +68,7 @@ export function isConfigurableSurface(surface: SurfaceType): surface is typeof C
   return CONFIGURABLE_SURFACES.includes(surface as typeof CONFIGURABLE_SURFACES[number]);
 }
 
-export function getDockPosition(surface: Extract<SurfaceType, `dock-${string}`>): TPluginDockPosition {
+export function getDockPosition(surface: SingleDockPositionSurface): TPluginDockPosition {
   return DOCK_POSITIONS[surface];
 }
 

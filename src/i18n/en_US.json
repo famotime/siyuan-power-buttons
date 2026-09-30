@@ -11,5 +11,9 @@
   "experimentalClickSequenceUnavailable": "Experimental click sequence adapter is not available.",
   "uninstallDataRemoveFailed": "uninstall [{name}] remove data [{storageName}] fail: {message}",
   "copiedServerUrlToClipboard": "Server URL copied to clipboard",
-  "copyServerUrlFailed": "Failed to copy server URL to clipboard"
+  "copyServerUrlFailed": "Failed to copy server URL to clipboard",
+  "dockPanelTitle": "Power Buttons",
+  "dockPanelSettings": "Settings",
+  "dockPanelEmpty": "No shortcut buttons placed yet",
+  "dockPanelGoToSettings": "Configure in Settings"
 }
