@@ -2,7 +2,7 @@
   <section>
     <div class="panel-title">
       <div>
-        <h2>1. 按钮列表</h2>
+        <h2>按钮列表</h2>
         <p>共 {{ config.items.length }} 个按钮，拖拽可排序</p>
       </div>
       <div class="panel-title__actions">

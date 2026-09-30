@@ -25,7 +25,7 @@
     </header>
 
     <div class="settings-layout">
-      <aside class="settings-panel settings-panel--sidebar">
+      <div class="settings-panel settings-panel--sidebar">
         <SettingsButtonListPanel
           :config="config"
           :selected-id="selectedId"
@@ -41,373 +41,13 @@
           :on-list-drop="onListDrop"
         />
 
-        <WorkspacePreviewPanel
-          :show-preview-labels="showPreviewLabels"
-          :is-refreshing-layout="isRefreshingLayout"
-          :toggle-preview-labels="() => { showPreviewLabels = !showPreviewLabels }"
-          :refresh-current-layout="refreshCurrentLayout"
-        >
-            <div
-              class="workspace-preview__topbar"
-              @dragover.prevent
-              @drop="onPreviewSurfaceDrop('topbar')"
-            >
-              <span class="workspace-preview__tag"><b>顶栏</b></span>
-              <div class="workspace-preview__stack workspace-preview__stack--row">
-                <button
-                  v-for="(item, index) in previewLayout.topbar"
-                  :key="item.id"
-                  type="button"
-                  class="workspace-chip"
-                  :class="previewChipClass(item)"
-                  :draggable="item.draggable ?? item.editable"
-                  :title="previewChipTitle(item)"
-                  @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart($event, item)"
-                  @dragover.prevent
-                  @drop.stop="onPreviewItemDrop('topbar', previewLayout.topbar, index)"
-                >
-                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                  <span class="workspace-chip__label">{{ item.title }}</span>
-                </button>
-                <span v-if="!previewLayout.topbar.length" class="surface-summary__empty">空</span>
-              </div>
-            </div>
 
-            <div class="workspace-preview__body">
-              <div class="workspace-preview__dock">
-                <span class="workspace-preview__tag"><b>左 Dock</b></span>
-                <div
-                  class="workspace-preview__stack workspace-preview__segment"
-                  @dragover.prevent
-                  @drop="onPreviewSurfaceDrop('dock-left-top')"
-                >
-                  <button
-                    v-for="(item, index) in previewLayout.leftDockTop"
-                    :key="item.id"
-                    type="button"
-                    class="workspace-chip"
-                    :class="previewChipClass(item)"
-                    :draggable="item.draggable ?? item.editable"
-                    :title="previewChipTitle(item)"
-                    @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart($event, item)"
-                    @dragover.prevent
-                    @drop.stop="onPreviewItemDrop('dock-left-top', previewLayout.leftDockTop, index)"
-                  >
-                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                    <span class="workspace-chip__label">{{ item.title }}</span>
-                    <span
-                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
-                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
-                    >🔒</span>
-                  </button>
-                  <span v-if="!previewLayout.leftDockTop.length" class="surface-summary__empty">空</span>
-                </div>
-                <div
-                  class="workspace-preview__stack workspace-preview__segment workspace-preview__segment--end"
-                  @dragover.prevent
-                  @drop="onPreviewSurfaceDrop('dock-left-bottom')"
-                >
-                  <button
-                    v-for="(item, index) in previewLayout.leftDockBottom"
-                    :key="item.id"
-                    type="button"
-                    class="workspace-chip"
-                    :class="previewChipClass(item)"
-                    :draggable="item.draggable ?? item.editable"
-                    :title="previewChipTitle(item)"
-                    @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart($event, item)"
-                    @dragover.prevent
-                    @drop.stop="onPreviewItemDrop('dock-left-bottom', previewLayout.leftDockBottom, index)"
-                  >
-                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                    <span class="workspace-chip__label">{{ item.title }}</span>
-                    <span
-                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
-                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
-                    >🔒</span>
-                  </button>
-                  <span v-if="!previewLayout.leftDockBottom.length" class="surface-summary__empty">空</span>
-                </div>
-              </div>
-
-              <div class="workspace-preview__canvas">
-                <div class="workspace-preview__canvas-header">
-                  <div class="workspace-preview__canvas-note"><b>编辑区</b></div>
-                  <div
-                    class="workspace-preview__stack workspace-preview__stack--row workspace-preview__canvas-items"
-                    @dragover.prevent
-                    @drop="onPreviewSurfaceDrop('canvas')"
-                  >
-                    <button
-                      v-for="(item, index) in previewLayout.canvas"
-                      :key="item.id"
-                      type="button"
-                      class="workspace-chip"
-                      :class="previewChipClass(item)"
-                      :draggable="item.draggable ?? item.editable"
-                      :title="previewChipTitle(item)"
-                      @click="handlePreviewChipClick(item)"
-                      @dragstart="onPreviewDragStart($event, item)"
-                      @dragover.prevent
-                      @drop.stop="onPreviewItemDrop('canvas', previewLayout.canvas, index)"
-                    >
-                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                      <span class="workspace-chip__label">{{ item.title }}</span>
-                    </button>
-                    <span v-if="!previewLayout.canvas.length" class="surface-summary__empty">空</span>
-                  </div>
-                </div>
-                <div class="workspace-preview__bottom-dock">
-                  <div
-                    class="workspace-preview__stack workspace-preview__stack--row"
-                    @dragover.prevent
-                    @drop="onPreviewSurfaceDrop('dock-bottom-left')"
-                  >
-                    <button
-                      v-for="(item, index) in previewLayout.bottomDockLeft"
-                      :key="item.id"
-                      type="button"
-                      class="workspace-chip"
-                      :class="previewChipClass(item)"
-                      :draggable="item.draggable ?? item.editable"
-                      :title="previewChipTitle(item)"
-                      @click="handlePreviewChipClick(item)"
-                      @dragstart="onPreviewDragStart($event, item)"
-                      @dragover.prevent
-                      @drop.stop="onPreviewItemDrop('dock-bottom-left', previewLayout.bottomDockLeft, index)"
-                    >
-                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                      <span class="workspace-chip__label">{{ item.title }}</span>
-                      <span
-                        v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
-                        style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
-                      >🔒</span>
-                    </button>
-                  </div>
-                  <div
-                    class="workspace-preview__stack workspace-preview__stack--row"
-                    @dragover.prevent
-                    @drop="onPreviewSurfaceDrop('dock-bottom-right')"
-                  >
-                    <button
-                      v-for="(item, index) in previewLayout.bottomDockRight"
-                      :key="item.id"
-                      type="button"
-                      class="workspace-chip"
-                      :class="previewChipClass(item)"
-                      :draggable="item.draggable ?? item.editable"
-                      :title="previewChipTitle(item)"
-                      @click="handlePreviewChipClick(item)"
-                      @dragstart="onPreviewDragStart($event, item)"
-                      @dragover.prevent
-                      @drop.stop="onPreviewItemDrop('dock-bottom-right', previewLayout.bottomDockRight, index)"
-                    >
-                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                      <span class="workspace-chip__label">{{ item.title }}</span>
-                      <span
-                        v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
-                        style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
-                      >🔒</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="workspace-preview__dock">
-                <span class="workspace-preview__tag"><b>右 Dock</b></span>
-                <div
-                  class="workspace-preview__stack workspace-preview__segment"
-                  @dragover.prevent
-                  @drop="onPreviewSurfaceDrop('dock-right-top')"
-                >
-                  <button
-                    v-for="(item, index) in previewLayout.rightDockTop"
-                    :key="item.id"
-                    type="button"
-                    class="workspace-chip"
-                    :class="previewChipClass(item)"
-                    :draggable="item.draggable ?? item.editable"
-                    :title="previewChipTitle(item)"
-                    @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart($event, item)"
-                    @dragover.prevent
-                    @drop.stop="onPreviewItemDrop('dock-right-top', previewLayout.rightDockTop, index)"
-                  >
-                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                    <span class="workspace-chip__label">{{ item.title }}</span>
-                    <span
-                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
-                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
-                    >🔒</span>
-                  </button>
-                  <span v-if="!previewLayout.rightDockTop.length" class="surface-summary__empty">空</span>
-                </div>
-                <div
-                  class="workspace-preview__stack workspace-preview__segment workspace-preview__segment--end"
-                  @dragover.prevent
-                  @drop="onPreviewSurfaceDrop('dock-right-bottom')"
-                >
-                  <button
-                    v-for="(item, index) in previewLayout.rightDockBottom"
-                    :key="item.id"
-                    type="button"
-                    class="workspace-chip"
-                    :class="previewChipClass(item)"
-                    :draggable="item.draggable ?? item.editable"
-                    :title="previewChipTitle(item)"
-                    @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart($event, item)"
-                    @dragover.prevent
-                    @drop.stop="onPreviewItemDrop('dock-right-bottom', previewLayout.rightDockBottom, index)"
-                  >
-                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                    <span class="workspace-chip__label">{{ item.title }}</span>
-                    <span
-                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
-                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
-                    >🔒</span>
-                  </button>
-                  <span v-if="!previewLayout.rightDockBottom.length" class="surface-summary__empty">空</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="workspace-preview__statusbar">
-              <div
-                class="workspace-preview__stack workspace-preview__stack--row"
-                @dragover.prevent
-                @drop="onPreviewSurfaceDrop('statusbar-left')"
-              >
-                <span class="workspace-preview__tag"><b>状态栏</b></span>
-                <button
-                  v-for="(item, index) in previewLayout.statusbarLeft"
-                  :key="item.id"
-                  type="button"
-                  class="workspace-chip"
-                  :class="previewChipClass(item)"
-                  :draggable="item.draggable ?? item.editable"
-                  :title="previewChipTitle(item)"
-                  @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart($event, item)"
-                  @dragover.prevent
-                  @drop.stop="onPreviewItemDrop('statusbar-left', previewLayout.statusbarLeft, index)"
-                >
-                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                  <span class="workspace-chip__label">{{ item.title }}</span>
-                </button>
-                <span v-if="!previewLayout.statusbarLeft.length" class="surface-summary__empty">空</span>
-              </div>
-              <div
-                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__stack--right"
-                @dragover.prevent
-                @drop="onPreviewSurfaceDrop('statusbar-right')"
-              >
-                <button
-                  v-for="(item, index) in previewLayout.statusbarRight"
-                  :key="item.id"
-                  type="button"
-                  class="workspace-chip"
-                  :class="previewChipClass(item)"
-                  :draggable="item.draggable ?? item.editable"
-                  :title="previewChipTitle(item)"
-                  @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart($event, item)"
-                  @dragover.prevent
-                  @drop.stop="onPreviewItemDrop('statusbar-right', previewLayout.statusbarRight, index)"
-                >
-                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                  <span class="workspace-chip__label">{{ item.title }}</span>
-                </button>
-                <span v-if="!previewLayout.statusbarRight.length" class="surface-summary__empty">空</span>
-              </div>
-            </div>
-
-            <div class="workspace-preview__selection-toolbar">
-              <div class="workspace-preview__selection-toolbar-header">
-                <span class="workspace-preview__tag"><b>浮动工具栏</b></span>
-                <small class="workspace-preview__selection-toolbar-hint">选中文本后弹出</small>
-              </div>
-              <div
-                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__selection-toolbar-custom"
-                @dragover.prevent
-                @drop="onSelectionToolbarPreviewDrop(selectionToolbarPreviewItems.length)"
-              >
-                <button
-                  v-for="(item, index) in selectionToolbarPreviewItems"
-                  :key="item.key"
-                  type="button"
-                  class="workspace-chip"
-                  :class="{
-                    'is-native': item.type === 'native',
-                    'is-draggable': true,
-                    'is-active': item.type === 'custom' && item.id === selectedId,
-                    'is-disabled': item.disabled,
-                  }"
-                  draggable="true"
-                  :title="item.type === 'native'
-                    ? (item.disabled ? `点击恢复「${item.title}」` : `点击禁用「${item.title}」`)
-                    : item.title"
-                  @click="item.type === 'native' ? toggleSelectionToolbarNativeButton(item.id) : selectItem(item.id)"
-                  @dragstart="(e) => onSelectionToolbarPreviewDragStart(e, item)"
-                  @dragover.prevent
-                  @drop.stop="onSelectionToolbarPreviewDrop(index)"
-                >
-                  <span class="workspace-chip__icon" v-html="item.iconMarkup" />
-                  <span class="workspace-chip__label">{{ item.title }}</span>
-                </button>
-                <span v-if="!selectionToolbarPreviewItems.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「浮动工具栏」位置</small></span>
-              </div>
-            </div>
-
-            <div class="workspace-preview__dock-panel">
-              <div class="workspace-preview__dock-panel-header">
-                <span class="workspace-preview__tag"><b>独立侧面板</b></span>
-                <small class="workspace-preview__dock-panel-hint">点击右侧栏插件图标展开</small>
-              </div>
-              <div
-                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__dock-panel-items"
-                @dragover.prevent
-                @drop="onPreviewSurfaceDrop('dock-panel')"
-              >
-                <button
-                  v-for="(item, index) in previewLayout.dockPanel"
-                  :key="item.id"
-                  type="button"
-                  class="workspace-chip"
-                  :class="previewChipClass(item)"
-                  :draggable="item.draggable ?? item.editable"
-                  :title="previewChipTitle(item)"
-                  @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart($event, item)"
-                  @dragover.prevent
-                  @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
-                >
-                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                  <span class="workspace-chip__label">{{ item.title }}</span>
-                </button>
-                <span v-if="!previewLayout.dockPanel.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「独立侧面板」位置</small></span>
-              </div>
-            </div>
-
-        </WorkspacePreviewPanel>
-
-        <ConfigTransferPanel
-          :set-import-file-input="setImportFileInput"
-          :export-config-file="exportConfigFile"
-          :open-import-file-picker="openImportFilePicker"
-          :handle-import-file="handleImportFile"
-        />
-      </aside>
-
-      <main class="settings-panel settings-panel--editor">
+        <section class="settings-panel--editor">
         <div class="panel-title">
           <div>
-            <h2>2. 按钮设置</h2>
+            <h2>按钮设置</h2>
             <p v-if="selectedItem">当前正在编辑：{{ selectedItem.title || "未命名按钮" }}</p>
-            <p v-else>请先在左侧选中一个按钮</p>
+            <p v-else>请先在上方列表中选中一个按钮</p>
           </div>
         </div>
 
@@ -777,7 +417,370 @@
           </section>
 
         </template>
-      </main>
+        </section>
+      </div>
+
+      <aside class="settings-panel settings-panel--preview">
+        <WorkspacePreviewPanel
+          :show-preview-labels="showPreviewLabels"
+          :is-refreshing-layout="isRefreshingLayout"
+          :toggle-preview-labels="() => { showPreviewLabels = !showPreviewLabels }"
+          :refresh-current-layout="refreshCurrentLayout"
+        >
+            <div
+              class="workspace-preview__topbar"
+              @dragover.prevent
+              @drop="onPreviewSurfaceDrop('topbar')"
+            >
+              <span class="workspace-preview__tag"><b>顶栏</b></span>
+              <div class="workspace-preview__stack workspace-preview__stack--row">
+                <button
+                  v-for="(item, index) in previewLayout.topbar"
+                  :key="item.id"
+                  type="button"
+                  class="workspace-chip"
+                  :class="previewChipClass(item)"
+                  :draggable="item.draggable ?? item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('topbar', previewLayout.topbar, index)"
+                >
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+                <span v-if="!previewLayout.topbar.length" class="surface-summary__empty">空</span>
+              </div>
+            </div>
+
+            <div class="workspace-preview__body">
+              <div class="workspace-preview__dock">
+                <span class="workspace-preview__tag"><b>左 Dock</b></span>
+                <div
+                  class="workspace-preview__stack workspace-preview__segment"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-left-top')"
+                >
+                  <button
+                    v-for="(item, index) in previewLayout.leftDockTop"
+                    :key="item.id"
+                    type="button"
+                    class="workspace-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.draggable ?? item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-left-top', previewLayout.leftDockTop, index)"
+                  >
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
+                  </button>
+                  <span v-if="!previewLayout.leftDockTop.length" class="surface-summary__empty">空</span>
+                </div>
+                <div
+                  class="workspace-preview__stack workspace-preview__segment workspace-preview__segment--end"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-left-bottom')"
+                >
+                  <button
+                    v-for="(item, index) in previewLayout.leftDockBottom"
+                    :key="item.id"
+                    type="button"
+                    class="workspace-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.draggable ?? item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-left-bottom', previewLayout.leftDockBottom, index)"
+                  >
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
+                  </button>
+                  <span v-if="!previewLayout.leftDockBottom.length" class="surface-summary__empty">空</span>
+                </div>
+              </div>
+
+              <div class="workspace-preview__canvas">
+                <div class="workspace-preview__canvas-header">
+                  <div class="workspace-preview__canvas-note"><b>编辑区</b></div>
+                  <div
+                    class="workspace-preview__stack workspace-preview__stack--row workspace-preview__canvas-items"
+                    @dragover.prevent
+                    @drop="onPreviewSurfaceDrop('canvas')"
+                  >
+                    <button
+                      v-for="(item, index) in previewLayout.canvas"
+                      :key="item.id"
+                      type="button"
+                      class="workspace-chip"
+                      :class="previewChipClass(item)"
+                      :draggable="item.draggable ?? item.editable"
+                      :title="previewChipTitle(item)"
+                      @click="handlePreviewChipClick(item)"
+                      @dragstart="onPreviewDragStart($event, item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('canvas', previewLayout.canvas, index)"
+                    >
+                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                      <span class="workspace-chip__label">{{ item.title }}</span>
+                    </button>
+                    <span v-if="!previewLayout.canvas.length" class="surface-summary__empty">空</span>
+                  </div>
+                </div>
+                <div class="workspace-preview__bottom-dock">
+                  <div
+                    class="workspace-preview__stack workspace-preview__stack--row"
+                    @dragover.prevent
+                    @drop="onPreviewSurfaceDrop('dock-bottom-left')"
+                  >
+                    <button
+                      v-for="(item, index) in previewLayout.bottomDockLeft"
+                      :key="item.id"
+                      type="button"
+                      class="workspace-chip"
+                      :class="previewChipClass(item)"
+                      :draggable="item.draggable ?? item.editable"
+                      :title="previewChipTitle(item)"
+                      @click="handlePreviewChipClick(item)"
+                      @dragstart="onPreviewDragStart($event, item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('dock-bottom-left', previewLayout.bottomDockLeft, index)"
+                    >
+                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                      <span class="workspace-chip__label">{{ item.title }}</span>
+                      <span
+                        v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                        style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                      >🔒</span>
+                    </button>
+                  </div>
+                  <div
+                    class="workspace-preview__stack workspace-preview__stack--row"
+                    @dragover.prevent
+                    @drop="onPreviewSurfaceDrop('dock-bottom-right')"
+                  >
+                    <button
+                      v-for="(item, index) in previewLayout.bottomDockRight"
+                      :key="item.id"
+                      type="button"
+                      class="workspace-chip"
+                      :class="previewChipClass(item)"
+                      :draggable="item.draggable ?? item.editable"
+                      :title="previewChipTitle(item)"
+                      @click="handlePreviewChipClick(item)"
+                      @dragstart="onPreviewDragStart($event, item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('dock-bottom-right', previewLayout.bottomDockRight, index)"
+                    >
+                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                      <span class="workspace-chip__label">{{ item.title }}</span>
+                      <span
+                        v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                        style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                      >🔒</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="workspace-preview__dock">
+                <span class="workspace-preview__tag"><b>右 Dock</b></span>
+                <div
+                  class="workspace-preview__stack workspace-preview__segment"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-right-top')"
+                >
+                  <button
+                    v-for="(item, index) in previewLayout.rightDockTop"
+                    :key="item.id"
+                    type="button"
+                    class="workspace-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.draggable ?? item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-right-top', previewLayout.rightDockTop, index)"
+                  >
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
+                  </button>
+                  <span v-if="!previewLayout.rightDockTop.length" class="surface-summary__empty">空</span>
+                </div>
+                <div
+                  class="workspace-preview__stack workspace-preview__segment workspace-preview__segment--end"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-right-bottom')"
+                >
+                  <button
+                    v-for="(item, index) in previewLayout.rightDockBottom"
+                    :key="item.id"
+                    type="button"
+                    class="workspace-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.draggable ?? item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-right-bottom', previewLayout.rightDockBottom, index)"
+                  >
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
+                    <span
+                      v-if="item.editable && checkHasSiyuanDockLayoutWrapper(item.id)"
+                      style="margin-left: 4px; font-size: 10px; opacity: 0.7;"
+                    >🔒</span>
+                  </button>
+                  <span v-if="!previewLayout.rightDockBottom.length" class="surface-summary__empty">空</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="workspace-preview__statusbar">
+              <div
+                class="workspace-preview__stack workspace-preview__stack--row"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('statusbar-left')"
+              >
+                <span class="workspace-preview__tag"><b>状态栏</b></span>
+                <button
+                  v-for="(item, index) in previewLayout.statusbarLeft"
+                  :key="item.id"
+                  type="button"
+                  class="workspace-chip"
+                  :class="previewChipClass(item)"
+                  :draggable="item.draggable ?? item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('statusbar-left', previewLayout.statusbarLeft, index)"
+                >
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+                <span v-if="!previewLayout.statusbarLeft.length" class="surface-summary__empty">空</span>
+              </div>
+              <div
+                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__stack--right"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('statusbar-right')"
+              >
+                <button
+                  v-for="(item, index) in previewLayout.statusbarRight"
+                  :key="item.id"
+                  type="button"
+                  class="workspace-chip"
+                  :class="previewChipClass(item)"
+                  :draggable="item.draggable ?? item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('statusbar-right', previewLayout.statusbarRight, index)"
+                >
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+                <span v-if="!previewLayout.statusbarRight.length" class="surface-summary__empty">空</span>
+              </div>
+            </div>
+
+            <div class="workspace-preview__selection-toolbar">
+              <div class="workspace-preview__selection-toolbar-header">
+                <span class="workspace-preview__tag"><b>浮动工具栏</b></span>
+                <small class="workspace-preview__selection-toolbar-hint">选中文本后弹出</small>
+              </div>
+              <div
+                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__selection-toolbar-custom"
+                @dragover.prevent
+                @drop="onSelectionToolbarPreviewDrop(selectionToolbarPreviewItems.length)"
+              >
+                <button
+                  v-for="(item, index) in selectionToolbarPreviewItems"
+                  :key="item.key"
+                  type="button"
+                  class="workspace-chip"
+                  :class="{
+                    'is-native': item.type === 'native',
+                    'is-draggable': true,
+                    'is-active': item.type === 'custom' && item.id === selectedId,
+                    'is-disabled': item.disabled,
+                  }"
+                  draggable="true"
+                  :title="item.type === 'native'
+                    ? (item.disabled ? `点击恢复「${item.title}」` : `点击禁用「${item.title}」`)
+                    : item.title"
+                  @click="item.type === 'native' ? toggleSelectionToolbarNativeButton(item.id) : selectItem(item.id)"
+                  @dragstart="(e) => onSelectionToolbarPreviewDragStart(e, item)"
+                  @dragover.prevent
+                  @drop.stop="onSelectionToolbarPreviewDrop(index)"
+                >
+                  <span class="workspace-chip__icon" v-html="item.iconMarkup" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+                <span v-if="!selectionToolbarPreviewItems.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「浮动工具栏」位置</small></span>
+              </div>
+            </div>
+
+            <div class="workspace-preview__dock-panel">
+              <div class="workspace-preview__dock-panel-header">
+                <span class="workspace-preview__tag"><b>独立侧面板</b></span>
+                <small class="workspace-preview__dock-panel-hint">点击右侧栏插件图标展开</small>
+              </div>
+              <div
+                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__dock-panel-items"
+                @dragover.prevent
+                @drop="onPreviewSurfaceDrop('dock-panel')"
+              >
+                <button
+                  v-for="(item, index) in previewLayout.dockPanel"
+                  :key="item.id"
+                  type="button"
+                  class="workspace-chip"
+                  :class="previewChipClass(item)"
+                  :draggable="item.draggable ?? item.editable"
+                  :title="previewChipTitle(item)"
+                  @click="handlePreviewChipClick(item)"
+                  @dragstart="onPreviewDragStart($event, item)"
+                  @dragover.prevent
+                  @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
+                >
+                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                  <span class="workspace-chip__label">{{ item.title }}</span>
+                </button>
+                <span v-if="!previewLayout.dockPanel.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「独立侧面板」位置</small></span>
+              </div>
+            </div>
+
+        </WorkspacePreviewPanel>
+
+        <ConfigTransferPanel
+          :set-import-file-input="setImportFileInput"
+          :export-config-file="exportConfigFile"
+          :open-import-file-picker="openImportFilePicker"
+          :handle-import-file="handleImportFile"
+        />
+      </aside>
     </div>
   </div>
 </template>

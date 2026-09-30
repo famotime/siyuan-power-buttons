@@ -40,7 +40,7 @@
 
 .settings-layout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 1.2fr minmax(0, 1fr);
   gap: 16px;
   min-height: 0;
   flex: 1;
@@ -59,12 +59,16 @@
   box-shadow: 0 18px 40px color-mix(in srgb, black 12%, transparent);
 }
 
-.settings-panel--sidebar {
+.settings-panel--sidebar,
+.settings-panel--preview {
   overflow: auto;
 }
 
 .settings-panel--editor {
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
 }
 
 .panel-title h2,

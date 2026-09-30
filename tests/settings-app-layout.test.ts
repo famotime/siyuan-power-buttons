@@ -1113,7 +1113,7 @@ describe("settings app layout", () => {
     unmount();
   });
 
-  it("renders config import and export as the last sidebar panel and removes json textarea tools", async () => {
+  it("renders config import and export in the right preview panel and button settings below button list in the left panel", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -1130,17 +1130,21 @@ describe("settings app layout", () => {
 
     const sidebar = target.querySelector(".settings-panel--sidebar");
     const sidebarSections = Array.from(sidebar?.children ?? []);
-    const sidebarTransfer = target.querySelector(".settings-panel--sidebar .config-transfer");
+    const previewPanel = target.querySelector(".settings-panel--preview");
+    const previewSections = Array.from(previewPanel?.children ?? []);
+    const previewTransfer = target.querySelector(".settings-panel--preview .config-transfer");
     const editorTransfer = target.querySelector(".settings-panel--editor .config-transfer");
 
-    expect(sidebarSections).toHaveLength(3);
+    expect(sidebarSections).toHaveLength(2);
     expect(sidebarSections[0]?.textContent).toContain("按钮列表");
     expect(sidebarSections[0]?.textContent).not.toContain("导出配置文件");
-    expect(sidebarSections[1]?.textContent).toContain("位置预览");
-    expect(sidebarSections[2]?.textContent).toContain("配置文件");
-    expect(sidebarTransfer?.textContent).toContain("导出配置文件");
-    expect(sidebarTransfer?.textContent).toContain("导入配置文件");
-    expect(sidebarTransfer?.textContent).toContain("所有已配置按钮");
+    expect(sidebarSections[1]?.textContent).toContain("按钮设置");
+    expect(previewSections).toHaveLength(2);
+    expect(previewSections[0]?.textContent).toContain("位置预览");
+    expect(previewSections[1]?.textContent).toContain("配置文件");
+    expect(previewTransfer?.textContent).toContain("导出配置文件");
+    expect(previewTransfer?.textContent).toContain("导入配置文件");
+    expect(previewTransfer?.textContent).toContain("所有已配置按钮");
     expect(editorTransfer).toBeNull();
     expect(target.textContent).not.toContain("复制 JSON");
     expect(target.textContent).not.toContain("导出到文本框");
