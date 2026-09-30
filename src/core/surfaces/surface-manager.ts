@@ -2,6 +2,7 @@ import type {
   Plugin,
 } from "siyuan";
 import { CommandExecutor } from "@/core/commands";
+import { DEFAULT_PLUGIN_COMMAND } from "@/shared/constants";
 import {
   getDockPosition,
   isDockSurface,
@@ -25,13 +26,19 @@ import {
   type DockRegistration,
   getIconMarkup,
   hasDockRemove,
+  renderStandaloneDockPanel,
 } from "@/core/surfaces/surface-elements";
+
+export const STANDALONE_DOCK_TYPE = "siyuan-power-buttons-dock-panel";
 
 export class SurfaceManager {
   private topbarElements: HTMLElement[] = [];
   private statusElements: HTMLElement[] = [];
   private canvasElements: HTMLElement[] = [];
   private dockRegistrations: DockRegistration[] = [];
+  private standaloneDockRegistration: DockRegistration | null = null;
+  private standaloneDockHost: HTMLElement | null = null;
+  private currentConfig: PowerButtonsConfig | null = null;
   private nativeSuppressor = new NativeElementSuppressor();
   private toolbarPatchObserver: MutationObserver | null = null;
   private disabledToolbarNames = new Set<string>();
@@ -46,7 +53,11 @@ export class SurfaceManager {
   ) {}
 
   render(config: PowerButtonsConfig): void {
-    this.destroy();
+    this.currentConfig = config;
+    this.clearDynamicSurfaces();
+
+    this.ensureStandaloneDock();
+    this.renderStandaloneDock();
 
     this.topbarElements.push(createFixedSettingsTopbar(this.plugin, this.executor));
 
@@ -96,6 +107,11 @@ export class SurfaceManager {
         continue;
       }
 
+      if (item.surface === "dock-panel") {
+        // 独立侧面板按钮已由 renderStandaloneDock 集中渲染
+        continue;
+      }
+
       if (isDockSurface(item.surface)) {
         const type = `siyuan-power-buttons-${item.id}`;
         const registration = this.plugin.addDock({
@@ -117,10 +133,12 @@ export class SurfaceManager {
             createDockPanel(item, this.executor, dock.element);
           },
         });
-        this.dockRegistrations.push({
-          type,
-          model: registration.model,
-        });
+        if (registration) {
+          this.dockRegistrations.push({
+            type,
+            model: registration.model,
+          });
+        }
       }
     }
 
@@ -315,7 +333,85 @@ export class SurfaceManager {
     return button;
   }
 
-  destroy(): void {
+  private ensureStandaloneDock(): void {
+    if (this.standaloneDockRegistration) {
+      return;
+    }
+
+    const title = this.t("dockPanelTitle", "随心按");
+    const registration = this.plugin.addDock({
+      type: STANDALONE_DOCK_TYPE,
+      data: {},
+      config: {
+        position: "RightTop",
+        size: { width: 320, height: null },
+        icon: getIconMarkup({
+          id: STANDALONE_DOCK_TYPE,
+          title,
+          visible: true,
+          iconType: "iconpark",
+          iconValue: "iconpark:AsteriskKey",
+          surface: "dock-panel",
+          order: 0,
+          actionType: "plugin-command",
+          actionId: DEFAULT_PLUGIN_COMMAND,
+        }),
+        title,
+        index: 0,
+        show: true,
+      },
+      init: dock => {
+        this.standaloneDockHost = dock.element;
+        this.renderStandaloneDock();
+      },
+      update: () => {
+        this.renderStandaloneDock();
+      },
+    });
+
+    if (registration) {
+      this.standaloneDockRegistration = {
+        type: STANDALONE_DOCK_TYPE,
+        model: registration.model,
+      };
+    }
+  }
+
+  private renderStandaloneDock(): void {
+    if (!this.standaloneDockHost || !this.currentConfig) {
+      return;
+    }
+    const dockPanelItems = sortItems(this.currentConfig.items)
+      .filter(item => item.surface === "dock-panel" && item.visible);
+
+    renderStandaloneDockPanel(
+      this.standaloneDockHost,
+      dockPanelItems,
+      this.executor,
+      () => {
+        void this.executor.execute({
+          actionType: "plugin-command",
+          actionId: DEFAULT_PLUGIN_COMMAND,
+        });
+      },
+      {
+        title: this.t("dockPanelTitle", "随心按"),
+        settings: this.t("dockPanelSettings", "设置"),
+        empty: this.t("dockPanelEmpty", "暂未放置快捷按钮"),
+        goToSettings: this.t("dockPanelGoToSettings", "前往设置添加"),
+      },
+    );
+  }
+
+  private t(key: string, defaultText: string): string {
+    const pluginWithT = this.plugin as Plugin & { t?: (k: string) => string };
+    if (typeof pluginWithT.t === "function") {
+      return pluginWithT.t(key);
+    }
+    return defaultText;
+  }
+
+  private clearDynamicSurfaces(): void {
     this.nativeSuppressor.clear();
     this.toolbarPatchObserver?.disconnect();
     this.toolbarPatchObserver = null;
@@ -345,5 +441,16 @@ export class SurfaceManager {
       }
     }
     this.dockRegistrations = [];
+  }
+
+  destroy(): void {
+    this.clearDynamicSurfaces();
+
+    if (this.standaloneDockRegistration && hasDockRemove(this.standaloneDockRegistration.model)) {
+      this.standaloneDockRegistration.model.remove(this.standaloneDockRegistration.type);
+    }
+    this.standaloneDockRegistration = null;
+    this.standaloneDockHost = null;
+    this.currentConfig = null;
   }
 }

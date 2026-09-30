@@ -99,7 +99,14 @@ describe("surface manager", () => {
 
     expect(addTopBar).toHaveBeenCalledTimes(2);
     expect(addStatusBar).toHaveBeenCalledTimes(1);
-    expect(addDock).not.toHaveBeenCalled();
+    expect(addDock).toHaveBeenCalledTimes(1);
+    expect(addDock).toHaveBeenCalledWith(expect.objectContaining({
+      type: "siyuan-power-buttons-dock-panel",
+      config: expect.objectContaining({
+        position: "RightTop",
+        title: "随心按",
+      }),
+    }));
 
     const statusOptions = addStatusBar.mock.calls[0][0];
     const statusButton = statusOptions.element as HTMLButtonElement;
@@ -107,7 +114,7 @@ describe("surface manager", () => {
 
     manager.destroy();
 
-    expect(removeDock).not.toHaveBeenCalled();
+    expect(removeDock).toHaveBeenCalledWith("siyuan-power-buttons-dock-panel");
   });
 
   it("skips dock teardown when the registration model has no remove method", () => {
@@ -605,6 +612,122 @@ describe("surface manager", () => {
       "#native-toolbar-search",
       "#native-toolbar-search",
     ]);
+
+    manager.destroy();
+  });
+
+  it("renders standalone dock panel with empty state when no buttons are placed on dock-panel", () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const addDock = vi.fn((options: any) => {
+      dockInit = options.init;
+      return {
+        model: { remove: vi.fn() },
+      };
+    });
+    const openSettings = vi.fn();
+    const plugin = {
+      addTopBar: vi.fn(() => document.createElement("button")),
+      addStatusBar: vi.fn(() => document.createElement("div")),
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: { globalCommand: vi.fn() },
+      openUrl: vi.fn(),
+      pluginCommands: new Map([
+        ["open-settings", openSettings],
+      ]),
+    }));
+
+    const config = createDefaultConfig();
+    config.items = [];
+    manager.render(config);
+
+    expect(addDock).toHaveBeenCalledWith(expect.objectContaining({
+      type: "siyuan-power-buttons-dock-panel",
+    }));
+
+    const host = document.createElement("div");
+    dockInit?.({ element: host });
+
+    // Empty state should be rendered
+    const empty = host.querySelector(".siyuan-power-buttons__dock-empty");
+    expect(empty).not.toBeNull();
+    expect(host.querySelector(".siyuan-power-buttons__dock-empty-text")?.textContent).toBe("暂未放置快捷按钮");
+
+    // Click "前往设置添加"
+    const emptyBtn = host.querySelector<HTMLButtonElement>(".siyuan-power-buttons__dock-empty-btn");
+    expect(emptyBtn).not.toBeNull();
+    emptyBtn?.click();
+    expect(openSettings).toHaveBeenCalledTimes(1);
+
+    // Click header settings icon
+    const settingsBtn = host.querySelector<HTMLElement>(".siyuan-power-buttons__dock-settings-btn");
+    expect(settingsBtn).not.toBeNull();
+    settingsBtn?.click();
+    expect(openSettings).toHaveBeenCalledTimes(2);
+
+    manager.destroy();
+  });
+
+  it("renders grid cards for dock-panel buttons and executes actions when clicked", () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const addDock = vi.fn((options: any) => {
+      dockInit = options.init;
+      return {
+        model: { remove: vi.fn() },
+      };
+    });
+    const runBuiltinCommand = vi.fn(() => true);
+    const plugin = {
+      addTopBar: vi.fn(() => document.createElement("button")),
+      addStatusBar: vi.fn(() => document.createElement("div")),
+      addDock,
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: { globalCommand: vi.fn() },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand,
+    }));
+
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "panel-daily-note",
+        title: "每日日志",
+        surface: "dock-panel",
+        actionType: "builtin-global-command",
+        actionId: "dailyNote",
+        order: 0,
+      }),
+      createButtonItem({
+        id: "panel-search",
+        title: "全局搜索",
+        surface: "dock-panel",
+        actionType: "builtin-global-command",
+        actionId: "search",
+        order: 1,
+      }),
+    ];
+
+    manager.render(config);
+
+    const host = document.createElement("div");
+    dockInit?.({ element: host });
+
+    const grid = host.querySelector(".siyuan-power-buttons__dock-grid");
+    expect(grid).not.toBeNull();
+
+    const cards = host.querySelectorAll<HTMLButtonElement>(".siyuan-power-buttons__dock-card");
+    expect(cards).toHaveLength(2);
+    expect(cards[0].querySelector(".siyuan-power-buttons__dock-card-title")?.textContent).toBe("每日日志");
+    expect(cards[1].querySelector(".siyuan-power-buttons__dock-card-title")?.textContent).toBe("全局搜索");
+
+    // Click first card
+    cards[0].click();
+    expect(runBuiltinCommand).toHaveBeenCalledWith("dailyNote");
 
     manager.destroy();
   });

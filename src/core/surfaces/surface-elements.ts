@@ -109,3 +109,87 @@ export function createDockPanel(item: PowerButtonItem, executor: CommandExecutor
     void executor.execute(item);
   });
 }
+
+export function renderStandaloneDockPanel(
+  host: HTMLElement,
+  items: PowerButtonItem[],
+  executor: CommandExecutor,
+  onOpenSettings: () => void,
+  i18n: {
+    title?: string;
+    settings?: string;
+    empty?: string;
+    goToSettings?: string;
+  } = {},
+): void {
+  const title = i18n.title || '随心按';
+  const settingsLabel = i18n.settings || '设置';
+  const emptyLabel = i18n.empty || '暂未放置快捷按钮';
+  const goToSettingsLabel = i18n.goToSettings || '前往设置添加';
+  const logoIcon = createIconSvg('iconpark:AsteriskKey');
+  const settingsIcon = createIconSvg('iconpark:SettingTwo');
+
+  host.innerHTML = '';
+  host.classList.add('fn__flex-1', 'fn__flex-column', 'siyuan-power-buttons__standalone-dock');
+
+  const header = document.createElement('div');
+  header.className = 'block__icons';
+  header.innerHTML = `
+    <div class="block__logo">
+      <span class="block__logoicon">${logoIcon}</span>
+      <span>${escapeAttribute(title)}</span>
+    </div>
+    <span class="fn__flex-1"></span>
+    <span class="block__icon b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-settings-btn" aria-label="${escapeAttribute(settingsLabel)}">
+      ${settingsIcon}
+    </span>
+  `;
+  header.querySelector('.siyuan-power-buttons__dock-settings-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onOpenSettings();
+  });
+  host.appendChild(header);
+
+  const content = document.createElement('div');
+  content.className = 'siyuan-power-buttons__dock-content fn__flex-1';
+
+  if (items.length === 0) {
+    const emptyContainer = document.createElement('div');
+    emptyContainer.className = 'siyuan-power-buttons__dock-empty';
+    emptyContainer.innerHTML = `
+      <div class="siyuan-power-buttons__dock-empty-icon">${logoIcon}</div>
+      <div class="siyuan-power-buttons__dock-empty-text">${escapeAttribute(emptyLabel)}</div>
+      <button type="button" class="b3-button b3-button--outline siyuan-power-buttons__dock-empty-btn">${escapeAttribute(goToSettingsLabel)}</button>
+    `;
+    emptyContainer.querySelector('.siyuan-power-buttons__dock-empty-btn')?.addEventListener('click', () => {
+      onOpenSettings();
+    });
+    content.appendChild(emptyContainer);
+  } else {
+    const grid = document.createElement('div');
+    grid.className = 'siyuan-power-buttons__dock-grid';
+
+    for (const item of items) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'siyuan-power-buttons__dock-card b3-tooltips b3-tooltips__s';
+      card.title = item.tooltip || item.title;
+      card.setAttribute('aria-label', item.tooltip || item.title);
+      card.dataset.powerButtonsOwned = 'true';
+      card.dataset.powerButtonsItemId = item.id;
+      card.innerHTML = `
+        <span class="siyuan-power-buttons__dock-card-icon">${getIconMarkup(item)}</span>
+        <span class="siyuan-power-buttons__dock-card-title">${escapeAttribute(item.title)}</span>
+      `;
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        void executor.execute(item);
+      });
+      grid.appendChild(card);
+    }
+    content.appendChild(grid);
+  }
+
+  host.appendChild(content);
+}
+
