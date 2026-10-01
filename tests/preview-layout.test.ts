@@ -6,7 +6,7 @@ import {
 } from "@/shared/preview-layout";
 
 describe("preview layout", () => {
-  it("maps configurable buttons into topbar and statusbar regions", () => {
+  it("maps configurable buttons into topbar and statusbar regions (merged to statusbar right)", () => {
     const layout = buildPreviewLayout([
       createButtonItem({
         id: "topbar-item",
@@ -23,8 +23,24 @@ describe("preview layout", () => {
     ]);
 
     expect(layout.topbar.length).toBe(1);
-    expect(layout.statusbarLeft.length).toBe(1);
-    expect(layout.statusbarRight.length).toBe(0);
+    expect(layout.statusbarLeft.length).toBe(0);
+    expect(layout.statusbarRight.length).toBe(1);
+    expect(layout.canvas.length).toBe(0);
+  });
+
+  it("maps a button with multiple surfaces into all corresponding regions", () => {
+    const layout = buildPreviewLayout([
+      createButtonItem({
+        id: "multi-btn",
+        title: "快捷操作",
+        surfaces: ["topbar", "statusbar-right", "dock-panel"],
+        order: 0,
+      }),
+    ]);
+
+    expect(layout.topbar.length).toBe(1);
+    expect(layout.statusbarRight.length).toBe(1);
+    expect(layout.dockPanel.length).toBe(1);
     expect(layout.canvas.length).toBe(0);
   });
 

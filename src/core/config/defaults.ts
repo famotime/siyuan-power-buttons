@@ -10,6 +10,7 @@ import {
   createId,
   normalizeItemOrder,
 } from "@/shared/utils";
+import { normalizeSurface } from "@/shared/surface-metadata";
 import type {
   ActionType,
   IconType,
@@ -21,6 +22,10 @@ import type {
 export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): PowerButtonItem {
   const actionType = (overrides.actionType || "builtin-global-command") as ActionType;
   const actionId = overrides.actionId ?? getDefaultActionId(actionType);
+  const surface = normalizeSurface((overrides.surface || "dock-panel") as SurfaceType);
+  const surfaces = overrides.surfaces && overrides.surfaces.length > 0
+    ? Array.from(new Set(overrides.surfaces.map(normalizeSurface)))
+    : [surface];
 
   return {
     id: overrides.id || createId(),
@@ -28,7 +33,8 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
     visible: overrides.visible ?? true,
     iconType: (overrides.iconType || "iconpark") as IconType,
     iconValue: overrides.iconValue || DEFAULT_ICONPARK_ICON,
-    surface: (overrides.surface || "statusbar-right") as SurfaceType,
+    surface,
+    surfaces,
     order: overrides.order ?? 0,
     actionType,
     actionId,

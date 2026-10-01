@@ -8,8 +8,9 @@ export const DEFAULT_PLUGIN_COMMAND = "siyuan-power-buttons:open-settings";
 
 export const SURFACE_LABELS: Record<string, string> = {
   topbar: "顶栏",
-  "statusbar-left": "状态栏左侧",
-  "statusbar-right": "状态栏右侧",
+  "statusbar-left": "状态栏",
+  "statusbar-right": "状态栏",
+  statusbar: "状态栏",
   canvas: "编辑区",
   "selection-toolbar": "浮动工具栏",
   "dock-panel": "独立侧面板",

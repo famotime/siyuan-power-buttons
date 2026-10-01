@@ -1,10 +1,11 @@
 import { DEFAULT_ICONPARK_ICON, SURFACE_LABELS } from "@/shared/constants";
+import { getItemSurfaces } from "@/shared/surface-metadata";
 import { hardenStrokeOnlySvgFill, renderIconMarkup } from "@/shared/icon-renderer";
 import {
   createNativeFallbackIconMarkup,
   resolveNativeIconMarkup,
 } from "@/shared/native-icon";
-import type { PowerButtonItem, PreviewButtonItem } from "@/shared/types";
+import type { PowerButtonItem, PreviewButtonItem, SurfaceType } from "@/shared/types";
 
 export type SvgPreviewState = {
   markup: string;
@@ -110,5 +111,11 @@ export function getPreviewChipTitle(item: PreviewButtonItem): string {
 }
 
 export function getSurfaceLabel(value: string): string {
-  return SURFACE_LABELS[value];
+  return SURFACE_LABELS[value] || value;
+}
+
+export function getItemSurfacesLabel(item: Pick<PowerButtonItem, "surface"> & { surfaces?: SurfaceType[] }): string {
+  const surfaces = getItemSurfaces(item);
+  const labels = surfaces.map(s => getSurfaceLabel(s)).filter(Boolean);
+  return labels.join(" · ") || getSurfaceLabel(item.surface);
 }

@@ -1837,8 +1837,15 @@ describe("settings app layout", () => {
     const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
     const dockPanelDropzone = target.querySelector(".workspace-preview__dock-panel-items") as HTMLElement;
 
-    expect(target.querySelector(".workspace-preview__dock-panel")).not.toBeNull();
+    const dockPanel = target.querySelector(".workspace-preview__dock-panel");
+    expect(dockPanel).not.toBeNull();
     expect(target.querySelector(".workspace-preview__dock-panel-header")?.textContent).toContain("独立侧面板");
+
+    const bodyChildren = Array.from(target.querySelectorAll(".workspace-preview__body > *"));
+    const dockPanelIndex = bodyChildren.indexOf(dockPanel as Element);
+    const canvasIndex = bodyChildren.findIndex(el => el.classList.contains("workspace-preview__canvas"));
+    expect(dockPanelIndex).toBe(canvasIndex + 1);
+    expect(dockPanelIndex).toBe(bodyChildren.length - 2);
 
     topbarButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
     dockPanelDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
@@ -1882,6 +1889,8 @@ describe("settings app layout", () => {
     const surfaceSelect = target.querySelector(".settings-panel--editor select.b3-select") as HTMLSelectElement;
     const options = Array.from(surfaceSelect.options).map(opt => ({ value: opt.value, label: opt.textContent?.trim() }));
     expect(options).toContainEqual({ value: "dock-panel", label: "独立侧面板" });
+    expect(options).toContainEqual({ value: "statusbar-right", label: "状态栏" });
+    expect(options.some(opt => opt.label === "状态栏左侧")).toBe(false);
 
     surfaceSelect.value = "dock-panel";
     surfaceSelect.dispatchEvent(new Event("change", { bubbles: true }));
@@ -1889,6 +1898,70 @@ describe("settings app layout", () => {
 
     const latestConfig = onChange.mock.calls.at(-1)?.[0];
     expect(latestConfig?.items.find((item: { id: string }) => item.id === "test-btn")?.surface).toBe("dock-panel");
+
+    unmount();
+  });
+
+  it("supports multi-selecting surfaces via option chips and updates list label", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "test-multi-btn",
+        title: "测试多选按钮",
+        surface: "topbar",
+        surfaces: ["topbar"],
+        order: 0,
+      }),
+    ];
+
+    const onChange = vi.fn();
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await flushAll();
+
+    // 验证显示位置多选芯片存在
+    const chips = Array.from(target.querySelectorAll<HTMLButtonElement>(".surface-option-chip"));
+    expect(chips.length).toBe(5);
+
+    // 找到顶栏和状态栏芯片
+    const topbarChip = chips.find(chip => chip.textContent?.includes("顶栏"));
+    const statusbarChip = chips.find(chip => chip.textContent?.includes("状态栏"));
+
+    expect(topbarChip?.classList.contains("is-selected")).toBe(true);
+    expect(statusbarChip?.classList.contains("is-selected")).toBe(false);
+
+    // 点击状态栏芯片以多选
+    statusbarChip?.click();
+    await flushAll();
+
+    expect(onChange).toHaveBeenCalled();
+    const updated = onChange.mock.calls.at(-1)?.[0];
+    const item = updated.items.find((i: { id: string }) => i.id === "test-multi-btn");
+    expect(item.surfaces).toContain("topbar");
+    expect(item.surfaces).toContain("statusbar-right");
+
+    // 验证左侧列表中显示了组合的位置名称
+    const subtitle = target.querySelector(".button-list__content small");
+    expect(subtitle?.textContent).toContain("顶栏 · 状态栏");
+
+    // 验证右侧位置预览区域的所有勾选位置直观显示该按钮（且均带有 is-active 选中高亮）
+    const topbarPreviewChip = target.querySelector(".workspace-preview__topbar .workspace-chip.is-active");
+    expect(topbarPreviewChip).not.toBeNull();
+    expect(topbarPreviewChip?.textContent).toContain("测试多选按钮");
+
+    const statusbarPreviewChip = target.querySelector(".workspace-preview__statusbar .workspace-chip.is-active");
+    expect(statusbarPreviewChip).not.toBeNull();
+    expect(statusbarPreviewChip?.textContent).toContain("测试多选按钮");
 
     unmount();
   });

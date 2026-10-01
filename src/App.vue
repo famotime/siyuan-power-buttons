@@ -32,6 +32,7 @@
           :selected-item="selectedItem"
           :render-builtin-icon-markup="renderBuiltinIconMarkup"
           :surface-label="surfaceLabel"
+          :item-surfaces-label="itemSurfacesLabel"
           :add-item="addItem"
           :duplicate-item="duplicateItem"
           :select-item="selectItem"
@@ -69,12 +70,40 @@
                 <span>提示文字</span>
                 <input v-model="selectedItem.tooltip" class="b3-text-field" placeholder="鼠标悬停提示" @change="persist" />
               </label>
-              <label>
-                <span>显示位置</span>
-                <select v-model="selectedItem.surface" class="b3-select" @change="persist">
+              <div class="form-grid__full surface-multiselect">
+                <div class="surface-multiselect__header">
+                  <span>显示位置</span>
+                  <small class="surface-multiselect__hint">允许多选，在选中的所有位置同时显示该按钮</small>
+                </div>
+                <div class="surface-multiselect__options" role="group" aria-label="显示位置">
+                  <button
+                    v-for="surface in surfaces"
+                    :key="surface.value"
+                    type="button"
+                    class="surface-option-chip"
+                    :class="{ 'is-selected': isSurfaceSelected(surface.value) }"
+                    :aria-pressed="isSurfaceSelected(surface.value)"
+                    @click="toggleSurface(surface.value)"
+                  >
+                    <span class="surface-option-chip__checkbox">
+                      <svg v-if="isSurfaceSelected(surface.value)" viewBox="0 0 16 16" width="12" height="12">
+                        <path fill="currentColor" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
+                      </svg>
+                    </span>
+                    <span class="surface-option-chip__label">{{ surface.label }}</span>
+                  </button>
+                </div>
+                <select
+                  v-show="false"
+                  :value="selectedItem.surface"
+                  class="b3-select"
+                  aria-hidden="true"
+                  tabindex="-1"
+                  @change="handleSingleSurfaceSelect(($event.target as HTMLSelectElement).value)"
+                >
                   <option v-for="surface in surfaces" :key="surface.value" :value="surface.value">{{ surface.label }}</option>
                 </select>
-              </label>
+              </div>
             </div>
           </section>
 
@@ -596,6 +625,36 @@
                 </div>
               </div>
 
+              <div class="workspace-preview__dock-panel">
+                <div class="workspace-preview__dock-panel-header">
+                  <span class="workspace-preview__tag"><b>独立侧面板</b></span>
+                  <small class="workspace-preview__dock-panel-hint">点击右侧栏展开</small>
+                </div>
+                <div
+                  class="workspace-preview__stack workspace-preview__dock-panel-items"
+                  @dragover.prevent
+                  @drop="onPreviewSurfaceDrop('dock-panel')"
+                >
+                  <button
+                    v-for="(item, index) in previewLayout.dockPanel"
+                    :key="item.id"
+                    type="button"
+                    class="workspace-chip"
+                    :class="previewChipClass(item)"
+                    :draggable="item.draggable ?? item.editable"
+                    :title="previewChipTitle(item)"
+                    @click="handlePreviewChipClick(item)"
+                    @dragstart="onPreviewDragStart($event, item)"
+                    @dragover.prevent
+                    @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
+                  >
+                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                    <span class="workspace-chip__label">{{ item.title }}</span>
+                  </button>
+                  <span v-if="!previewLayout.dockPanel.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建后选择「独立侧面板」</small></span>
+                </div>
+              </div>
+
               <div class="workspace-preview__dock">
                 <span class="workspace-preview__tag"><b>右 Dock</b></span>
                 <div
@@ -742,36 +801,6 @@
               </div>
             </div>
 
-            <div class="workspace-preview__dock-panel">
-              <div class="workspace-preview__dock-panel-header">
-                <span class="workspace-preview__tag"><b>独立侧面板</b></span>
-                <small class="workspace-preview__dock-panel-hint">点击右侧栏插件图标展开</small>
-              </div>
-              <div
-                class="workspace-preview__stack workspace-preview__stack--row workspace-preview__dock-panel-items"
-                @dragover.prevent
-                @drop="onPreviewSurfaceDrop('dock-panel')"
-              >
-                <button
-                  v-for="(item, index) in previewLayout.dockPanel"
-                  :key="item.id"
-                  type="button"
-                  class="workspace-chip"
-                  :class="previewChipClass(item)"
-                  :draggable="item.draggable ?? item.editable"
-                  :title="previewChipTitle(item)"
-                  @click="handlePreviewChipClick(item)"
-                  @dragstart="onPreviewDragStart($event, item)"
-                  @dragover.prevent
-                  @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
-                >
-                  <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                  <span class="workspace-chip__label">{{ item.title }}</span>
-                </button>
-                <span v-if="!previewLayout.dockPanel.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建按钮后选择「独立侧面板」位置</small></span>
-              </div>
-            </div>
-
         </WorkspacePreviewPanel>
 
         <ConfigTransferPanel
@@ -875,6 +904,10 @@ const {
   showPreviewLabels,
   surfaceLabel,
   surfaces,
+  isSurfaceSelected,
+  toggleSurface,
+  handleSingleSurfaceSelect,
+  itemSurfacesLabel,
   syncExperimentalClickSequence,
   syncExperimentalShortcut,
   toggleSelectedClickSequenceStopOnFailure,

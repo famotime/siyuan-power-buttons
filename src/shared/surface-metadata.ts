@@ -52,6 +52,27 @@ export function getPreviewLayoutKey(surface: PreviewSurfaceType): PreviewLayoutK
   return PREVIEW_LAYOUT_KEYS[surface];
 }
 
+export function normalizeSurface(surface: string): SurfaceType {
+  if (surface === "statusbar-left" || surface === "statusbar") {
+    return "statusbar-right";
+  }
+  return surface as SurfaceType;
+}
+
+export function getItemSurfaces(item: { surface?: string; surfaces?: string[] }): SurfaceType[] {
+  if (Array.isArray(item.surfaces) && item.surfaces.length > 0) {
+    const list = item.surfaces.map(normalizeSurface);
+    return Array.from(new Set(list));
+  }
+  const s = item.surface ? normalizeSurface(item.surface) : "statusbar-right";
+  return [s];
+}
+
+export function itemHasSurface(item: { surface?: string; surfaces?: string[] }, surface: string): boolean {
+  const norm = normalizeSurface(surface);
+  return getItemSurfaces(item).includes(norm);
+}
+
 export function isDockSurface(surface: SurfaceType): surface is SingleDockPositionSurface {
   return surface in DOCK_POSITIONS;
 }
@@ -61,11 +82,12 @@ export function isDockPanelSurface(surface: SurfaceType): surface is "dock-panel
 }
 
 export function isStatusBarSurface(surface: SurfaceType): surface is Extract<SurfaceType, `statusbar-${string}`> {
-  return surface.startsWith("statusbar-");
+  return surface.startsWith("statusbar-") || surface === "statusbar";
 }
 
 export function isConfigurableSurface(surface: SurfaceType): surface is typeof CONFIGURABLE_SURFACES[number] {
-  return CONFIGURABLE_SURFACES.includes(surface as typeof CONFIGURABLE_SURFACES[number]);
+  const norm = normalizeSurface(surface);
+  return CONFIGURABLE_SURFACES.includes(norm as typeof CONFIGURABLE_SURFACES[number]);
 }
 
 export function getDockPosition(surface: SingleDockPositionSurface): TPluginDockPosition {

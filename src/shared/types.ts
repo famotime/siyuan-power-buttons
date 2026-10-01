@@ -15,7 +15,6 @@ export const SURFACES = [
 
 export const CONFIGURABLE_SURFACES = [
   "topbar",
-  "statusbar-left",
   "statusbar-right",
   "canvas",
   "selection-toolbar",
@@ -70,6 +69,7 @@ export interface PowerButtonItem {
   iconType: IconType;
   iconValue: string;
   surface: SurfaceType;
+  surfaces?: SurfaceType[];
   order: number;
   actionType: ActionType;
   actionId: string;
@@ -136,6 +136,7 @@ export interface PreviewButtonItem {
   title: string;
   visible: boolean;
   surface: PreviewSurfaceType;
+  surfaces?: SurfaceType[];
   order: number;
   editable: boolean;
   source: PreviewSource;

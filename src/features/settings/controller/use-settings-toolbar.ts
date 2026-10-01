@@ -15,6 +15,7 @@ import type {
 import { renderSettingsIconMarkup } from "@/features/settings/view-helpers";
 import { getNativeToolbarIcon } from "@/shared/native-icon";
 import { isSameNativeButton } from "@/features/settings/controller/preview-interactions";
+import { itemHasSurface } from "@/shared/surface-metadata";
 
 export type SelectionToolbarPreviewItem = {
   key: string;
@@ -69,7 +70,7 @@ export function useSettingsToolbar(options: UseSettingsToolbarOptions) {
   /** 浮动工具栏中用户自定义的按钮 */
   const selectionToolbarCustomItems = computed(() => {
     return config.items
-      .filter(item => item.surface === "selection-toolbar")
+      .filter(item => itemHasSurface(item, "selection-toolbar"))
       .sort((a, b) => a.order - b.order);
   });
 

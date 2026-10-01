@@ -5,8 +5,10 @@ import { CommandExecutor } from "@/core/commands";
 import { DEFAULT_PLUGIN_COMMAND } from "@/shared/constants";
 import {
   getDockPosition,
+  getItemSurfaces,
   isDockSurface,
   isStatusBarSurface,
+  itemHasSurface,
 } from "@/shared/surface-metadata";
 import {
   sortItems,
@@ -66,8 +68,9 @@ export class SurfaceManager {
 
     const visibleItems = sortItems(config.items).filter(item => item.visible);
 
+    // 1. 顶栏按钮
     for (const item of visibleItems) {
-      if (item.surface === "topbar") {
+      if (itemHasSurface(item, "topbar")) {
         const element = this.plugin.addTopBar({
           icon: item.iconType === "iconpark" ? getIconMarkup(item) : getIconMarkup(item),
           title: item.tooltip || item.title,
@@ -78,69 +81,66 @@ export class SurfaceManager {
         element.dataset.powerButtonsOwned = "true";
         element.dataset.powerButtonsItemId = item.id;
         this.topbarElements.push(element);
-        continue;
       }
+    }
 
-      if (isStatusBarSurface(item.surface)) {
+    // 2. 状态栏按钮（合并为状态栏，默认为右侧）
+    for (const item of visibleItems) {
+      if (itemHasSurface(item, "statusbar-right") || itemHasSurface(item, "statusbar-left") || itemHasSurface(item, "statusbar")) {
         const element = this.plugin.addStatusBar({
           element: createStatusElement(item, this.executor),
-          position: item.surface === "statusbar-left" ? "left" : "right",
+          position: "right",
         });
         this.statusElements.push(element);
-        continue;
       }
+    }
 
-      if (item.surface === "canvas") {
-        const target = findCanvasMountTarget(document);
-        if (!target) {
-          continue;
+    // 3. 编辑区按钮
+    const canvasMount = findCanvasMountTarget(document);
+    if (canvasMount) {
+      for (const item of visibleItems) {
+        if (itemHasSurface(item, "canvas")) {
+          const element = createCanvasElement(item, this.executor, canvasMount.kind);
+          if (canvasMount.anchor) {
+            canvasMount.container.insertBefore(element, canvasMount.anchor);
+          } else {
+            canvasMount.container.appendChild(element);
+          }
+          this.canvasElements.push(element);
         }
-        const element = createCanvasElement(item, this.executor, target.kind);
-        if (target.anchor) {
-          target.container.insertBefore(element, target.anchor);
-        } else {
-          target.container.appendChild(element);
-        }
-        this.canvasElements.push(element);
-        continue;
       }
+    }
 
-      if (item.surface === "selection-toolbar") {
-        // 浮动工具栏按钮由 updateProtyleToolbar + patchSelectionToolbar 管理
-        continue;
-      }
-
-      if (item.surface === "dock-panel") {
-        // 独立侧面板按钮已由 renderStandaloneDock 集中渲染
-        continue;
-      }
-
-      if (isDockSurface(item.surface)) {
-        const type = `siyuan-power-buttons-${item.id}`;
-        const registration = this.plugin.addDock({
-          type,
-          data: {
-            itemId: item.id,
-          },
-          config: {
-            position: getDockPosition(item.surface),
-            size: item.surface.startsWith("dock-bottom")
-              ? { width: null, height: 220 }
-              : { width: 280, height: null },
-            icon: getIconMarkup(item),
-            title: item.title,
-            index: item.order,
-            show: true,
-          },
-          init: dock => {
-            createDockPanel(item, this.executor, dock.element);
-          },
-        });
-        if (registration) {
-          this.dockRegistrations.push({
+    // 4. 单独 Dock 按钮
+    for (const item of visibleItems) {
+      for (const surface of getItemSurfaces(item)) {
+        if (isDockSurface(surface)) {
+          const type = `siyuan-power-buttons-${item.id}-${surface}`;
+          const registration = this.plugin.addDock({
             type,
-            model: registration.model,
+            data: {
+              itemId: item.id,
+            },
+            config: {
+              position: getDockPosition(surface),
+              size: surface.startsWith("dock-bottom")
+                ? { width: null, height: 220 }
+                : { width: 280, height: null },
+              icon: getIconMarkup(item),
+              title: item.title,
+              index: item.order,
+              show: true,
+            },
+            init: dock => {
+              createDockPanel(item, this.executor, dock.element);
+            },
           });
+          if (registration) {
+            this.dockRegistrations.push({
+              type,
+              model: registration.model,
+            });
+          }
         }
       }
     }
@@ -153,7 +153,7 @@ export class SurfaceManager {
     );
     // 缓存浮动工具栏自定义按钮，供 DOM 注入使用
     this.customToolbarItems = config.items
-      .filter(item => item.surface === "selection-toolbar" && item.visible)
+      .filter(item => itemHasSurface(item, "selection-toolbar") && item.visible)
       .sort((a, b) => a.order - b.order);
     this.selectionToolbarLayout = config.selectionToolbarLayout;
     this.patchSelectionToolbar();
@@ -398,7 +398,7 @@ export class SurfaceManager {
       return;
     }
     const dockPanelItems = sortItems(this.currentConfig.items)
-      .filter(item => item.surface === "dock-panel" && item.visible);
+      .filter(item => itemHasSurface(item, "dock-panel") && item.visible);
 
     renderStandaloneDockPanel(
       this.standaloneDockHost,

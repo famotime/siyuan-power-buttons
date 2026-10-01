@@ -38,11 +38,12 @@ describe("config store model", () => {
     expect(config.experimental.clickSequenceAdapter).toBe(true);
   });
 
-  it("creates new buttons with the default title and status bar placement", () => {
+  it("creates new buttons with the default title and independent side panel placement", () => {
     const item = createButtonItem();
 
     expect(item.title).toBe("新建");
-    expect(item.surface).toBe("statusbar-right");
+    expect(item.surface).toBe("dock-panel");
+    expect(item.surfaces).toEqual(["dock-panel"]);
   });
 
   it("sanitizes malformed input into a safe config", () => {

@@ -65,6 +65,7 @@ import {
 } from "@/features/settings/controller/preview-interactions";
 import {
   buildPreviewChipClass,
+  getItemSurfacesLabel,
   getPreviewChipTitle,
   getSurfaceLabel,
   renderNamedIcon,
@@ -72,6 +73,11 @@ import {
   renderSettingsIconMarkup,
   resolveSvgPreviewState,
 } from "@/features/settings/view-helpers";
+import {
+  getItemSurfaces,
+  itemHasSurface,
+  normalizeSurface,
+} from "@/shared/surface-metadata";
 import { useSettingsIcons } from "@/features/settings/controller/use-settings-icons";
 import { useSettingsShortcuts } from "@/features/settings/controller/use-settings-shortcuts";
 import { useSettingsToolbar } from "@/features/settings/controller/use-settings-toolbar";
@@ -201,6 +207,7 @@ export function useSettingsController(props: SettingsAppProps) {
       title: item.title || "未命名按钮",
       visible: item.visible,
       surface: item.surface,
+      surfaces: getItemSurfaces(item),
       order: item.order + 1000,
       editable: true,
       source: "config",
@@ -546,6 +553,48 @@ export function useSettingsController(props: SettingsAppProps) {
     return getSurfaceLabel(value);
   }
 
+  function itemSurfacesLabel(item: PowerButtonItem): string {
+    return getItemSurfacesLabel(item);
+  }
+
+  function isSurfaceSelected(surfaceValue: string): boolean {
+    if (!selectedItem.value) {
+      return false;
+    }
+    return itemHasSurface(selectedItem.value, surfaceValue);
+  }
+
+  async function toggleSurface(surfaceValue: string): Promise<void> {
+    if (!selectedItem.value) {
+      return;
+    }
+    const target = normalizeSurface(surfaceValue);
+    const current = getItemSurfaces(selectedItem.value);
+    let next: SurfaceType[];
+    if (current.includes(target)) {
+      if (current.length <= 1) {
+        props.onNotify?.("至少需要保留一个显示位置", "info");
+        return;
+      }
+      next = current.filter(s => s !== target);
+    } else {
+      next = [...current, target];
+    }
+    selectedItem.value.surfaces = next;
+    selectedItem.value.surface = next[0];
+    await persist();
+  }
+
+  async function handleSingleSurfaceSelect(surfaceValue: string): Promise<void> {
+    if (!selectedItem.value) {
+      return;
+    }
+    const target = normalizeSurface(surfaceValue);
+    selectedItem.value.surfaces = [target];
+    selectedItem.value.surface = target;
+    await persist();
+  }
+
   watch(() => `${selectedId.value}:${selectedItem.value?.actionType || ""}`, () => {
     if (selectedItem.value) {
       ensureSelectedActionConfiguration(selectedItem.value);
@@ -630,6 +679,10 @@ export function useSettingsController(props: SettingsAppProps) {
     showPreviewLabels,
     surfaceLabel,
     surfaces,
+    isSurfaceSelected,
+    toggleSurface,
+    handleSingleSurfaceSelect,
+    itemSurfacesLabel,
     syncExperimentalClickSequence: shortcuts.syncExperimentalClickSequence,
     syncExperimentalShortcut: shortcuts.syncExperimentalShortcut,
     toggleSelectedClickSequenceStopOnFailure: shortcuts.toggleSelectedClickSequenceStopOnFailure,

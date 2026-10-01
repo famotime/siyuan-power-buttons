@@ -27,6 +27,7 @@ import {
   normalizeItemOrder,
   sortItems,
 } from "@/shared/utils";
+import { normalizeSurface } from "@/shared/surface-metadata";
 import type {
   ActionType,
   DisabledNativeButton,
@@ -48,17 +49,23 @@ const LEGACY_SURFACE_MIGRATIONS: Record<string, SurfaceType> = {
 };
 
 function ensureSurface(value: unknown, isLegacy: boolean): SurfaceType {
+  if (value === "statusbar-left" || value === "statusbar") {
+    return "statusbar-right";
+  }
   if (isLegacy) {
-    // 历史版本配置（version < 2），强制将 Dock surfaces 迁移至 statusbar-left / statusbar-right
+    // 历史版本配置（version < 2），强制将 Dock surfaces 迁移至 dock-panel
     if (typeof value === "string" && LEGACY_SURFACE_MIGRATIONS[value]) {
       return LEGACY_SURFACE_MIGRATIONS[value];
     }
   }
-  if (CONFIGURABLE_SURFACES.includes(value as typeof CONFIGURABLE_SURFACES[number])) {
-    return value as SurfaceType;
-  }
-  if (typeof value === "string" && LEGACY_SURFACE_MIGRATIONS[value]) {
-    return LEGACY_SURFACE_MIGRATIONS[value];
+  if (typeof value === "string") {
+    const norm = normalizeSurface(value);
+    if (CONFIGURABLE_SURFACES.includes(norm as typeof CONFIGURABLE_SURFACES[number])) {
+      return norm;
+    }
+    if (LEGACY_SURFACE_MIGRATIONS[value]) {
+      return LEGACY_SURFACE_MIGRATIONS[value];
+    }
   }
   return "topbar";
 }
@@ -197,7 +204,12 @@ function sanitizeItem(value: unknown, index: number, isLegacy: boolean): PowerBu
       typeof raw.iconType === "string" ? raw.iconType : "iconpark",
       typeof raw.iconValue === "string" && raw.iconValue.trim() ? raw.iconValue : DEFAULT_ICONPARK_ICON,
     ),
-    surface: ensureSurface(raw.surface, isLegacy),
+    surface: (Array.isArray(raw.surfaces) && raw.surfaces.length > 0)
+      ? ensureSurface(raw.surfaces[0], isLegacy)
+      : ensureSurface(raw.surface, isLegacy),
+    surfaces: (Array.isArray(raw.surfaces) && raw.surfaces.length > 0)
+      ? Array.from(new Set(raw.surfaces.map(s => ensureSurface(s, isLegacy))))
+      : [ensureSurface(raw.surface, isLegacy)],
     order: Number.isFinite(raw.order) ? Number(raw.order) : index,
     actionType,
     actionId,

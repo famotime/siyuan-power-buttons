@@ -734,4 +734,60 @@ describe("surface manager", () => {
 
     manager.destroy();
   });
+
+  it("renders the same button on multiple surfaces when configured with multiple surfaces", () => {
+    const addTopBar = vi.fn((opts: { title: string; callback?: () => void }) => {
+      const el = document.createElement("div");
+      el.title = opts.title;
+      el.addEventListener("click", () => opts.callback?.());
+      return el;
+    });
+    const addStatusBar = vi.fn((opts: { element: HTMLElement; position: string }) => {
+      opts.element.dataset.position = opts.position;
+      return opts.element;
+    });
+    const plugin = {
+      addTopBar,
+      addStatusBar,
+      addDock: vi.fn(),
+    } as never;
+
+    const runBuiltinCommand = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: {
+        globalCommand: runBuiltinCommand,
+      },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    });
+
+    const manager = new SurfaceManager(plugin, executor);
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "multi-surface-btn",
+        title: "全能按钮",
+        surfaces: ["topbar", "statusbar-right"],
+        actionType: "builtin-global-command",
+        actionId: "dailyNote",
+        order: 0,
+      }),
+    ];
+
+    manager.render(config);
+
+    // 顶栏有1个固定设置按钮 + 1个自定义按钮
+    expect(addTopBar).toHaveBeenCalledTimes(2);
+    expect(addTopBar).toHaveBeenCalledWith(expect.objectContaining({
+      title: "全能按钮",
+    }));
+
+    // 状态栏有1个按钮，且默认为右侧
+    expect(addStatusBar).toHaveBeenCalledTimes(1);
+    expect(addStatusBar).toHaveBeenCalledWith(expect.objectContaining({
+      position: "right",
+    }));
+
+    manager.destroy();
+  });
 });

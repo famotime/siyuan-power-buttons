@@ -27,7 +27,7 @@
           <span class="button-list__icon" v-html="renderBuiltinIconMarkup(item)" />
           <span class="button-list__content">
             <strong>{{ item.title || '未命名按钮' }}</strong>
-            <small>{{ surfaceLabel(item.surface) }}</small>
+            <small>{{ itemSurfacesLabel ? itemSurfacesLabel(item) : surfaceLabel(item.surface) }}</small>
           </span>
         </button>
         <button
@@ -65,6 +65,7 @@ defineProps<{
   selectedItem?: PowerButtonItem;
   renderBuiltinIconMarkup: (item: Pick<PowerButtonItem, 'iconType' | 'iconValue'>) => string;
   surfaceLabel: (value: string) => string;
+  itemSurfacesLabel?: (item: PowerButtonItem) => string;
   addItem: () => void | Promise<void>;
   duplicateItem: () => void | Promise<void>;
   selectItem: (itemId: string) => void;
