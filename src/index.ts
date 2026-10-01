@@ -1,3 +1,4 @@
+import * as siyuan from "siyuan";
 import {
   Dialog,
   Plugin,
@@ -67,10 +68,21 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     getBazaarConfig: () => getSiyuanBazaarConfig(),
     getLayout: () => getSiyuanLayout(),
     globalCommand: command => {
-      const pluginWithGlobal = this as Plugin & { globalCommand?: (cmd: string) => void };
+      try {
+        const siyuanModule = siyuan as { globalCommand?: (cmd: string, app: unknown) => boolean };
+        if (typeof siyuanModule.globalCommand === "function") {
+          const result = siyuanModule.globalCommand(command, this.app);
+          if (result !== false) {
+            return true;
+          }
+        }
+      } catch {
+        // fallback
+      }
+      const pluginWithGlobal = this as Plugin & { globalCommand?: (cmd: string) => boolean | void };
       if (typeof pluginWithGlobal.globalCommand === "function") {
-        pluginWithGlobal.globalCommand(command);
-        return true;
+        const res = pluginWithGlobal.globalCommand(command);
+        return res !== false;
       }
       return false;
     },
@@ -83,6 +95,15 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     t: (key: string, replacements?: Record<string, string>) => this.t(key, replacements),
     getKeymap: () => getSiyuanKeymap(),
     pluginGlobalCommand: (commandId: string) => {
+      try {
+        const siyuanModule = siyuan as { globalCommand?: (cmd: string, app: unknown) => boolean };
+        if (typeof siyuanModule.globalCommand === "function") {
+          siyuanModule.globalCommand(commandId, this.app);
+          return;
+        }
+      } catch {
+        // fallback
+      }
       const pluginWithGlobal = this as Plugin & { globalCommand?: (command: string) => void };
       pluginWithGlobal.globalCommand?.(commandId);
     },

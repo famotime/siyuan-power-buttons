@@ -87,6 +87,13 @@ export class CommandExecutor {
         }
 
         if (!provider) {
+          if (parsed.providerId === "siyuan-doc-assist") {
+            const customMessage = this.t("docAssistPluginNotFound");
+            if (customMessage && customMessage !== "docAssistPluginNotFound") {
+              await this.notify(customMessage, "error");
+              return;
+            }
+          }
           await this.notify(this.t("pluginNotFound", { providerId: parsed.providerId }), "error");
           return;
         }

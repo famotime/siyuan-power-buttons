@@ -80,7 +80,7 @@ describe("settings dialog controller", () => {
 
     const activeItem = hostRoot.querySelector(".button-list__item.is-active strong");
     expect(settingsUiState.lastSelectedButtonId).toBeTruthy();
-    expect(activeItem?.textContent?.trim()).toBe("最近文档");
+    expect(activeItem?.textContent?.trim()).toBe("全部面板浮动切换");
   });
 
   it("persists the latest selected button id before teardown", () => {

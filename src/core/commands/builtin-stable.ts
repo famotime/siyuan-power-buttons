@@ -280,6 +280,10 @@ export async function executeBuiltinCommandStable(commandId: string, options: {
     }
   }
 
+  if (options.globalCommand?.(commandId)) {
+    return true;
+  }
+
   if (await options.runBuiltinCommandByDom(commandId)) {
     return true;
   }

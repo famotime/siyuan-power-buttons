@@ -310,7 +310,7 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
       .map(sanitizeSelectionToolbarLayoutItem)
       .filter((item): item is SelectionToolbarLayoutItem => Boolean(item))
     : defaults.selectionToolbarLayout;
-  const surfaceLayouts = ensureSurfaceLayouts(raw.surfaceLayouts, items);
+  const surfaceLayouts = ensureSurfaceLayouts(raw.surfaceLayouts ?? defaults.surfaceLayouts, items);
 
   return {
     version: 2,

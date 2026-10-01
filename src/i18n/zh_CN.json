@@ -5,6 +5,7 @@
   "builtinCommandFailed": "内置命令当前无法执行：{commandId}",
   "pluginCommandInvalid": "插件命令配置无效：{actionId}",
   "pluginNotFound": "未检测到插件：{providerId}",
+  "docAssistPluginNotFound": "未检测到「思源文档助手」插件，请前往集市安装并启用该插件",
   "experimentalShortcutFailed": "实验快捷键当前无法执行：{actionId}",
   "experimentalClickSequenceFailed": "实验点击序列当前无法执行：{actionId}",
   "experimentalShortcutUnavailable": "实验快捷键适配当前不可用。",

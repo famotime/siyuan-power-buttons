@@ -190,7 +190,8 @@ export function renderStandaloneDockPanel(
     return { type: 'button', item: raw as PowerButtonItem };
   });
 
-  if (entries.length === 0) {
+  const hasButtons = entries.some(entry => entry.type === 'button');
+  if (entries.length === 0 || !hasButtons) {
     const emptyContainer = document.createElement('div');
     emptyContainer.className = 'siyuan-power-buttons__dock-empty';
     emptyContainer.innerHTML = `
@@ -264,9 +265,7 @@ export function renderStandaloneDockPanel(
         const item = entry.item;
         const card = document.createElement('button');
         card.type = 'button';
-        card.className = 'siyuan-power-buttons__dock-card b3-tooltips b3-tooltips__s';
-        card.title = item.tooltip || item.title;
-        card.setAttribute('aria-label', item.tooltip || item.title);
+        card.className = 'siyuan-power-buttons__dock-card';
         card.dataset.powerButtonsOwned = 'true';
         card.dataset.powerButtonsItemId = item.id;
         card.dataset.dockIndex = String(index);

@@ -13,24 +13,33 @@ describe("config store model", () => {
 
     expect(config.version).toBe(2);
     expect(config.desktopOnly).toBe(true);
-    expect(config.items.length).toBe(10);
+    expect(config.items.length).toBe(13);
     expect(config.items.every(item => item.visible)).toBe(true);
     expect(config.items.map(item => item.title)).toEqual([
       "今日日记",
-      "最近文档",
+      "全部面板浮动切换",
+      "在浏览器打开",
       "数据历史",
       "集市",
       "重启所有插件",
-      "在浏览器打开",
-      "切换到英文",
+      "删除之前段落",
+      "删除后续段落",
+      "批量转换为WebP",
       "切换到中文",
-      "仅导出当前文档",
+      "切换到英文",
       "随心按设置",
+      "仅导出当前文档",
+    ]);
+    expect(config.surfaceLayouts?.["dock-panel"]?.filter(entry => entry.type === "divider").map(d => d.title)).toEqual([
+      "文档与视图",
+      "实用工具",
+      "插件命令",
+      "偏好与设置",
     ]);
     expect(config.items.every(item => item.iconType === "iconpark")).toBe(true);
     expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(true);
     expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-in-browser")).toBe(true);
-    expect(config.items.some(item => item.actionType === "experimental-shortcut")).toBe(true);
+    expect(config.items.some(item => item.actionType === "builtin-global-command" && item.actionId === "dataHistory")).toBe(true);
     expect(config.items.some(item => item.actionType === "experimental-click-sequence")).toBe(true);
     expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
     expect(config.disabledNativeButtons).toEqual([]);

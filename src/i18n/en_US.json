@@ -5,6 +5,7 @@
   "builtinCommandFailed": "Built-in command not available: {commandId}",
   "pluginCommandInvalid": "Plugin command invalid: {actionId}",
   "pluginNotFound": "Plugin not found: {providerId}",
+  "docAssistPluginNotFound": "The \"Doc Assist\" plugin is not installed. Please install and enable it from Bazaar.",
   "experimentalShortcutFailed": "Experimental shortcut not available: {actionId}",
   "experimentalClickSequenceFailed": "Experimental click sequence not available: {actionId}",
   "experimentalShortcutUnavailable": "Experimental shortcut adapter is not available.",

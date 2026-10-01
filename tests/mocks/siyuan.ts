@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 
 export class Plugin {
+  app = {};
   loadData = vi.fn().mockResolvedValue(null);
   saveData = vi.fn().mockResolvedValue(undefined);
   removeData = vi.fn().mockResolvedValue(undefined);
@@ -40,3 +41,6 @@ export class Dialog {
 export const fetchSyncPost = vi.fn();
 export const getFrontend = vi.fn(() => 'desktop');
 export const showMessage = vi.fn();
+export const globalCommand = vi.fn();
+export const openSetting = vi.fn();
+export const openTab = vi.fn();

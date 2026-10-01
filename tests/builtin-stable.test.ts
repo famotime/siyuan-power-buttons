@@ -442,5 +442,30 @@ describe('builtin stable runner', () => {
     expect(globalCommand).toHaveBeenCalledWith('switchRightDock');
     expect(globalCommand).toHaveBeenCalledWith('switchBottomDock');
   });
+
+  it('delegates dataHistory, dailyNote, and recentDocs to globalCommand when available', async () => {
+    const globalCommand = vi.fn((cmd: string) => cmd === 'dataHistory' || cmd === 'dailyNote' || cmd === 'recentDocs');
+
+    const historyResult = await executeBuiltinCommandStable('dataHistory', {
+      globalCommand,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+    expect(historyResult).toBe(true);
+    expect(globalCommand).toHaveBeenCalledWith('dataHistory');
+
+    const dailyResult = await executeBuiltinCommandStable('dailyNote', {
+      globalCommand,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+    expect(dailyResult).toBe(true);
+    expect(globalCommand).toHaveBeenCalledWith('dailyNote');
+
+    const recentResult = await executeBuiltinCommandStable('recentDocs', {
+      globalCommand,
+      runBuiltinCommandByDom: vi.fn(() => false),
+    });
+    expect(recentResult).toBe(true);
+    expect(globalCommand).toHaveBeenCalledWith('recentDocs');
+  });
 });
 

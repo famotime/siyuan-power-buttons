@@ -38,6 +38,7 @@ describe("command executor", () => {
       "backlinks",
       "config",
       "recentDocs",
+      "dataHistory",
       "dailyNote",
       "riffCard",
       "syncNow",
@@ -275,6 +276,31 @@ describe("command executor", () => {
 
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith("未检测到插件：siyuan-doc-assist", "error");
+  });
+
+  it("notifies friendly install message when doc-assist plugin is missing and i18n is available", async () => {
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify,
+      t: (key) => key === "docAssistPluginNotFound" ? "未检测到「思源文档助手」插件，请前往集市安装并启用该插件" : t(key),
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      externalCommands: {
+        refresh: vi.fn().mockResolvedValue(undefined),
+        getProvider: vi.fn().mockReturnValue(null),
+      },
+    });
+
+    await executor.execute(createItem({
+      id: "del-prev",
+      surface: "dock-panel",
+      actionType: "plugin-command",
+      actionId: "siyuan-doc-assist:delete-from-start-to-current",
+    }));
+
+    expect(notify).toHaveBeenCalledWith("未检测到「思源文档助手」插件，请前往集市安装并启用该插件", "error");
   });
 
   it("notifies when plugin command provider refresh itself fails", async () => {

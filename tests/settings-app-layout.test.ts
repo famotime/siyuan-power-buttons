@@ -148,7 +148,7 @@ describe("settings app layout", () => {
     expect(headerActions?.textContent).toContain("恢复默认");
     expect(headerActions?.textContent).not.toContain("新建");
     expect(target.textContent).not.toContain("实验功能");
-    expect(listTitles.slice(0, 2)).toEqual(["今日日记", "最近文档"]);
+    expect(listTitles.slice(0, 2)).toEqual(["今日日记", "全部面板浮动切换"]);
 
     unmount();
   });
@@ -177,8 +177,8 @@ describe("settings app layout", () => {
     const activeItem = target.querySelector(".button-list__item.is-active strong");
     const editorTitle = target.querySelector(".settings-panel--editor .panel-title p");
 
-    expect(activeItem?.textContent?.trim()).toBe("最近文档");
-    expect(editorTitle?.textContent).toContain("最近文档");
+    expect(activeItem?.textContent?.trim()).toBe("全部面板浮动切换");
+    expect(editorTitle?.textContent).toContain("全部面板浮动切换");
 
     unmount();
   });

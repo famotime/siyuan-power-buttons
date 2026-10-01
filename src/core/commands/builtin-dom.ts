@@ -17,6 +17,8 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
     "config",
   ],
   dailyNote: [
+    "#barDailyNote",
+    "barDailyNote",
     "#barDaily",
     "barDaily",
     "menuNewDaily",
@@ -24,9 +26,17 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
     "daily",
   ],
   recentDocs: [
+    "#barRecent",
+    "barRecent",
     "menuRecent",
     "recentDocs",
     "recent",
+  ],
+  dataHistory: [
+    "[data-id='dataHistory']",
+    "dataHistory",
+    "menuHistory",
+    "history",
   ],
   riffCard: [
     "menuCard",

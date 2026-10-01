@@ -728,6 +728,9 @@ describe("surface manager", () => {
     expect(cards).toHaveLength(2);
     expect(cards[0].querySelector(".siyuan-power-buttons__dock-card-title")?.textContent).toBe("每日日志");
     expect(cards[1].querySelector(".siyuan-power-buttons__dock-card-title")?.textContent).toBe("全局搜索");
+    expect(cards[0].classList.contains("b3-tooltips")).toBe(false);
+    expect(cards[0].hasAttribute("title")).toBe(false);
+    expect(cards[0].hasAttribute("aria-label")).toBe(false);
 
     // Click first card
     cards[0].click();

@@ -26,6 +26,14 @@ export const BUILTIN_COMMANDS: BuiltinCommandDefinition[] = [
     stability: "stable",
   },
   {
+    id: "dataHistory",
+    title: "数据历史",
+    category: "系统",
+    surfaceSuggestion: ["dock-panel", "statusbar-right"],
+    requiresContext: false,
+    stability: "stable",
+  },
+  {
     id: "dailyNote",
     title: "今日日记",
     category: "系统",
