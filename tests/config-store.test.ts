@@ -370,4 +370,19 @@ describe("config store model", () => {
       },
     ]);
   });
+
+  it("supports save as an alias to replace", async () => {
+    const store = new ConfigStore({
+      loadData: () => Promise.resolve(null),
+      saveData: () => Promise.resolve(undefined),
+    } as never);
+
+    await store.load();
+    const config = store.snapshot();
+    config.items = [];
+    const saved = await store.save(config);
+
+    expect(saved.items).toEqual([]);
+    expect(store.getConfig().items).toEqual([]);
+  });
 });

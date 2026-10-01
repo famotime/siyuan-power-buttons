@@ -121,7 +121,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       createDialog: options => new Dialog(options),
       mountSettingsApp,
     }),
-    createSurfaceManager: () => new SurfaceManager(this, this.executor, config => this.configStore.save(config)),
+    createSurfaceManager: () => new SurfaceManager(this, this.executor, config => this.configStore.replace(config)),
     executor: this.executor,
     exportConfigAsJson,
     clipboard: navigator.clipboard,

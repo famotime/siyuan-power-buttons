@@ -37,6 +37,10 @@ export class ConfigStore {
     return this.snapshot();
   }
 
+  async save(nextConfig: PowerButtonsConfig): Promise<PowerButtonsConfig> {
+    return this.replace(nextConfig);
+  }
+
   async reset(): Promise<PowerButtonsConfig> {
     this.config = createDefaultConfig();
     await this.persist();
