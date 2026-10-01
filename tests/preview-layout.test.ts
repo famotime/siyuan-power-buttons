@@ -3,6 +3,7 @@ import { createButtonItem, createDefaultConfig } from "@/core/config";
 import {
   buildPreviewLayout,
   movePreviewItem,
+  moveSurfaceItem,
 } from "@/shared/preview-layout";
 
 describe("preview layout", () => {
@@ -155,5 +156,77 @@ describe("preview layout", () => {
     const moved = movePreviewItem(config.items, "side-panel-2", "dock-panel", 0);
     const updatedLayout = buildPreviewLayout(moved);
     expect(updatedLayout.dockPanel.map(item => item.title)).toEqual(["面板按钮2", "面板按钮1"]);
+  });
+
+  it("reordering buttons in one surface layout does not link to or affect other surfaces", () => {
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "btn-a",
+        title: "按钮 A",
+        surfaces: ["topbar", "dock-panel"],
+        order: 0,
+      }),
+      createButtonItem({
+        id: "btn-b",
+        title: "按钮 B",
+        surfaces: ["topbar", "dock-panel"],
+        order: 1,
+      }),
+    ];
+    config.surfaceLayouts = {
+      topbar: [
+        { type: "button", id: "btn-a" },
+        { type: "button", id: "btn-b" },
+      ],
+      "dock-panel": [
+        { type: "button", id: "btn-a" },
+        { type: "button", id: "btn-b" },
+      ],
+    };
+
+    // Reorder in topbar: move btn-b before btn-a
+    moveSurfaceItem(config, { id: "btn-b", itemId: "btn-b", surface: "topbar" }, "topbar", 0);
+
+    const layout = buildPreviewLayout(config.items, { surfaceLayouts: config.surfaceLayouts });
+
+    // topbar is reordered to [B, A]
+    expect(layout.topbar.map(i => i.title)).toEqual(["按钮 B", "按钮 A"]);
+
+    // dock-panel is untouched and remains [A, B]
+    expect(layout.dockPanel.map(i => i.title)).toEqual(["按钮 A", "按钮 B"]);
+  });
+
+  it("supports dividers and custom titles in dock-panel layout", () => {
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "btn-1",
+        title: "工具按钮",
+        surfaces: ["dock-panel"],
+        order: 0,
+      }),
+    ];
+    config.surfaceLayouts = {
+      "dock-panel": [
+        { type: "divider", id: "div-section-1", title: "常用工具" },
+        { type: "button", id: "btn-1" },
+        { type: "divider", id: "div-section-2" },
+      ],
+    };
+
+    const layout = buildPreviewLayout(config.items, { surfaceLayouts: config.surfaceLayouts });
+    expect(layout.dockPanel).toHaveLength(3);
+    expect(layout.dockPanel[0].type).toBe("divider");
+    expect(layout.dockPanel[0].title).toBe("常用工具");
+    expect(layout.dockPanel[1].title).toBe("工具按钮");
+    expect(layout.dockPanel[2].type).toBe("divider");
+    expect(layout.dockPanel[2].title).toBe("");
+
+    // Move divider to middle
+    moveSurfaceItem(config, { id: "div-section-1", type: "divider" }, "dock-panel", 1);
+    const updated = buildPreviewLayout(config.items, { surfaceLayouts: config.surfaceLayouts });
+    expect(updated.dockPanel[0].title).toBe("工具按钮");
+    expect(updated.dockPanel[1].title).toBe("常用工具");
   });
 });

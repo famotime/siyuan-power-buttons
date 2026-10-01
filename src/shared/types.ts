@@ -98,6 +98,14 @@ export interface SelectionToolbarLayoutItem {
   id: string;
 }
 
+export type SurfaceLayoutElementType = "button" | "divider";
+
+export interface SurfaceLayoutItem {
+  type: SurfaceLayoutElementType;
+  id: string;
+  title?: string;
+}
+
 export interface PowerButtonsConfig {
   version: 2;
   desktopOnly: boolean;
@@ -105,6 +113,7 @@ export interface PowerButtonsConfig {
   disabledNativeButtons: DisabledNativeButton[];
   disabledSelectionToolbarItems: DisabledSelectionToolbarItem[];
   selectionToolbarLayout: SelectionToolbarLayoutItem[];
+  surfaceLayouts?: Partial<Record<SurfaceType, SurfaceLayoutItem[]>>;
   experimental: {
     nativeToolbarControl: boolean;
     internalCommandAdapter: boolean;
@@ -140,6 +149,7 @@ export interface PreviewButtonItem {
   order: number;
   editable: boolean;
   source: PreviewSource;
+  type?: SurfaceLayoutElementType;
   iconMarkup?: string;
   itemId?: string;
   nativeSelectors?: string[];

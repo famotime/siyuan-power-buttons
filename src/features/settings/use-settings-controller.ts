@@ -7,6 +7,7 @@ import {
 import {
   createDefaultConfig,
   createButtonItem,
+  ensureSurfaceLayouts,
   importConfigFromJson,
   mergeImportedButtonsWithStats,
 } from "@/core/config";
@@ -89,6 +90,7 @@ function applyConfig(config: PowerButtonsConfig, nextConfig: PowerButtonsConfig)
   config.disabledNativeButtons = nextConfig.disabledNativeButtons;
   config.disabledSelectionToolbarItems = nextConfig.disabledSelectionToolbarItems;
   config.selectionToolbarLayout = nextConfig.selectionToolbarLayout;
+  config.surfaceLayouts = nextConfig.surfaceLayouts;
   config.experimental = nextConfig.experimental;
 }
 
@@ -249,7 +251,10 @@ export function useSettingsController(props: SettingsAppProps) {
   });
 
   const previewLayout = computed(() => {
-    return buildPreviewLayout([...activeRuntimePreviewItems.value, ...configPreviewItems.value], { includeHidden: true });
+    return buildPreviewLayout(
+      [...activeRuntimePreviewItems.value, ...configPreviewItems.value],
+      { includeHidden: true, surfaceLayouts: config.surfaceLayouts },
+    );
   });
 
   async function refreshCurrentLayout(): Promise<void> {
@@ -268,6 +273,7 @@ export function useSettingsController(props: SettingsAppProps) {
 
   async function persist(): Promise<void> {
     config.items = normalizeItemOrder(config.items);
+    config.surfaceLayouts = ensureSurfaceLayouts(config.surfaceLayouts, config.items);
     await props.onChange(cloneConfig(config));
     await refreshCurrentLayout();
   }
@@ -280,6 +286,7 @@ export function useSettingsController(props: SettingsAppProps) {
     });
     config.items.push(item);
     selectedId.value = item.id;
+    config.surfaceLayouts = ensureSurfaceLayouts(config.surfaceLayouts, config.items);
     // 新建按钮不加入 customTitleIds，保持默认名称状态随动作设置变化
     await persist();
   }
@@ -297,6 +304,7 @@ export function useSettingsController(props: SettingsAppProps) {
     config.items.push(item);
     selectedId.value = item.id;
     customTitleIds.value.add(item.id);
+    config.surfaceLayouts = ensureSurfaceLayouts(config.surfaceLayouts, config.items);
     await persist();
   }
 
@@ -315,6 +323,7 @@ export function useSettingsController(props: SettingsAppProps) {
     if (selectedId.value === itemId) {
       selectedId.value = config.items[0]?.id || "";
     }
+    config.surfaceLayouts = ensureSurfaceLayouts(config.surfaceLayouts, config.items);
     await persist();
   }
 

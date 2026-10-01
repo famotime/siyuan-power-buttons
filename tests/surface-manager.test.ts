@@ -5,6 +5,7 @@ import { CommandExecutor } from "@/core/commands";
 import { createButtonItem } from "@/core/config/defaults";
 import { SurfaceManager, STANDALONE_DOCK_ICON_SYMBOL } from "@/core/surfaces";
 import * as commands from "@/core/commands";
+import * as dialogUtils from "@/core/surfaces/dialog-utils";
 import { renderIconMarkup } from "@/shared/icon-renderer";
 
 describe("surface manager", () => {
@@ -787,6 +788,249 @@ describe("surface manager", () => {
     expect(addStatusBar).toHaveBeenCalledWith(expect.objectContaining({
       position: "right",
     }));
+
+    manager.destroy();
+  });
+
+  it("renders standalone dock with dividers, highlighted settings button, and add-divider button", () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const plugin = {
+      addTopBar: vi.fn(() => document.createElement("button")),
+      addStatusBar: vi.fn(() => document.createElement("div")),
+      addDock: vi.fn((opts: { init?: (dock: { element: HTMLElement }) => void }) => {
+        dockInit = opts.init;
+        return { model: { remove: vi.fn() } };
+      }),
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: { globalCommand: vi.fn() },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "btn-note",
+        title: "每日日志",
+        surface: "dock-panel",
+        order: 0,
+      }),
+    ];
+    config.surfaceLayouts = {
+      "dock-panel": [
+        { type: "divider", id: "div-1", title: "核心功能" },
+        { type: "button", id: "btn-note" },
+        { type: "divider", id: "div-2" },
+      ],
+    };
+
+    manager.render(config);
+
+    const host = document.createElement("div");
+    dockInit?.({ element: host });
+
+    // 验证头部按钮
+    const addDividerBtn = host.querySelector(".siyuan-power-buttons__dock-add-divider-btn");
+    const settingsBtn = host.querySelector(".siyuan-power-buttons__dock-settings-btn");
+    expect(addDividerBtn).not.toBeNull();
+    expect(settingsBtn).not.toBeNull();
+
+    // 验证分割线和卡片
+    const dividers = host.querySelectorAll(".siyuan-power-buttons__dock-divider");
+    expect(dividers).toHaveLength(2);
+    expect(dividers[0].querySelector(".siyuan-power-buttons__dock-divider-title")?.textContent).toBe("核心功能");
+    expect(dividers[1].classList.contains("is-line-only")).toBe(true);
+
+    const cards = host.querySelectorAll(".siyuan-power-buttons__dock-card");
+    expect(cards).toHaveLength(1);
+
+    manager.destroy();
+  });
+
+  it("supports adding, editing, and deleting dividers via dock panel controls", async () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const plugin = {
+      addTopBar: vi.fn(() => document.createElement("button")),
+      addStatusBar: vi.fn(() => document.createElement("div")),
+      addDock: vi.fn((opts: { init?: (dock: { element: HTMLElement }) => void }) => {
+        dockInit = opts.init;
+        return { model: { remove: vi.fn() } };
+      }),
+    } as never;
+
+    const onSaveConfig = vi.fn();
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: { globalCommand: vi.fn() },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }), onSaveConfig);
+
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "btn-note",
+        title: "每日日志",
+        surface: "dock-panel",
+        order: 0,
+      }),
+    ];
+    config.surfaceLayouts = {
+      "dock-panel": [
+        { type: "button", id: "btn-note" },
+      ],
+    };
+
+    manager.render(config);
+
+    const host = document.createElement("div");
+    dockInit?.({ element: host });
+
+    // 1. 测试添加分割线
+    const promptSpy = vi.spyOn(dialogUtils, "promptDialog").mockResolvedValue("快捷分区");
+    const addBtn = host.querySelector<HTMLSpanElement>(".siyuan-power-buttons__dock-add-divider-btn");
+    await addBtn?.click();
+
+    expect(promptSpy).toHaveBeenCalled();
+    expect(onSaveConfig).toHaveBeenCalled();
+    expect(config.surfaceLayouts["dock-panel"]).toHaveLength(2);
+    expect(config.surfaceLayouts["dock-panel"]![1]).toMatchObject({
+      type: "divider",
+      title: "快捷分区",
+    });
+
+    // 2. 测试修改分割线名称
+    promptSpy.mockResolvedValue("修改后的分区");
+    const editBtn = host.querySelector<HTMLButtonElement>(".siyuan-power-buttons__dock-divider-edit");
+    await editBtn?.click();
+
+    expect(config.surfaceLayouts["dock-panel"]![1].title).toBe("修改后的分区");
+
+    // 3. 测试删除分割线
+    const confirmSpy = vi.spyOn(dialogUtils, "confirmDialog").mockResolvedValue(true);
+    const delBtn = host.querySelector<HTMLButtonElement>(".siyuan-power-buttons__dock-divider-del");
+    await delBtn?.click();
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(config.surfaceLayouts["dock-panel"]).toHaveLength(1);
+
+    promptSpy.mockRestore();
+    confirmSpy.mockRestore();
+    manager.destroy();
+  });
+
+  it("supports drag and drop reordering in standalone dock panel", () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const plugin = {
+      addTopBar: vi.fn(() => document.createElement("button")),
+      addStatusBar: vi.fn(() => document.createElement("div")),
+      addDock: vi.fn((opts: { init?: (dock: { element: HTMLElement }) => void }) => {
+        dockInit = opts.init;
+        return { model: { remove: vi.fn() } };
+      }),
+    } as never;
+
+    const onSaveConfig = vi.fn();
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: { globalCommand: vi.fn() },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }), onSaveConfig);
+
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({ id: "btn-1", title: "按钮 1", surface: "dock-panel" }),
+      createButtonItem({ id: "btn-2", title: "按钮 2", surface: "dock-panel" }),
+    ];
+    config.surfaceLayouts = {
+      "dock-panel": [
+        { type: "button", id: "btn-1" },
+        { type: "button", id: "btn-2" },
+      ],
+    };
+
+    manager.render(config);
+
+    const host = document.createElement("div");
+    dockInit?.({ element: host });
+
+    const cards = host.querySelectorAll<HTMLButtonElement>(".siyuan-power-buttons__dock-card");
+    expect(cards).toHaveLength(2);
+
+    // Simulate drop from index 1 onto index 0
+    const dropEvent = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(dropEvent, "dataTransfer", {
+      value: {
+        getData: vi.fn().mockReturnValue("1"),
+      },
+    });
+    cards[0].dispatchEvent(dropEvent);
+
+    expect(onSaveConfig).toHaveBeenCalled();
+    expect(config.surfaceLayouts["dock-panel"]!.map(e => e.id)).toEqual(["btn-2", "btn-1"]);
+
+    manager.destroy();
+  });
+
+  it("renders surfaces strictly respecting their independent surfaceLayouts", () => {
+    const topBarCalls: string[] = [];
+    const statusBarCalls: string[] = [];
+
+    const plugin = {
+      addTopBar: vi.fn((opts: { title: string }) => {
+        topBarCalls.push(opts.title);
+        return document.createElement("button");
+      }),
+      addStatusBar: vi.fn((opts: { element: HTMLElement }) => {
+        statusBarCalls.push(opts.element.title);
+        return opts.element;
+      }),
+      addDock: vi.fn(),
+    } as never;
+
+    const manager = new SurfaceManager(plugin, new CommandExecutor({
+      plugin: { globalCommand: vi.fn() },
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+    }));
+
+    const config = createDefaultConfig();
+    config.items = [
+      createButtonItem({
+        id: "btn-1",
+        title: "第一",
+        surfaces: ["topbar", "statusbar-right"],
+        order: 0,
+      }),
+      createButtonItem({
+        id: "btn-2",
+        title: "第二",
+        surfaces: ["topbar", "statusbar-right"],
+        order: 1,
+      }),
+    ];
+    // In topbar: btn-1 first, then btn-2
+    // In statusbar-right: btn-2 first, then btn-1 (independent!)
+    config.surfaceLayouts = {
+      topbar: [
+        { type: "button", id: "btn-1" },
+        { type: "button", id: "btn-2" },
+      ],
+      "statusbar-right": [
+        { type: "button", id: "btn-2" },
+        { type: "button", id: "btn-1" },
+      ],
+    };
+
+    manager.render(config);
+
+    // 顶栏调用（除去第一个固定随心按设置按钮）
+    const customTopBar = topBarCalls.slice(1);
+    expect(customTopBar).toEqual(["第一", "第二"]);
+
+    // 状态栏调用：第二在前，第一在后
+    expect(statusBarCalls).toEqual(["第二", "第一"]);
 
     manager.destroy();
   });

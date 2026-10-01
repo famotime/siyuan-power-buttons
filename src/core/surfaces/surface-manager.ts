@@ -17,7 +17,9 @@ import type {
   PowerButtonItem,
   PowerButtonsConfig,
   SelectionToolbarLayoutItem,
+  SurfaceType,
 } from "@/shared/types";
+import { confirmDialog, promptDialog } from "@/core/surfaces/dialog-utils";
 import { findCanvasMountTarget } from "@/core/surfaces/canvas-mount-target";
 import { NativeElementSuppressor } from "@/core/surfaces/native-element-suppressor";
 import {
@@ -25,6 +27,7 @@ import {
   createDockPanel,
   createFixedSettingsTopbar,
   createStatusElement,
+  type DockPanelEntry,
   type DockRegistration,
   getIconMarkup,
   hasDockRemove,
@@ -35,6 +38,35 @@ export const STANDALONE_DOCK_TYPE = "siyuan-power-buttons-dock-panel";
 export const STANDALONE_DOCK_ICON_SYMBOL = "iconPowerButtonsDock";
 
 const ASTERISK_KEY_SYMBOL_SVG = `<svg style="display:none;" id="siyuan-power-buttons-symbols"><symbol id="${STANDALONE_DOCK_ICON_SYMBOL}" viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 16V32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.447 19.4114L30.5535 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M30.5532 19.4114L17.4468 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>`;
+
+function getOrderedSurfaceButtons(config: PowerButtonsConfig, surface: SurfaceType): PowerButtonItem[] {
+  const visibleButtons = config.items.filter(item => itemHasSurface(item, surface) && item.visible);
+  const layout = config.surfaceLayouts?.[surface];
+  if (!layout) {
+    return sortItems(visibleButtons);
+  }
+  const buttonMap = new Map<string, PowerButtonItem>(visibleButtons.map(item => [item.id, item]));
+  const ordered: PowerButtonItem[] = [];
+  const usedIds = new Set<string>();
+
+  for (const entry of layout) {
+    if (entry.type === "button") {
+      const item = buttonMap.get(entry.id);
+      if (item) {
+        ordered.push(item);
+        usedIds.add(entry.id);
+      }
+    }
+  }
+
+  for (const item of sortItems(visibleButtons)) {
+    if (!usedIds.has(item.id)) {
+      ordered.push(item);
+    }
+  }
+
+  return ordered;
+}
 
 export class SurfaceManager {
   private topbarElements: HTMLElement[] = [];
@@ -55,6 +87,7 @@ export class SurfaceManager {
   constructor(
     private readonly plugin: Plugin,
     private readonly executor: CommandExecutor,
+    private readonly onSaveConfig?: (config: PowerButtonsConfig) => Promise<void> | void,
   ) {}
 
   render(config: PowerButtonsConfig): void {
@@ -66,10 +99,8 @@ export class SurfaceManager {
 
     this.topbarElements.push(createFixedSettingsTopbar(this.plugin, this.executor));
 
-    const visibleItems = sortItems(config.items).filter(item => item.visible);
-
     // 1. 顶栏按钮
-    for (const item of visibleItems) {
+    for (const item of getOrderedSurfaceButtons(config, "topbar")) {
       if (itemHasSurface(item, "topbar")) {
         const element = this.plugin.addTopBar({
           icon: item.iconType === "iconpark" ? getIconMarkup(item) : getIconMarkup(item),
@@ -85,33 +116,30 @@ export class SurfaceManager {
     }
 
     // 2. 状态栏按钮（合并为状态栏，默认为右侧）
-    for (const item of visibleItems) {
-      if (itemHasSurface(item, "statusbar-right") || itemHasSurface(item, "statusbar-left") || itemHasSurface(item, "statusbar")) {
-        const element = this.plugin.addStatusBar({
-          element: createStatusElement(item, this.executor),
-          position: "right",
-        });
-        this.statusElements.push(element);
-      }
+    for (const item of getOrderedSurfaceButtons(config, "statusbar-right")) {
+      const element = this.plugin.addStatusBar({
+        element: createStatusElement(item, this.executor),
+        position: "right",
+      });
+      this.statusElements.push(element);
     }
 
     // 3. 编辑区按钮
     const canvasMount = findCanvasMountTarget(document);
     if (canvasMount) {
-      for (const item of visibleItems) {
-        if (itemHasSurface(item, "canvas")) {
-          const element = createCanvasElement(item, this.executor, canvasMount.kind);
-          if (canvasMount.anchor) {
-            canvasMount.container.insertBefore(element, canvasMount.anchor);
-          } else {
-            canvasMount.container.appendChild(element);
-          }
-          this.canvasElements.push(element);
+      for (const item of getOrderedSurfaceButtons(config, "canvas")) {
+        const element = createCanvasElement(item, this.executor, canvasMount.kind);
+        if (canvasMount.anchor) {
+          canvasMount.container.insertBefore(element, canvasMount.anchor);
+        } else {
+          canvasMount.container.appendChild(element);
         }
+        this.canvasElements.push(element);
       }
     }
 
     // 4. 单独 Dock 按钮
+    const visibleItems = sortItems(config.items).filter(item => item.visible);
     for (const item of visibleItems) {
       for (const surface of getItemSurfaces(item)) {
         if (isDockSurface(surface)) {
@@ -397,12 +425,38 @@ export class SurfaceManager {
     if (!this.standaloneDockHost || !this.currentConfig) {
       return;
     }
-    const dockPanelItems = sortItems(this.currentConfig.items)
-      .filter(item => itemHasSurface(item, "dock-panel") && item.visible);
+
+    const layout = this.currentConfig.surfaceLayouts?.["dock-panel"] || [];
+    const buttonMap = new Map<string, PowerButtonItem>(
+      this.currentConfig.items
+        .filter(item => itemHasSurface(item, "dock-panel") && item.visible)
+        .map(item => [item.id, item]),
+    );
+
+    const dockPanelEntries: DockPanelEntry[] = [];
+    const usedButtonIds = new Set<string>();
+
+    for (const entry of layout) {
+      if (entry.type === "button") {
+        const item = buttonMap.get(entry.id);
+        if (item) {
+          dockPanelEntries.push({ type: "button", item });
+          usedButtonIds.add(entry.id);
+        }
+      } else if (entry.type === "divider") {
+        dockPanelEntries.push({ type: "divider", id: entry.id, title: entry.title });
+      }
+    }
+
+    for (const [id, item] of buttonMap) {
+      if (!usedButtonIds.has(id)) {
+        dockPanelEntries.push({ type: "button", item });
+      }
+    }
 
     renderStandaloneDockPanel(
       this.standaloneDockHost,
-      dockPanelItems,
+      dockPanelEntries,
       this.executor,
       () => {
         void this.executor.execute({
@@ -415,8 +469,99 @@ export class SurfaceManager {
         settings: this.t("dockPanelSettings", "设置"),
         empty: this.t("dockPanelEmpty", "暂未放置快捷按钮"),
         goToSettings: this.t("dockPanelGoToSettings", "前往设置添加"),
+        addDivider: this.t("dockPanelAddDivider", "添加分割线"),
+        editDivider: this.t("dockPanelEditDivider", "修改分区名称"),
+        deleteDivider: this.t("dockPanelDeleteDivider", "删除分割线"),
+      },
+      {
+        onAddDivider: () => this.handleAddDivider(),
+        onEditDivider: (id, currentTitle) => this.handleEditDivider(id, currentTitle),
+        onRemoveDivider: (id) => this.handleRemoveDivider(id),
+        onMoveItem: (fromIndex, toIndex) => this.handleMoveDockItem(fromIndex, toIndex),
       },
     );
+  }
+
+  private async handleAddDivider(): Promise<void> {
+    if (!this.currentConfig) return;
+    const title = await promptDialog({
+      title: this.t("dockPanelAddDivider", "添加分割线"),
+      placeholder: this.t("dockPanelDividerTitlePrompt", "请输入分区名称（可选，留空为纯分割线）："),
+      confirmText: this.t("confirm", "确定"),
+      cancelText: this.t("cancel", "取消"),
+    });
+    if (title === null) return;
+    if (!this.currentConfig.surfaceLayouts) {
+      this.currentConfig.surfaceLayouts = {};
+    }
+    if (!this.currentConfig.surfaceLayouts["dock-panel"]) {
+      this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.items
+        .filter(item => itemHasSurface(item, "dock-panel"))
+        .map(item => ({ type: "button", id: item.id }));
+    }
+    const newId = `divider-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const trimmed = title.trim();
+    this.currentConfig.surfaceLayouts["dock-panel"]!.push({
+      type: "divider",
+      id: newId,
+      ...(trimmed ? { title: trimmed } : {}),
+    });
+    this.renderStandaloneDock();
+    await this.onSaveConfig?.(this.currentConfig);
+  }
+
+  private async handleEditDivider(id: string, currentTitle?: string): Promise<void> {
+    if (!this.currentConfig?.surfaceLayouts?.["dock-panel"]) return;
+    const list = this.currentConfig.surfaceLayouts["dock-panel"];
+    const target = list.find(e => e.id === id && e.type === "divider");
+    if (!target) return;
+    const title = await promptDialog({
+      title: this.t("dockPanelEditDivider", "修改分区名称"),
+      placeholder: this.t("dockPanelDividerEditPrompt", "修改分区名称（留空为纯分割线）："),
+      initialValue: currentTitle || "",
+      confirmText: this.t("confirm", "确定"),
+      cancelText: this.t("cancel", "取消"),
+    });
+    if (title === null) return;
+    const trimmed = title.trim();
+    if (trimmed) {
+      target.title = trimmed;
+    } else {
+      delete target.title;
+    }
+    this.renderStandaloneDock();
+    await this.onSaveConfig?.(this.currentConfig);
+  }
+
+  private async handleRemoveDivider(id: string): Promise<void> {
+    if (!this.currentConfig?.surfaceLayouts?.["dock-panel"]) return;
+    const shouldDelete = await confirmDialog({
+      title: this.t("dockPanelDeleteDivider", "删除分割线"),
+      message: this.t("dockPanelDividerDeleteConfirm", "确定删除此分割线吗？"),
+      confirmText: this.t("confirm", "确定"),
+      cancelText: this.t("cancel", "取消"),
+    });
+    if (!shouldDelete) return;
+    this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.surfaceLayouts["dock-panel"]
+      .filter(e => e.id !== id);
+    this.renderStandaloneDock();
+    await this.onSaveConfig?.(this.currentConfig);
+  }
+
+  private async handleMoveDockItem(fromIndex: number, toIndex: number): Promise<void> {
+    if (!this.currentConfig) return;
+    if (!this.currentConfig.surfaceLayouts?.["dock-panel"]) {
+      this.currentConfig.surfaceLayouts = this.currentConfig.surfaceLayouts || {};
+      this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.items
+        .filter(item => itemHasSurface(item, "dock-panel"))
+        .map(item => ({ type: "button", id: item.id }));
+    }
+    const list = this.currentConfig.surfaceLayouts["dock-panel"];
+    if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) return;
+    const [moved] = list.splice(fromIndex, 1);
+    list.splice(toIndex, 0, moved);
+    this.renderStandaloneDock();
+    await this.onSaveConfig?.(this.currentConfig);
   }
 
   private t(key: string, defaultText: string): string {

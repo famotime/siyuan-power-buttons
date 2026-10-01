@@ -36,6 +36,7 @@ import type {
   PowerButtonItem,
   PowerButtonsConfig,
   SelectionToolbarLayoutItem,
+  SurfaceLayoutItem,
   SurfaceType,
 } from "@/shared/types";
 
@@ -176,6 +177,66 @@ function sanitizeSelectionToolbarLayoutItem(value: unknown): SelectionToolbarLay
   return { type, id };
 }
 
+function sanitizeSurfaceLayoutItem(value: unknown): SurfaceLayoutItem | null {
+  const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
+  const type = raw.type === "divider" ? "divider" : raw.type === "button" ? "button" : null;
+  const id = typeof raw.id === "string" ? raw.id.trim() : "";
+
+  if (!type || !id) {
+    return null;
+  }
+
+  const title = typeof raw.title === "string" ? raw.title.trim() : undefined;
+  return {
+    type,
+    id,
+    ...(title !== undefined ? { title } : {}),
+  };
+}
+
+export function ensureSurfaceLayouts(
+  rawLayouts: unknown,
+  items: PowerButtonItem[],
+): Partial<Record<SurfaceType, SurfaceLayoutItem[]>> {
+  const result: Partial<Record<SurfaceType, SurfaceLayoutItem[]>> = {};
+  const raw = (rawLayouts && typeof rawLayouts === "object") ? rawLayouts as Record<string, unknown> : {};
+
+  for (const surface of CONFIGURABLE_SURFACES) {
+    const rawList = Array.isArray(raw[surface]) ? raw[surface] : null;
+    const itemsForSurface = items.filter(item => (item.surfaces || [item.surface]).includes(surface));
+    const surfaceItemIds = new Set(itemsForSurface.map(item => item.id));
+
+    if (rawList) {
+      const sanitizedList: SurfaceLayoutItem[] = [];
+      const seenButtonIds = new Set<string>();
+
+      for (const entry of rawList) {
+        const sanitized = sanitizeSurfaceLayoutItem(entry);
+        if (!sanitized) continue;
+        if (sanitized.type === "button") {
+          if (surfaceItemIds.has(sanitized.id) && !seenButtonIds.has(sanitized.id)) {
+            sanitizedList.push(sanitized);
+            seenButtonIds.add(sanitized.id);
+          }
+        } else if (sanitized.type === "divider") {
+          sanitizedList.push(sanitized);
+        }
+      }
+
+      for (const item of itemsForSurface) {
+        if (!seenButtonIds.has(item.id)) {
+          sanitizedList.push({ type: "button", id: item.id });
+        }
+      }
+      result[surface] = sanitizedList;
+    } else {
+      result[surface] = itemsForSurface.map(item => ({ type: "button", id: item.id }));
+    }
+  }
+
+  return result;
+}
+
 function sanitizeItem(value: unknown, index: number, isLegacy: boolean): PowerButtonItem {
   const fallback = createButtonItem({ order: index });
   const raw = (value && typeof value === "object") ? value as Record<string, unknown> : {};
@@ -249,6 +310,7 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
       .map(sanitizeSelectionToolbarLayoutItem)
       .filter((item): item is SelectionToolbarLayoutItem => Boolean(item))
     : defaults.selectionToolbarLayout;
+  const surfaceLayouts = ensureSurfaceLayouts(raw.surfaceLayouts, items);
 
   return {
     version: 2,
@@ -257,6 +319,7 @@ export function sanitizeConfig(input: unknown): PowerButtonsConfig {
     disabledNativeButtons,
     disabledSelectionToolbarItems,
     selectionToolbarLayout,
+    surfaceLayouts,
     experimental: {
       nativeToolbarControl: readExperimentalFlag(raw.experimental, "nativeToolbarControl", false),
       internalCommandAdapter: readExperimentalFlag(raw.experimental, "internalCommandAdapter", false),

@@ -14,8 +14,27 @@ export class Plugin {
 }
 
 export class Dialog {
-  element = document.createElement('div');
-  destroy = vi.fn();
+  element: HTMLElement;
+  destroy: () => void;
+
+  constructor(public options?: {
+    title?: string;
+    content?: string;
+    width?: string;
+    height?: string;
+    destroyCallback?: () => void;
+  }) {
+    this.element = document.createElement('div');
+    if (options?.content) {
+      this.element.innerHTML = options.content;
+    }
+    document.body.appendChild(this.element);
+
+    this.destroy = vi.fn(() => {
+      options?.destroyCallback?.();
+      this.element.remove();
+    });
+  }
 }
 
 export const fetchSyncPost = vi.fn();

@@ -518,6 +518,44 @@
   border-style: dashed;
 }
 
+.workspace-chip--divider {
+  width: 100%;
+  padding: 4px 6px;
+  background: transparent !important;
+  border: 1px dashed var(--b3-border-color) !important;
+  border-radius: 6px;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+
+  .workspace-chip__divider-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--b3-theme-primary);
+    white-space: nowrap;
+  }
+
+  .workspace-chip__divider-empty {
+    font-size: 11px;
+    opacity: 0.5;
+    color: var(--b3-theme-on-surface-light);
+    white-space: nowrap;
+  }
+
+  .workspace-chip__divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--b3-border-color);
+  }
+
+  &:hover {
+    border-color: var(--b3-theme-primary) !important;
+    background: color-mix(in srgb, var(--b3-theme-primary) 6%, transparent) !important;
+  }
+}
+
 .workspace-chip__icon {
   display: inline-flex;
   align-items: center;
@@ -1110,10 +1148,33 @@
       }
     }
 
+    .siyuan-power-buttons__dock-add-divider-btn {
+      opacity: 0.85;
+      display: inline-flex !important;
+      border-radius: 6px;
+      margin-right: 4px;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background-color: var(--b3-theme-surface-lighter);
+        opacity: 1;
+      }
+    }
+
     .siyuan-power-buttons__dock-settings-btn {
       opacity: 1 !important;
       visibility: visible !important;
       display: inline-flex !important;
+      color: var(--b3-theme-primary) !important;
+      background-color: color-mix(in srgb, var(--b3-theme-primary) 14%, transparent) !important;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background-color: color-mix(in srgb, var(--b3-theme-primary) 25%, transparent) !important;
+        transform: scale(1.06);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--b3-theme-primary) 40%, transparent);
+      }
     }
   }
 
@@ -1131,6 +1192,90 @@
     align-content: start;
   }
 
+  .siyuan-power-buttons__dock-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 4px;
+    padding: 2px 4px;
+    user-select: none;
+    cursor: grab;
+    position: relative;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+
+    &.is-line-only {
+      margin: 6px 0;
+      padding: 0 4px;
+
+      .siyuan-power-buttons__dock-divider-line {
+        height: 1px;
+        background-color: var(--b3-border-color);
+      }
+    }
+
+    .siyuan-power-buttons__dock-divider-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--b3-theme-on-surface-light);
+      white-space: nowrap;
+    }
+
+    .siyuan-power-buttons__dock-divider-line {
+      flex: 1;
+      height: 1px;
+      background-color: var(--b3-border-color);
+    }
+
+    .siyuan-power-buttons__dock-divider-actions {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      margin-left: 4px;
+    }
+
+    &:hover .siyuan-power-buttons__dock-divider-actions {
+      display: flex;
+    }
+
+    .siyuan-power-buttons__dock-divider-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--b3-theme-on-surface-light);
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: var(--b3-theme-surface-lighter);
+        color: var(--b3-theme-on-surface);
+      }
+
+      &.siyuan-power-buttons__dock-divider-del:hover {
+        color: var(--b3-theme-error, #d83b01);
+      }
+
+      svg {
+        width: 13px;
+        height: 13px;
+      }
+    }
+
+    &.is-dragging {
+      opacity: 0.35;
+    }
+
+    &.is-drag-over {
+      border-top: 2px solid var(--b3-theme-primary);
+    }
+  }
+
   .siyuan-power-buttons__dock-card {
     display: flex;
     flex-direction: column;
@@ -1146,6 +1291,15 @@
     transition: all 0.15s ease;
     user-select: none;
     min-height: 72px;
+
+    &.is-dragging {
+      opacity: 0.35;
+    }
+
+    &.is-drag-over {
+      outline: 2px dashed var(--b3-theme-primary);
+      outline-offset: -2px;
+    }
 
     &:hover {
       background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface));

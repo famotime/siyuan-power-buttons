@@ -16,5 +16,13 @@
   "dockPanelTitle": "随心按",
   "dockPanelSettings": "设置",
   "dockPanelEmpty": "暂未放置快捷按钮",
-  "dockPanelGoToSettings": "前往设置添加"
+  "dockPanelGoToSettings": "前往设置添加",
+  "dockPanelAddDivider": "添加分割线",
+  "dockPanelEditDivider": "修改分区名称",
+  "dockPanelDeleteDivider": "删除分割线",
+  "dockPanelDividerTitlePrompt": "请输入分区名称（可选，留空为纯分割线）：",
+  "dockPanelDividerEditPrompt": "修改分区名称（留空为纯分割线）：",
+  "dockPanelDividerDeleteConfirm": "确定删除此分割线吗？",
+  "confirm": "确定",
+  "cancel": "取消"
 }

@@ -11,6 +11,9 @@ import {
   normalizeItemOrder,
 } from "@/shared/utils";
 import { normalizeSurface } from "@/shared/surface-metadata";
+import {
+  CONFIGURABLE_SURFACES,
+} from "@/shared/types";
 import type {
   ActionType,
   IconType,
@@ -281,6 +284,14 @@ export function createDefaultConfig(): PowerButtonsConfig {
     disabledNativeButtons: [],
     disabledSelectionToolbarItems: [],
     selectionToolbarLayout: [],
+    surfaceLayouts: Object.fromEntries(
+      CONFIGURABLE_SURFACES.map(surface => [
+        surface,
+        items
+          .filter(item => (item.surfaces || [item.surface]).includes(surface))
+          .map(item => ({ type: "button" as const, id: item.id })),
+      ]),
+    ),
     experimental: {
       nativeToolbarControl: false,
       internalCommandAdapter: false,

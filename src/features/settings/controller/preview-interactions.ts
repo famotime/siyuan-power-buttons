@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import { fetchSyncPost } from 'siyuan';
-import { movePreviewItem } from '@/shared/preview-layout';
+import { movePreviewItem, moveSurfaceItem } from '@/shared/preview-layout';
 import { isDockSurface } from '@/shared/surface-metadata';
 import { CONFIGURABLE_SURFACES } from '@/shared/types';
 import type {
@@ -255,7 +255,7 @@ export function usePreviewInteractions(options: {
       surface: dragItem.surface,
     });
 
-    if (!dragItem.editable || !dragItem.itemId) {
+    if (!dragItem.editable || (!dragItem.itemId && dragItem.type !== 'divider')) {
       if (isDockSurface(dragItem.surface) && isDockSurface(surface)) {
         await moveNativeDockItem(dragItem, surface, targetIndex);
         return;
@@ -280,8 +280,10 @@ export function usePreviewInteractions(options: {
       return;
     }
 
-    options.config.items = movePreviewItem(options.config.items, dragItem.itemId, surface, targetIndex);
-    options.selectedId.value = dragItem.itemId;
+    moveSurfaceItem(options.config, dragItem, surface, targetIndex);
+    if (dragItem.itemId) {
+      options.selectedId.value = dragItem.itemId;
+    }
     options.previewDragItem.value = null;
     clearPreviewDragImage(options.previewDragCleanup);
     await options.persist();
@@ -292,13 +294,16 @@ export function usePreviewInteractions(options: {
     surfaceItems: PreviewButtonItem[],
     targetIndex: number,
   ): Promise<void> {
-    await moveFromPreview(surface, getPreviewInsertIndex(surfaceItems, targetIndex));
+    const insertIndex = isDockSurface(surface)
+      ? getPreviewInsertIndex(surfaceItems, targetIndex)
+      : Math.max(0, Math.min(targetIndex, surfaceItems.length));
+    await moveFromPreview(surface, insertIndex);
   }
 
   async function onPreviewSurfaceDrop(surface: SurfaceType, targetIndex?: number): Promise<void> {
     await moveFromPreview(
       surface,
-      targetIndex ?? options.config.items.filter(item => item.surface === surface).length,
+      targetIndex ?? (options.config.surfaceLayouts?.[surface]?.length || options.config.items.filter(item => (item.surfaces || [item.surface]).includes(surface)).length),
     );
   }
 

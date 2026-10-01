@@ -110,9 +110,13 @@ export function createDockPanel(item: PowerButtonItem, executor: CommandExecutor
   });
 }
 
+export type DockPanelEntry =
+  | { type: 'button'; item: PowerButtonItem }
+  | { type: 'divider'; id: string; title?: string };
+
 export function renderStandaloneDockPanel(
   host: HTMLElement,
-  items: PowerButtonItem[],
+  items: Array<PowerButtonItem | DockPanelEntry>,
   executor: CommandExecutor,
   onOpenSettings: () => void,
   i18n: {
@@ -120,14 +124,30 @@ export function renderStandaloneDockPanel(
     settings?: string;
     empty?: string;
     goToSettings?: string;
+    addDivider?: string;
+    editDivider?: string;
+    deleteDivider?: string;
+  } = {},
+  handlers: {
+    onAddDivider?: () => void | Promise<void>;
+    onEditDivider?: (id: string, currentTitle?: string) => void | Promise<void>;
+    onRemoveDivider?: (id: string) => void | Promise<void>;
+    onMoveItem?: (fromIndex: number, toIndex: number) => void | Promise<void>;
   } = {},
 ): void {
   const title = i18n.title || '随心按';
   const settingsLabel = i18n.settings || '设置';
   const emptyLabel = i18n.empty || '暂未放置快捷按钮';
   const goToSettingsLabel = i18n.goToSettings || '前往设置添加';
+  const addDividerLabel = i18n.addDivider || '添加分割线';
+  const editDividerLabel = i18n.editDivider || '修改分区名称';
+  const deleteDividerLabel = i18n.deleteDivider || '删除分割线';
+
   const logoIcon = createIconSvg('iconpark:AsteriskKey');
+  const addDividerIcon = createIconSvg('iconpark:Plus');
   const settingsIcon = createIconSvg('iconpark:SettingTwo');
+  const editIcon = createIconSvg('iconpark:Edit');
+  const deleteIcon = createIconSvg('iconpark:Delete');
 
   host.innerHTML = '';
   host.classList.add('fn__flex-1', 'fn__flex-column', 'siyuan-power-buttons__standalone-dock');
@@ -140,10 +160,19 @@ export function renderStandaloneDockPanel(
       <span>${escapeAttribute(title)}</span>
     </div>
     <span class="fn__flex-1"></span>
+    <span class="block__icon block__icon--show b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-add-divider-btn" aria-label="${escapeAttribute(addDividerLabel)}">
+      ${addDividerIcon}
+    </span>
     <span class="block__icon block__icon--show b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-settings-btn" aria-label="${escapeAttribute(settingsLabel)}">
       ${settingsIcon}
     </span>
   `;
+
+  header.querySelector('.siyuan-power-buttons__dock-add-divider-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handlers.onAddDivider?.();
+  });
+
   header.querySelector('.siyuan-power-buttons__dock-settings-btn')?.addEventListener('click', (e) => {
     e.stopPropagation();
     onOpenSettings();
@@ -153,7 +182,15 @@ export function renderStandaloneDockPanel(
   const content = document.createElement('div');
   content.className = 'siyuan-power-buttons__dock-content fn__flex-1';
 
-  if (items.length === 0) {
+  // Normalize entries
+  const entries: DockPanelEntry[] = items.map((raw) => {
+    if ('type' in raw && (raw.type === 'divider' || raw.type === 'button')) {
+      return raw as DockPanelEntry;
+    }
+    return { type: 'button', item: raw as PowerButtonItem };
+  });
+
+  if (entries.length === 0) {
     const emptyContainer = document.createElement('div');
     emptyContainer.className = 'siyuan-power-buttons__dock-empty';
     emptyContainer.innerHTML = `
@@ -169,24 +206,112 @@ export function renderStandaloneDockPanel(
     const grid = document.createElement('div');
     grid.className = 'siyuan-power-buttons__dock-grid';
 
-    for (const item of items) {
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'siyuan-power-buttons__dock-card b3-tooltips b3-tooltips__s';
-      card.title = item.tooltip || item.title;
-      card.setAttribute('aria-label', item.tooltip || item.title);
-      card.dataset.powerButtonsOwned = 'true';
-      card.dataset.powerButtonsItemId = item.id;
-      card.innerHTML = `
-        <span class="siyuan-power-buttons__dock-card-icon">${getIconMarkup(item)}</span>
-        <span class="siyuan-power-buttons__dock-card-title">${escapeAttribute(item.title)}</span>
-      `;
-      card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        void executor.execute(item);
-      });
-      grid.appendChild(card);
-    }
+    entries.forEach((entry, index) => {
+      if (entry.type === 'divider') {
+        const divider = document.createElement('div');
+        divider.className = `siyuan-power-buttons__dock-divider${entry.title ? '' : ' is-line-only'}`;
+        divider.draggable = true;
+        divider.dataset.dockIndex = String(index);
+        divider.dataset.dividerId = entry.id;
+        divider.innerHTML = `
+          ${entry.title ? `<span class="siyuan-power-buttons__dock-divider-title">${escapeAttribute(entry.title)}</span>` : ''}
+          <span class="siyuan-power-buttons__dock-divider-line"></span>
+          <div class="siyuan-power-buttons__dock-divider-actions">
+            <button type="button" class="siyuan-power-buttons__dock-divider-btn siyuan-power-buttons__dock-divider-edit b3-tooltips b3-tooltips__s" aria-label="${escapeAttribute(editDividerLabel)}">${editIcon}</button>
+            <button type="button" class="siyuan-power-buttons__dock-divider-btn siyuan-power-buttons__dock-divider-del b3-tooltips b3-tooltips__s" aria-label="${escapeAttribute(deleteDividerLabel)}">${deleteIcon}</button>
+          </div>
+        `;
+
+        divider.querySelector('.siyuan-power-buttons__dock-divider-edit')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handlers.onEditDivider?.(entry.id, entry.title);
+        });
+
+        divider.querySelector('.siyuan-power-buttons__dock-divider-del')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handlers.onRemoveDivider?.(entry.id);
+        });
+
+        divider.addEventListener('dragstart', (e) => {
+          e.dataTransfer?.setData('text/plain', String(index));
+          if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+          divider.classList.add('is-dragging');
+        });
+        divider.addEventListener('dragend', () => {
+          divider.classList.remove('is-dragging');
+        });
+        divider.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          divider.classList.add('is-drag-over');
+        });
+        divider.addEventListener('dragleave', () => {
+          divider.classList.remove('is-drag-over');
+        });
+        divider.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          divider.classList.remove('is-drag-over');
+          const fromIdxStr = e.dataTransfer?.getData('text/plain');
+          if (!fromIdxStr) return;
+          const fromIdx = parseInt(fromIdxStr, 10);
+          if (!Number.isNaN(fromIdx) && fromIdx !== index) {
+            handlers.onMoveItem?.(fromIdx, index);
+          }
+        });
+
+        grid.appendChild(divider);
+      } else {
+        const item = entry.item;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'siyuan-power-buttons__dock-card b3-tooltips b3-tooltips__s';
+        card.title = item.tooltip || item.title;
+        card.setAttribute('aria-label', item.tooltip || item.title);
+        card.dataset.powerButtonsOwned = 'true';
+        card.dataset.powerButtonsItemId = item.id;
+        card.dataset.dockIndex = String(index);
+        card.draggable = true;
+        card.innerHTML = `
+          <span class="siyuan-power-buttons__dock-card-icon">${getIconMarkup(item)}</span>
+          <span class="siyuan-power-buttons__dock-card-title">${escapeAttribute(item.title)}</span>
+        `;
+
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          void executor.execute(item);
+        });
+
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer?.setData('text/plain', String(index));
+          if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+          card.classList.add('is-dragging');
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('is-dragging');
+        });
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          card.classList.add('is-drag-over');
+        });
+        card.addEventListener('dragleave', () => {
+          card.classList.remove('is-drag-over');
+        });
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          card.classList.remove('is-drag-over');
+          const fromIdxStr = e.dataTransfer?.getData('text/plain');
+          if (!fromIdxStr) return;
+          const fromIdx = parseInt(fromIdxStr, 10);
+          if (!Number.isNaN(fromIdx) && fromIdx !== index) {
+            handlers.onMoveItem?.(fromIdx, index);
+          }
+        });
+
+        grid.appendChild(card);
+      }
+    });
+
     content.appendChild(grid);
   }
 

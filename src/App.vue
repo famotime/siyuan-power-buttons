@@ -635,22 +635,36 @@
                   @dragover.prevent
                   @drop="onPreviewSurfaceDrop('dock-panel')"
                 >
-                  <button
-                    v-for="(item, index) in previewLayout.dockPanel"
-                    :key="item.id"
-                    type="button"
-                    class="workspace-chip"
-                    :class="previewChipClass(item)"
-                    :draggable="item.draggable ?? item.editable"
-                    :title="previewChipTitle(item)"
-                    @click="handlePreviewChipClick(item)"
-                    @dragstart="onPreviewDragStart($event, item)"
-                    @dragover.prevent
-                    @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
-                  >
-                    <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
-                    <span class="workspace-chip__label">{{ item.title }}</span>
-                  </button>
+                  <template v-for="(item, index) in previewLayout.dockPanel" :key="item.id">
+                    <div
+                      v-if="item.type === 'divider'"
+                      class="workspace-chip workspace-chip--divider"
+                      draggable="true"
+                      :title="item.title ? `分组：${item.title}` : '分割线'"
+                      @dragstart="onPreviewDragStart($event, item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
+                    >
+                      <span class="workspace-chip__divider-line" />
+                      <span v-if="item.title" class="workspace-chip__divider-title">{{ item.title }}</span>
+                      <span v-else class="workspace-chip__divider-empty">--- 分割线 ---</span>
+                    </div>
+                    <button
+                      v-else
+                      type="button"
+                      class="workspace-chip"
+                      :class="previewChipClass(item)"
+                      :draggable="item.draggable ?? item.editable"
+                      :title="previewChipTitle(item)"
+                      @click="handlePreviewChipClick(item)"
+                      @dragstart="onPreviewDragStart($event, item)"
+                      @dragover.prevent
+                      @drop.stop="onPreviewItemDrop('dock-panel', previewLayout.dockPanel, index)"
+                    >
+                      <span class="workspace-chip__icon" v-html="previewIconMarkup(item)" />
+                      <span class="workspace-chip__label">{{ item.title }}</span>
+                    </button>
+                  </template>
                   <span v-if="!previewLayout.dockPanel.length" class="surface-summary__empty"><small>从左侧列表拖入按钮，或新建后选择「独立侧面板」</small></span>
                 </div>
               </div>

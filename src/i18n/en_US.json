@@ -15,5 +15,13 @@
   "dockPanelTitle": "Power Buttons",
   "dockPanelSettings": "Settings",
   "dockPanelEmpty": "No shortcut buttons placed yet",
-  "dockPanelGoToSettings": "Configure in Settings"
+  "dockPanelGoToSettings": "Configure in Settings",
+  "dockPanelAddDivider": "Add Divider",
+  "dockPanelEditDivider": "Edit Section Title",
+  "dockPanelDeleteDivider": "Delete Divider",
+  "dockPanelDividerTitlePrompt": "Enter section name (optional, leave blank for divider only):",
+  "dockPanelDividerEditPrompt": "Edit section name (leave blank for divider only):",
+  "dockPanelDividerDeleteConfirm": "Are you sure you want to delete this divider?",
+  "confirm": "Confirm",
+  "cancel": "Cancel"
 }
