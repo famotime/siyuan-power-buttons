@@ -1197,16 +1197,19 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 10px 0 4px;
+    margin: 8px 0 4px;
     padding: 2px 4px;
+    min-height: 24px;
+    box-sizing: border-box;
     user-select: none;
     cursor: grab;
     position: relative;
     transition: opacity 0.15s ease, background-color 0.15s ease;
 
     &.is-line-only {
-      margin: 6px 0;
-      padding: 0 4px;
+      margin: 8px 0 4px;
+      padding: 2px 4px;
+      min-height: 24px;
 
       .siyuan-power-buttons__dock-divider-line {
         height: 1px;
@@ -1217,6 +1220,7 @@
     .siyuan-power-buttons__dock-divider-title {
       font-size: 12px;
       font-weight: 600;
+      line-height: 20px;
       color: var(--b3-theme-on-surface-light);
       white-space: nowrap;
     }
@@ -1228,14 +1232,20 @@
     }
 
     .siyuan-power-buttons__dock-divider-actions {
-      display: none;
+      display: flex;
       align-items: center;
       gap: 4px;
       margin-left: 4px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.15s ease, visibility 0.15s ease;
     }
 
     &:hover .siyuan-power-buttons__dock-divider-actions {
-      display: flex;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
     }
 
     .siyuan-power-buttons__dock-divider-btn {
