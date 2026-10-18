@@ -2,7 +2,8 @@ import type {
   Plugin,
 } from "siyuan";
 import { CommandExecutor } from "@/core/commands";
-import { DEFAULT_PLUGIN_COMMAND } from "@/shared/constants";
+import { DEFAULT_PLUGIN_COMMAND, PLUGIN_ENTRY_DIVIDER_ID } from "@/shared/constants";
+import { createDefaultConfig } from "@/core/config/defaults";
 import {
   getDockPosition,
   getItemSurfaces,
@@ -11,6 +12,7 @@ import {
   itemHasSurface,
 } from "@/shared/surface-metadata";
 import {
+  createId,
   sortItems,
 } from "@/shared/utils";
 import type {
@@ -19,6 +21,8 @@ import type {
   SelectionToolbarLayoutItem,
   SurfaceType,
 } from "@/shared/types";
+import { scanPluginEntries } from "@/core/plugins/plugin-scanner";
+import type { DiscoveredPluginEntry } from "@/core/plugins/types";
 import { confirmDialog, promptDialog } from "@/core/surfaces/dialog-utils";
 import { findCanvasMountTarget } from "@/core/surfaces/canvas-mount-target";
 import { NativeElementSuppressor } from "@/core/surfaces/native-element-suppressor";
@@ -83,12 +87,23 @@ export class SurfaceManager {
   private customToolbarItems: PowerButtonItem[] = [];
   private selectionToolbarLayout: SelectionToolbarLayoutItem[] = [];
   private injectedToolbarItems = new Set<HTMLElement>();
+  private isPluginListCollapsed = false;
+  private pluginSearchQuery = "";
 
   constructor(
     private readonly plugin: Plugin,
     private readonly executor: CommandExecutor,
     private readonly onSaveConfig?: (config: PowerButtonsConfig) => Promise<void> | void,
-  ) {}
+    private readonly getPlugins?: () => unknown[] | undefined,
+    private readonly settingsUiStateStore?: {
+      snapshot: () => { isPluginListCollapsed?: boolean };
+      setPluginListCollapsed: (collapsed: boolean) => Promise<void> | void;
+    },
+  ) {
+    if (this.settingsUiStateStore) {
+      this.isPluginListCollapsed = Boolean(this.settingsUiStateStore.snapshot().isPluginListCollapsed);
+    }
+  }
 
   render(config: PowerButtonsConfig): void {
     this.currentConfig = config;
@@ -454,6 +469,13 @@ export class SurfaceManager {
       }
     }
 
+    const pluginEntries = this.getPlugins ? scanPluginEntries(this.getPlugins() as any) : [];
+    const pinnedActionIds = new Set<string>(
+      this.currentConfig.items
+        .filter(item => itemHasSurface(item, "dock-panel") && item.actionType === "plugin-command")
+        .map(item => item.actionId),
+    );
+
     renderStandaloneDockPanel(
       this.standaloneDockHost,
       dockPanelEntries,
@@ -472,14 +494,108 @@ export class SurfaceManager {
         addDivider: this.t("dockPanelAddDivider", "添加分割线"),
         editDivider: this.t("dockPanelEditDivider", "修改分区名称"),
         deleteDivider: this.t("dockPanelDeleteDivider", "删除分割线"),
+        pluginEntryDividerTitle: this.t("pluginEntryDividerTitle", "插件入口"),
+        searchPluginsPlaceholder: this.t("searchPluginsPlaceholder", "搜索插件名称、按钮或命令..."),
+        pinToDock: this.t("pinToDock", "设为右侧栏常驻"),
+        unpinFromDock: this.t("unpinFromDock", "取消右侧栏常驻"),
+        badgeSetting: this.t("badgeSetting", "配置"),
+        badgeTopBar: this.t("badgeTopBar", "顶栏"),
+        badgeCommand: this.t("badgeCommand", "命令"),
+        noPluginsFound: this.t("noPluginsFound", "未找到匹配的插件功能"),
+        togglePluginList: this.t("togglePluginList", "折叠/展开插件列表"),
+        foldPluginList: this.t("foldPluginList", "折叠插件列表"),
+        expandPluginList: this.t("expandPluginList", "展开插件列表"),
+        resetLayout: this.t("dockPanelResetLayout", "恢复默认布局"),
       },
       {
         onAddDivider: () => this.handleAddDivider(),
+        onResetLayout: () => this.handleResetDockLayout(),
         onEditDivider: (id, currentTitle) => this.handleEditDivider(id, currentTitle),
         onRemoveDivider: (id) => this.handleRemoveDivider(id),
         onMoveItem: (fromIndex, toIndex) => this.handleMoveDockItem(fromIndex, toIndex),
+        onTogglePin: (entry) => this.handleTogglePinPluginEntry(entry),
+        onToggleCollapse: async (collapsed) => {
+          this.isPluginListCollapsed = collapsed;
+          await this.settingsUiStateStore?.setPluginListCollapsed(collapsed);
+        },
+        onSearchQueryChange: (query) => {
+          this.pluginSearchQuery = query;
+        },
+      },
+      {
+        pluginEntries,
+        pinnedActionIds,
+        isPluginListCollapsed: this.isPluginListCollapsed,
+        initialSearchQuery: this.pluginSearchQuery,
       },
     );
+  }
+
+  private async handleTogglePinPluginEntry(entry: DiscoveredPluginEntry): Promise<void> {
+    if (!this.currentConfig) return;
+    if (!this.currentConfig.surfaceLayouts) {
+      this.currentConfig.surfaceLayouts = {};
+    }
+    if (!this.currentConfig.surfaceLayouts["dock-panel"]) {
+      this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.items
+        .filter(item => itemHasSurface(item, "dock-panel"))
+        .map(item => ({ type: "button", id: item.id }));
+    }
+
+    const layout = this.currentConfig.surfaceLayouts["dock-panel"]!;
+    const existingIndex = this.currentConfig.items.findIndex(
+      item => item.actionType === entry.actionType && item.actionId === entry.actionId && itemHasSurface(item, "dock-panel"),
+    );
+
+    if (existingIndex >= 0) {
+      const existingItem = this.currentConfig.items[existingIndex];
+      const layoutIdx = layout.findIndex(e => e.type === "button" && e.id === existingItem.id);
+      if (layoutIdx >= 0) {
+        layout.splice(layoutIdx, 1);
+      }
+      const surfaces = (existingItem.surfaces || [existingItem.surface]).filter(s => s !== "dock-panel");
+      if (surfaces.length === 0) {
+        this.currentConfig.items.splice(existingIndex, 1);
+      } else {
+        existingItem.surfaces = surfaces;
+        if (existingItem.surface === "dock-panel") {
+          existingItem.surface = surfaces[0];
+        }
+      }
+    } else {
+      const newItemId = createId();
+      const newItem: PowerButtonItem = {
+        id: newItemId,
+        title: entry.title,
+        visible: true,
+        iconType: entry.iconType,
+        iconValue: entry.iconValue,
+        surface: "dock-panel",
+        surfaces: ["dock-panel"],
+        order: this.currentConfig.items.length,
+        actionType: entry.actionType,
+        actionId: entry.actionId,
+        tooltip: entry.description || entry.title,
+      };
+      this.currentConfig.items.push(newItem);
+
+      const dividerIdx = layout.findIndex(
+        e => e.type === "divider" && (e.id === PLUGIN_ENTRY_DIVIDER_ID || e.title === "插件入口" || e.title === "Plugin Shortcuts"),
+      );
+
+      if (dividerIdx >= 0) {
+        let insertIdx = dividerIdx + 1;
+        while (insertIdx < layout.length && layout[insertIdx].type === "button") {
+          insertIdx++;
+        }
+        layout.splice(insertIdx, 0, { type: "button", id: newItemId });
+      } else {
+        layout.push({ type: "button", id: newItemId });
+      }
+    }
+
+    this.renderStandaloneDock();
+    await this.onSaveConfig?.(this.currentConfig);
   }
 
   private async handleAddDivider(): Promise<void> {
@@ -544,6 +660,74 @@ export class SurfaceManager {
     if (!shouldDelete) return;
     this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.surfaceLayouts["dock-panel"]
       .filter(e => e.id !== id);
+    this.renderStandaloneDock();
+    await this.onSaveConfig?.(this.currentConfig);
+  }
+
+  private async handleResetDockLayout(): Promise<void> {
+    if (!this.currentConfig) return;
+
+    const confirmed = await confirmDialog({
+      title: this.t("dockPanelResetLayout", "恢复默认布局"),
+      message: this.t("dockPanelResetLayoutConfirm", "确定恢复右侧栏默认布局吗？已调整的分区和常驻按钮将被重置。"),
+      confirmText: this.t("confirm", "确定"),
+      cancelText: this.t("cancel", "取消"),
+    });
+    if (!confirmed) return;
+
+    const defaultConfig = createDefaultConfig();
+    const defaultDockLayout = defaultConfig.surfaceLayouts["dock-panel"] || [];
+    const defaultDockButtonIds = new Set(
+      defaultDockLayout
+        .filter(e => e.type === "button")
+        .map(e => e.id),
+    );
+
+    // 1. 清理非默认 dock 按钮，或将其从 dock-panel 表面移除
+    const remainingItems: PowerButtonItem[] = [];
+    for (const item of this.currentConfig.items) {
+      if (itemHasSurface(item, "dock-panel")) {
+        if (!defaultDockButtonIds.has(item.id)) {
+          // 该按钮不是默认 dock 按钮，从 dock-panel 表面移除
+          const updatedSurfaces = (item.surfaces || [item.surface]).filter(s => s !== "dock-panel");
+          if (updatedSurfaces.length > 0) {
+            item.surfaces = updatedSurfaces;
+            if (item.surface === "dock-panel") {
+              item.surface = updatedSurfaces[0];
+            }
+            remainingItems.push(item);
+          }
+        } else {
+          // 默认 dock 按钮，保留并确保包含 dock-panel 表面
+          if (!item.surfaces) {
+            item.surfaces = [item.surface];
+          }
+          if (!item.surfaces.includes("dock-panel")) {
+            item.surfaces.push("dock-panel");
+          }
+          remainingItems.push(item);
+        }
+      } else {
+        remainingItems.push(item);
+      }
+    }
+
+    // 2. 检查是否有缺失的默认 dock 按钮，若有则从 defaultConfig 中恢复补充
+    const existingIds = new Set(remainingItems.map(item => item.id));
+    for (const defaultItem of defaultConfig.items) {
+      if (defaultDockButtonIds.has(defaultItem.id) && !existingIds.has(defaultItem.id)) {
+        remainingItems.push(JSON.parse(JSON.stringify(defaultItem)));
+      }
+    }
+
+    this.currentConfig.items = remainingItems;
+
+    // 3. 恢复 surfaceLayouts["dock-panel"] 为默认布局
+    if (!this.currentConfig.surfaceLayouts) {
+      this.currentConfig.surfaceLayouts = {};
+    }
+    this.currentConfig.surfaceLayouts["dock-panel"] = JSON.parse(JSON.stringify(defaultDockLayout));
+
     this.renderStandaloneDock();
     await this.onSaveConfig?.(this.currentConfig);
   }

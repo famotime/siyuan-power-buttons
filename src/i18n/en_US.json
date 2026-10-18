@@ -24,5 +24,19 @@
   "dockPanelDividerEditPrompt": "Edit section name (leave blank for divider only):",
   "dockPanelDividerDeleteConfirm": "Are you sure you want to delete this divider?",
   "confirm": "Confirm",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "pluginEntryDividerTitle": "Plugin Shortcuts",
+  "searchPluginsPlaceholder": "Search plugin names, buttons, or commands...",
+  "pinToDock": "Pin to right dock",
+  "unpinFromDock": "Unpin from right dock",
+  "badgeSetting": "Setting",
+  "badgeTopBar": "TopBar",
+  "badgeCommand": "Command",
+  "noPluginsFound": "No matching plugin features found",
+  "pluginNotInstalledOrDisabled": "Plugin is not installed or disabled",
+  "togglePluginList": "Toggle plugin list",
+  "foldPluginList": "Collapse plugin list",
+  "expandPluginList": "Expand plugin list",
+  "dockPanelResetLayout": "Reset Layout",
+  "dockPanelResetLayoutConfirm": "Are you sure you want to restore the default right dock layout? Custom sections and pinned buttons will be reset."
 }

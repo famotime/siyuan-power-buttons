@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import {
   BUILTIN_COMMANDS,
@@ -325,6 +326,78 @@ describe("command executor", () => {
     }))).resolves.toBeUndefined();
 
     expect(notify).toHaveBeenCalledWith("读取插件命令失败：registry offline", "error");
+  });
+
+  it("dispatches plugin setting, topbar icon, and command entries correctly", async () => {
+    const openSetting = vi.fn();
+    const topBarClick = vi.fn();
+    const cmdCallback = vi.fn();
+    const mockEl = document.createElement("div");
+    mockEl.setAttribute("data-id", "tb-test");
+    mockEl.onclick = topBarClick;
+
+    const mockPlugins = [
+      {
+        name: "test-plugin",
+        displayName: "测试插件",
+        openSetting,
+        topBarIcons: [mockEl],
+        commands: [
+          {
+            langKey: "myAction",
+            callback: cmdCallback,
+          },
+        ],
+      },
+    ];
+
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      t,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      getPlugins: () => mockPlugins,
+    });
+
+    // 1. Execute setting
+    await executor.execute(createItem({
+      actionType: "plugin-command",
+      actionId: "plugin-setting:test-plugin",
+    }));
+    expect(openSetting).toHaveBeenCalledTimes(1);
+
+    // 2. Execute topbar icon
+    await executor.execute(createItem({
+      actionType: "plugin-command",
+      actionId: "plugin-topbar:test-plugin__tb-test",
+    }));
+    expect(topBarClick).toHaveBeenCalledTimes(1);
+
+    // 3. Execute command
+    await executor.execute(createItem({
+      actionType: "plugin-command",
+      actionId: "plugin-cmd:test-plugin__myAction",
+    }));
+    expect(cmdCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it("notifies when plugin is not found for discovered entries", async () => {
+    const notify = vi.fn();
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify,
+      t: (key) => key,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      getPlugins: () => [],
+    });
+
+    await executor.execute(createItem({
+      actionType: "plugin-command",
+      actionId: "plugin-setting:non-existent",
+    }));
+    expect(notify).toHaveBeenCalledWith("pluginNotInstalledOrDisabled", "error");
   });
 
   it("dispatches experimental shortcuts through the injected runner", async () => {

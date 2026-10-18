@@ -11,7 +11,7 @@ describe('settings UI state store', () => {
     const store = new SettingsUiStateStore(plugin);
     const state = await store.load();
 
-    expect(state).toEqual({ lastSelectedButtonId: '' });
+    expect(state).toEqual({ lastSelectedButtonId: '', isPluginListCollapsed: false });
   });
 
   it('persists lastSelectedButtonId independently of the main config store', async () => {
@@ -26,6 +26,23 @@ describe('settings UI state store', () => {
 
     expect(plugin.saveData).toHaveBeenLastCalledWith('settings-ui.json', {
       lastSelectedButtonId: 'daily-note-button',
+      isPluginListCollapsed: false,
+    });
+  });
+
+  it('persists isPluginListCollapsed independently', async () => {
+    const plugin = {
+      loadData: vi.fn().mockResolvedValue(null),
+      saveData: vi.fn().mockResolvedValue(undefined),
+    } as never;
+
+    const store = new SettingsUiStateStore(plugin);
+    await store.load();
+    await store.setPluginListCollapsed(true);
+
+    expect(plugin.saveData).toHaveBeenLastCalledWith('settings-ui.json', {
+      lastSelectedButtonId: '',
+      isPluginListCollapsed: true,
     });
   });
 });

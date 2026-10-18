@@ -1,5 +1,6 @@
 import {
   DEFAULT_ICONPARK_ICON,
+  PLUGIN_ENTRY_DIVIDER_ID,
 } from "@/shared/constants";
 import {
   createExperimentalClickSequenceConfig,
@@ -345,6 +346,8 @@ export function createDefaultConfig(): PowerButtonsConfig {
         { type: "button", id: "pb-d367924d-a9ac-4eae-91ec-69dcd19eaffd" },
         { type: "button", id: "pb-72370934-8420-4c2b-abfa-928764ca6d84" },
         { type: "button", id: "pb-4b654804-355d-4a3d-960f-8437e0f36e9b" },
+
+        { type: "divider", id: PLUGIN_ENTRY_DIVIDER_ID, title: "插件入口" },
       ],
       "statusbar-right": [
         { type: "button", id: "pb-378f4f34-6cca-47a2-99d9-a240a248e31a" },

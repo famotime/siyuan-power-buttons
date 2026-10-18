@@ -30,6 +30,7 @@ export class CommandExecutor {
     runExperimentalShortcut?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalShortcut">) => boolean | Promise<boolean>;
     runExperimentalClickSequence?: (item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalClickSequence">) => boolean | Promise<boolean>;
     sourcePluginVersion?: string;
+    getPlugins?: () => unknown[] | undefined;
   }) {}
 
   private notify(message: string, type?: string): void {
@@ -71,6 +72,88 @@ export class CommandExecutor {
 
         if (parsed.providerId === INTERNAL_PLUGIN_PROVIDER_ID) {
           await this.options.pluginCommands.get(parsed.commandId)?.();
+          return;
+        }
+
+        if (parsed.providerId === "plugin-setting") {
+          const plugins = (this.options.getPlugins?.() || []) as Array<{
+            name?: string;
+            displayName?: string;
+            openSetting?: () => void;
+            setting?: { open?: (name?: string) => void };
+          }>;
+          const targetPlugin = plugins.find(p => p?.name === parsed.commandId);
+          if (!targetPlugin) {
+            await this.notify(this.t("pluginNotInstalledOrDisabled", { providerId: parsed.commandId }), "error");
+            return;
+          }
+          if (typeof targetPlugin.openSetting === "function") {
+            targetPlugin.openSetting();
+            return;
+          }
+          if (targetPlugin.setting && typeof targetPlugin.setting.open === "function") {
+            targetPlugin.setting.open(targetPlugin.displayName || targetPlugin.name);
+            return;
+          }
+          await this.notify(this.t("pluginNotInstalledOrDisabled", { providerId: parsed.commandId }), "error");
+          return;
+        }
+
+        if (parsed.providerId === "plugin-topbar") {
+          const [pluginName, ...rest] = parsed.commandId.split("__");
+          const topbarId = rest.join("__");
+          const plugins = (this.options.getPlugins?.() || []) as Array<{
+            name?: string;
+            topBarIcons?: Element[];
+          }>;
+          const targetPlugin = plugins.find(p => p?.name === pluginName);
+          if (!targetPlugin) {
+            await this.notify(this.t("pluginNotInstalledOrDisabled", { providerId: pluginName }), "error");
+            return;
+          }
+          const topbars: Element[] = Array.isArray(targetPlugin.topBarIcons) ? targetPlugin.topBarIcons : [];
+          const el = topbars.find((item, idx) =>
+            item?.getAttribute?.("data-id") === topbarId ||
+            item?.id === topbarId ||
+            String(idx) === topbarId,
+          ) || (typeof document !== "undefined" ? document.getElementById(topbarId) : null);
+
+          if (el) {
+            const htmlEl = el as HTMLElement;
+            if (typeof htmlEl.onclick === "function") {
+              htmlEl.onclick(new MouseEvent("click", { bubbles: true, cancelable: true }));
+            } else {
+              htmlEl.click?.();
+              htmlEl.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+            }
+            return;
+          }
+          await this.notify(this.t("pluginNotInstalledOrDisabled", { providerId: pluginName }), "error");
+          return;
+        }
+
+        if (parsed.providerId === "plugin-cmd") {
+          const [pluginName, ...rest] = parsed.commandId.split("__");
+          const cmdKey = rest.join("__");
+          const plugins = (this.options.getPlugins?.() || []) as Array<{
+            name?: string;
+            commands?: Array<{ langKey?: string; callback?: () => void | Promise<void> }>;
+          }>;
+          const targetPlugin = plugins.find(p => p?.name === pluginName);
+          if (!targetPlugin) {
+            await this.notify(this.t("pluginNotInstalledOrDisabled", { providerId: pluginName }), "error");
+            return;
+          }
+          const commands = Array.isArray(targetPlugin.commands) ? targetPlugin.commands : [];
+          const cmd = commands.find((item, idx) =>
+            item?.langKey === cmdKey ||
+            String(idx) === cmdKey,
+          );
+          if (cmd && typeof cmd.callback === "function") {
+            await cmd.callback();
+            return;
+          }
+          await this.notify(this.t("pluginNotInstalledOrDisabled", { providerId: pluginName }), "error");
           return;
         }
 

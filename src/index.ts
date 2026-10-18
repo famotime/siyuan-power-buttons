@@ -129,6 +129,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     runExperimentalShortcut: item => this.experimentalActionRunners.runExperimentalShortcut(item),
     runExperimentalClickSequence: item => this.experimentalActionRunners.runExperimentalClickSequence(item),
     sourcePluginVersion: pluginInfo.version,
+    getPlugins: () => this.getInstalledPlugins(),
   });
   private runtime = new PowerButtonsRuntime({
     plugin: this,
@@ -142,7 +143,13 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       createDialog: options => new Dialog(options),
       mountSettingsApp,
     }),
-    createSurfaceManager: () => new SurfaceManager(this, this.executor, config => this.configStore.replace(config)),
+    createSurfaceManager: () => new SurfaceManager(
+      this,
+      this.executor,
+      config => this.configStore.replace(config),
+      () => this.getInstalledPlugins(),
+      this.settingsUiStateStore,
+    ),
     executor: this.executor,
     exportConfigAsJson,
     clipboard: navigator.clipboard,

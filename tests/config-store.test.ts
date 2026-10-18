@@ -35,6 +35,7 @@ describe("config store model", () => {
       "实用工具",
       "插件命令",
       "偏好与设置",
+      "插件入口",
     ]);
     expect(config.items.every(item => item.iconType === "iconpark")).toBe(true);
     expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(true);

@@ -25,5 +25,19 @@
   "dockPanelDividerEditPrompt": "修改分区名称（留空为纯分割线）：",
   "dockPanelDividerDeleteConfirm": "确定删除此分割线吗？",
   "confirm": "确定",
-  "cancel": "取消"
+  "cancel": "取消",
+  "pluginEntryDividerTitle": "插件入口",
+  "searchPluginsPlaceholder": "搜索插件名称、按钮或命令...",
+  "pinToDock": "设为右侧栏常驻",
+  "unpinFromDock": "取消右侧栏常驻",
+  "badgeSetting": "配置",
+  "badgeTopBar": "顶栏",
+  "badgeCommand": "命令",
+  "noPluginsFound": "未找到匹配的插件功能",
+  "pluginNotInstalledOrDisabled": "插件未安装或已停用",
+  "togglePluginList": "折叠/展开插件列表",
+  "foldPluginList": "折叠插件列表",
+  "expandPluginList": "展开插件列表",
+  "dockPanelResetLayout": "恢复默认布局",
+  "dockPanelResetLayoutConfirm": "确定恢复右侧栏默认布局吗？已调整的分区和常驻按钮将被重置。"
 }

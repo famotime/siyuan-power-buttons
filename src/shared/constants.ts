@@ -5,6 +5,8 @@ export const DEFAULT_ICONPARK_ICON = "iconpark:Search";
 export const INTERNAL_PLUGIN_PROVIDER_ID = "siyuan-power-buttons";
 export const INTERNAL_PLUGIN_PROVIDER_NAME = "随心按";
 export const DEFAULT_PLUGIN_COMMAND = "siyuan-power-buttons:open-settings";
+export const PLUGIN_ENTRY_DIVIDER_ID = "plugin-entry-divider";
+export const DOCK_PLUGIN_ENTRY_COLLAPSED_KEY = "siyuan-power-buttons:dock-plugin-entry-collapsed";
 
 export const SURFACE_LABELS: Record<string, string> = {
   topbar: "顶栏",

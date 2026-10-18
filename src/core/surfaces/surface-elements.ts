@@ -1,9 +1,11 @@
-import type { Dock, Plugin } from 'siyuan';
-import { DEFAULT_ICONPARK_ICON, DEFAULT_PLUGIN_COMMAND } from '@/shared/constants';
+import type { Dock } from 'siyuan';
+import { DEFAULT_ICONPARK_ICON, DEFAULT_PLUGIN_COMMAND, PLUGIN_ENTRY_DIVIDER_ID } from '@/shared/constants';
 import { hardenStrokeOnlySvgFill, renderIconMarkup } from '@/shared/icon-renderer';
 import type { PowerButtonItem } from '@/shared/types';
 import { CommandExecutor } from '@/core/commands';
 import type { CanvasMountTarget } from '@/core/surfaces/canvas-mount-target';
+import type { DiscoveredPluginEntry } from '@/core/plugins/types';
+import { matchKeyword } from '@/core/plugins/pinyin';
 
 export type DockRegistration = {
   type: string;
@@ -114,6 +116,166 @@ export type DockPanelEntry =
   | { type: 'button'; item: PowerButtonItem }
   | { type: 'divider'; id: string; title?: string };
 
+function isPluginEntryDivider(entry: DockPanelEntry): boolean {
+  return entry.type === 'divider' && (
+    entry.id === PLUGIN_ENTRY_DIVIDER_ID
+    || entry.title === '插件入口'
+    || entry.title === 'Plugin Shortcuts'
+  );
+}
+
+function getCollapseIconSvg(collapsed: boolean): string {
+  return collapsed
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="siyuan-power-buttons__icon"><path d="m9 18 6-6-6-6"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="siyuan-power-buttons__icon"><path d="m6 9 6 6 6-6"/></svg>`;
+}
+
+function createPluginSearchSection(
+  pluginEntries: DiscoveredPluginEntry[],
+  pinnedActionIds: Set<string>,
+  initialCollapsed: boolean,
+  initialQuery: string,
+  executor: CommandExecutor,
+  i18n: Record<string, string | undefined>,
+  handlers: {
+    onTogglePin?: (entry: DiscoveredPluginEntry) => void | Promise<void>;
+    onToggleCollapse?: (collapsed: boolean) => void | Promise<void>;
+    onSearchQueryChange?: (query: string) => void;
+  },
+): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'siyuan-power-buttons__dock-plugin-section';
+
+  let isCollapsed = initialCollapsed;
+  let currentQuery = initialQuery;
+
+  const searchPlaceholder = i18n.searchPluginsPlaceholder || '搜索插件名称、按钮或命令...';
+  const foldLabel = i18n.foldPluginList || '折叠插件列表';
+  const expandLabel = i18n.expandPluginList || '展开插件列表';
+  const getCollapseLabel = (collapsed: boolean) => (collapsed ? expandLabel : foldLabel);
+  const noPluginsFound = i18n.noPluginsFound || '未找到匹配的插件功能';
+  const pinLabel = i18n.pinToDock || '设为右侧栏常驻';
+  const unpinLabel = i18n.unpinFromDock || '取消右侧栏常驻';
+  const badgeLabels: Record<string, string> = {
+    setting: i18n.badgeSetting || '配置',
+    topbar: i18n.badgeTopBar || '顶栏',
+    command: i18n.badgeCommand || '命令',
+  };
+
+  const searchIcon = createIconSvg('iconpark:Search');
+  const closeIcon = createIconSvg('iconpark:CloseSmall') || '✕';
+  const pushpinIcon = createIconSvg('iconpark:Pushpin');
+
+  const searchBar = document.createElement('div');
+  searchBar.className = 'siyuan-power-buttons__dock-plugin-search-bar';
+  searchBar.innerHTML = `
+    <div class="siyuan-power-buttons__dock-plugin-input-wrap">
+      <span class="siyuan-power-buttons__dock-plugin-search-icon">${searchIcon}</span>
+      <input type="text" class="b3-text-field b3-text-field--text siyuan-power-buttons__dock-plugin-input" placeholder="${escapeAttribute(searchPlaceholder)}" value="${escapeAttribute(currentQuery)}">
+      <button type="button" class="siyuan-power-buttons__dock-plugin-clear-btn ${currentQuery ? '' : 'fn__none'}" aria-label="清空">${closeIcon}</button>
+    </div>
+    <button type="button" class="block__icon block__icon--show b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-plugin-collapse-btn ${isCollapsed ? 'is-collapsed' : ''}" aria-label="${escapeAttribute(getCollapseLabel(isCollapsed))}">
+      ${getCollapseIconSvg(isCollapsed)}
+    </button>
+  `;
+
+  const inputEl = searchBar.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-input')!;
+  const clearBtn = searchBar.querySelector<HTMLButtonElement>('.siyuan-power-buttons__dock-plugin-clear-btn')!;
+  const collapseBtn = searchBar.querySelector<HTMLButtonElement>('.siyuan-power-buttons__dock-plugin-collapse-btn')!;
+
+  const resultsContainer = document.createElement('div');
+  resultsContainer.className = `siyuan-power-buttons__dock-plugin-results ${isCollapsed ? 'fn__none' : ''}`;
+
+  const renderResults = (query: string) => {
+    resultsContainer.innerHTML = '';
+    const q = query.trim();
+    const filtered = q
+      ? pluginEntries.filter(entry =>
+          matchKeyword(entry.title, q, entry.initials)
+          || matchKeyword(entry.pluginDisplayName, q, entry.initials)
+          || matchKeyword(entry.pluginName, q)
+          || (entry.description && matchKeyword(entry.description, q)),
+        )
+      : pluginEntries;
+
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'siyuan-power-buttons__dock-plugin-empty';
+      empty.textContent = noPluginsFound;
+      resultsContainer.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach(entry => {
+      const isPinned = pinnedActionIds.has(entry.actionId);
+      const card = document.createElement('div');
+      card.className = `siyuan-power-buttons__dock-plugin-card ${isPinned ? 'is-pinned' : ''}`;
+      card.dataset.actionId = entry.actionId;
+      card.innerHTML = `
+        <div class="siyuan-power-buttons__dock-plugin-icon">${getIconMarkup(entry as any)}</div>
+        <div class="siyuan-power-buttons__dock-plugin-info">
+          <div class="siyuan-power-buttons__dock-plugin-row-top">
+            <span class="siyuan-power-buttons__dock-plugin-name">${escapeAttribute(entry.pluginDisplayName)}</span>
+            <span class="siyuan-power-buttons__dock-plugin-badge is-${entry.type}">${escapeAttribute(badgeLabels[entry.type] || entry.type)}</span>
+          </div>
+          <div class="siyuan-power-buttons__dock-plugin-title">${escapeAttribute(entry.title)}</div>
+        </div>
+        <button type="button" class="siyuan-power-buttons__dock-plugin-pin-btn b3-tooltips b3-tooltips__sw ${isPinned ? 'is-pinned' : ''}" aria-label="${escapeAttribute(isPinned ? unpinLabel : pinLabel)}">
+          ${pushpinIcon}
+        </button>
+      `;
+
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        void executor.execute({
+          actionType: entry.actionType,
+          actionId: entry.actionId,
+        } as any);
+      });
+
+      card.querySelector('.siyuan-power-buttons__dock-plugin-pin-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handlers.onTogglePin?.(entry);
+      });
+
+      resultsContainer.appendChild(card);
+    });
+  };
+
+  inputEl.addEventListener('input', () => {
+    currentQuery = inputEl.value;
+    clearBtn.classList.toggle('fn__none', !currentQuery);
+    handlers.onSearchQueryChange?.(currentQuery);
+    renderResults(currentQuery);
+  });
+
+  clearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    inputEl.value = '';
+    currentQuery = '';
+    clearBtn.classList.add('fn__none');
+    handlers.onSearchQueryChange?.('');
+    renderResults('');
+    inputEl.focus();
+  });
+
+  collapseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isCollapsed = !isCollapsed;
+    collapseBtn.classList.toggle('is-collapsed', isCollapsed);
+    collapseBtn.innerHTML = getCollapseIconSvg(isCollapsed);
+    collapseBtn.setAttribute('aria-label', getCollapseLabel(isCollapsed));
+    resultsContainer.classList.toggle('fn__none', isCollapsed);
+    handlers.onToggleCollapse?.(isCollapsed);
+  });
+
+  renderResults(currentQuery);
+
+  container.appendChild(searchBar);
+  container.appendChild(resultsContainer);
+  return container;
+}
+
 export function renderStandaloneDockPanel(
   host: HTMLElement,
   items: Array<PowerButtonItem | DockPanelEntry>,
@@ -127,12 +289,34 @@ export function renderStandaloneDockPanel(
     addDivider?: string;
     editDivider?: string;
     deleteDivider?: string;
+    pluginEntryDividerTitle?: string;
+    searchPluginsPlaceholder?: string;
+    pinToDock?: string;
+    unpinFromDock?: string;
+    badgeSetting?: string;
+    badgeTopBar?: string;
+    badgeCommand?: string;
+    noPluginsFound?: string;
+    togglePluginList?: string;
+    foldPluginList?: string;
+    expandPluginList?: string;
+    resetLayout?: string;
   } = {},
   handlers: {
     onAddDivider?: () => void | Promise<void>;
+    onResetLayout?: () => void | Promise<void>;
     onEditDivider?: (id: string, currentTitle?: string) => void | Promise<void>;
     onRemoveDivider?: (id: string) => void | Promise<void>;
     onMoveItem?: (fromIndex: number, toIndex: number) => void | Promise<void>;
+    onTogglePin?: (entry: DiscoveredPluginEntry) => void | Promise<void>;
+    onToggleCollapse?: (collapsed: boolean) => void | Promise<void>;
+    onSearchQueryChange?: (query: string) => void;
+  } = {},
+  options: {
+    pluginEntries?: DiscoveredPluginEntry[];
+    pinnedActionIds?: Set<string>;
+    isPluginListCollapsed?: boolean;
+    initialSearchQuery?: string;
   } = {},
 ): void {
   const title = i18n.title || '随心按';
@@ -140,11 +324,13 @@ export function renderStandaloneDockPanel(
   const emptyLabel = i18n.empty || '暂未放置快捷按钮';
   const goToSettingsLabel = i18n.goToSettings || '前往设置添加';
   const addDividerLabel = i18n.addDivider || '添加分割线';
+  const resetLayoutLabel = i18n.resetLayout || '恢复默认布局';
   const editDividerLabel = i18n.editDivider || '修改分区名称';
   const deleteDividerLabel = i18n.deleteDivider || '删除分割线';
 
   const logoIcon = createIconSvg('iconpark:AsteriskKey');
   const addDividerIcon = createIconSvg('iconpark:Plus');
+  const resetLayoutIcon = createIconSvg('iconpark:Refresh');
   const settingsIcon = createIconSvg('iconpark:SettingTwo');
   const editIcon = createIconSvg('iconpark:Edit');
   const deleteIcon = createIconSvg('iconpark:Delete');
@@ -163,6 +349,9 @@ export function renderStandaloneDockPanel(
     <span class="block__icon block__icon--show b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-add-divider-btn" aria-label="${escapeAttribute(addDividerLabel)}">
       ${addDividerIcon}
     </span>
+    <span class="block__icon block__icon--show b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-reset-btn" aria-label="${escapeAttribute(resetLayoutLabel)}">
+      ${resetLayoutIcon}
+    </span>
     <span class="block__icon block__icon--show b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-settings-btn" aria-label="${escapeAttribute(settingsLabel)}">
       ${settingsIcon}
     </span>
@@ -171,6 +360,11 @@ export function renderStandaloneDockPanel(
   header.querySelector('.siyuan-power-buttons__dock-add-divider-btn')?.addEventListener('click', (e) => {
     e.stopPropagation();
     handlers.onAddDivider?.();
+  });
+
+  header.querySelector('.siyuan-power-buttons__dock-reset-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handlers.onResetLayout?.();
   });
 
   header.querySelector('.siyuan-power-buttons__dock-settings-btn')?.addEventListener('click', (e) => {
@@ -191,7 +385,8 @@ export function renderStandaloneDockPanel(
   });
 
   const hasButtons = entries.some(entry => entry.type === 'button');
-  if (entries.length === 0 || !hasButtons) {
+  const hasPluginEntries = Boolean(options.pluginEntries && options.pluginEntries.length > 0);
+  if (entries.length === 0 || (!hasButtons && !hasPluginEntries)) {
     const emptyContainer = document.createElement('div');
     emptyContainer.className = 'siyuan-power-buttons__dock-empty';
     emptyContainer.innerHTML = `
@@ -207,7 +402,30 @@ export function renderStandaloneDockPanel(
     const grid = document.createElement('div');
     grid.className = 'siyuan-power-buttons__dock-grid';
 
+    const pluginEntryDividerIndex = entries.findIndex(isPluginEntryDivider);
+    let hasAppendedPluginSection = false;
+
+    const maybeAppendPluginSection = () => {
+      if (pluginEntryDividerIndex !== -1 && !hasAppendedPluginSection && options.pluginEntries) {
+        hasAppendedPluginSection = true;
+        const pluginSection = createPluginSearchSection(
+          options.pluginEntries,
+          options.pinnedActionIds || new Set(),
+          Boolean(options.isPluginListCollapsed),
+          options.initialSearchQuery || '',
+          executor,
+          i18n,
+          handlers,
+        );
+        grid.appendChild(pluginSection);
+      }
+    };
+
     entries.forEach((entry, index) => {
+      if (entry.type === 'divider' && pluginEntryDividerIndex !== -1 && index > pluginEntryDividerIndex) {
+        maybeAppendPluginSection();
+      }
+
       if (entry.type === 'divider') {
         const divider = document.createElement('div');
         divider.className = `siyuan-power-buttons__dock-divider${entry.title ? '' : ' is-line-only'}`;
@@ -310,6 +528,8 @@ export function renderStandaloneDockPanel(
         grid.appendChild(card);
       }
     });
+
+    maybeAppendPluginSection();
 
     content.appendChild(grid);
   }

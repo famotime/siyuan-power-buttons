@@ -3,20 +3,25 @@ import { SETTINGS_UI_STORAGE_NAME } from "@/shared/constants";
 
 export interface SettingsUiState {
   lastSelectedButtonId: string;
+  isPluginListCollapsed?: boolean;
 }
 
 function sanitizeSettingsUiState(input: unknown): SettingsUiState {
-  const candidate = input as { lastSelectedButtonId?: unknown } | null | undefined;
+  const candidate = input as { lastSelectedButtonId?: unknown; isPluginListCollapsed?: unknown } | null | undefined;
   return {
     lastSelectedButtonId: typeof candidate?.lastSelectedButtonId === "string"
       ? candidate.lastSelectedButtonId
       : "",
+    isPluginListCollapsed: typeof candidate?.isPluginListCollapsed === "boolean"
+      ? candidate.isPluginListCollapsed
+      : false,
   };
 }
 
 export class SettingsUiStateStore {
   private state: SettingsUiState = {
     lastSelectedButtonId: "",
+    isPluginListCollapsed: false,
   };
 
   constructor(private readonly plugin: Plugin) {}
@@ -35,7 +40,16 @@ export class SettingsUiStateStore {
 
   async setLastSelectedButtonId(lastSelectedButtonId: string): Promise<void> {
     this.state = {
+      ...this.state,
       lastSelectedButtonId,
+    };
+    await this.plugin.saveData(SETTINGS_UI_STORAGE_NAME, this.state);
+  }
+
+  async setPluginListCollapsed(isPluginListCollapsed: boolean): Promise<void> {
+    this.state = {
+      ...this.state,
+      isPluginListCollapsed,
     };
     await this.plugin.saveData(SETTINGS_UI_STORAGE_NAME, this.state);
   }

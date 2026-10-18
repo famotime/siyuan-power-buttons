@@ -12,6 +12,7 @@ import {
 } from "@/core/config/item-defaults";
 import {
   DEFAULT_ICONPARK_ICON,
+  PLUGIN_ENTRY_DIVIDER_ID,
 } from "@/shared/constants";
 import { normalizeIconValue } from "@/shared/icon-catalog";
 import {
@@ -231,6 +232,14 @@ export function ensureSurfaceLayouts(
       result[surface] = sanitizedList;
     } else {
       result[surface] = itemsForSurface.map(item => ({ type: "button", id: item.id }));
+    }
+
+    if (surface === "dock-panel") {
+      const dockList = result["dock-panel"] || [];
+      if (!dockList.some(entry => entry.type === "divider" && entry.id === PLUGIN_ENTRY_DIVIDER_ID)) {
+        dockList.push({ type: "divider", id: PLUGIN_ENTRY_DIVIDER_ID, title: "插件入口" });
+        result["dock-panel"] = dockList;
+      }
     }
   }
 

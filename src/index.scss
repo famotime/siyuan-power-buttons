@@ -1381,6 +1381,250 @@
       margin-top: 4px;
     }
   }
+
+  .siyuan-power-buttons__dock-plugin-section {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 4px;
+
+    .siyuan-power-buttons__dock-plugin-search-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .siyuan-power-buttons__dock-plugin-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .siyuan-power-buttons__dock-plugin-search-icon {
+      position: absolute;
+      left: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--b3-theme-on-surface-light);
+      pointer-events: none;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+
+    .siyuan-power-buttons__dock-plugin-input {
+      width: 100%;
+      height: 28px;
+      padding-left: 28px;
+      padding-right: 26px;
+      font-size: 12px;
+      border-radius: 6px;
+      background: var(--b3-theme-surface);
+      box-sizing: border-box;
+
+      &:focus {
+        border-color: var(--b3-theme-primary);
+      }
+    }
+
+    .siyuan-power-buttons__dock-plugin-clear-btn {
+      position: absolute;
+      right: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--b3-theme-on-surface-light);
+      cursor: pointer;
+      padding: 0;
+
+      &:hover {
+        background: var(--b3-theme-surface-lighter);
+        color: var(--b3-theme-on-surface);
+      }
+
+      svg {
+        width: 12px;
+        height: 12px;
+      }
+    }
+
+    .siyuan-power-buttons__dock-plugin-collapse-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--b3-theme-on-surface-light);
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: var(--b3-theme-surface-lighter);
+        color: var(--b3-theme-on-surface);
+      }
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+
+    .siyuan-power-buttons__dock-plugin-results {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 280px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 2px;
+    }
+
+    .siyuan-power-buttons__dock-plugin-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border: 1px solid var(--b3-border-color);
+      border-radius: 6px;
+      background: var(--b3-theme-surface);
+      color: var(--b3-theme-on-surface);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+
+      &:hover {
+        background: color-mix(in srgb, var(--b3-theme-primary) 8%, var(--b3-theme-surface));
+        border-color: color-mix(in srgb, var(--b3-theme-primary) 40%, var(--b3-border-color));
+      }
+
+      &.is-pinned {
+        border-color: color-mix(in srgb, var(--b3-theme-primary) 50%, var(--b3-border-color));
+        background: color-mix(in srgb, var(--b3-theme-primary) 6%, var(--b3-theme-surface));
+      }
+
+      .siyuan-power-buttons__dock-plugin-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      .siyuan-power-buttons__dock-plugin-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .siyuan-power-buttons__dock-plugin-row-top {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .siyuan-power-buttons__dock-plugin-name {
+        font-size: 11px;
+        color: var(--b3-theme-on-surface-light);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .siyuan-power-buttons__dock-plugin-badge {
+        font-size: 10px;
+        line-height: 14px;
+        padding: 0 4px;
+        border-radius: 3px;
+        font-weight: 500;
+        white-space: nowrap;
+
+        &.is-setting {
+          color: var(--b3-theme-primary);
+          background: color-mix(in srgb, var(--b3-theme-primary) 15%, transparent);
+        }
+
+        &.is-topbar {
+          color: #d97706;
+          background: color-mix(in srgb, #f59e0b 15%, transparent);
+        }
+
+        &.is-command {
+          color: #16a34a;
+          background: color-mix(in srgb, #22c55e 15%, transparent);
+        }
+      }
+
+      .siyuan-power-buttons__dock-plugin-title {
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .siyuan-power-buttons__dock-plugin-pin-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--b3-theme-on-surface-light);
+        opacity: 0.45;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        &:hover {
+          opacity: 1;
+          background: var(--b3-theme-surface-lighter);
+          color: var(--b3-theme-primary);
+        }
+
+        &.is-pinned {
+          opacity: 1;
+          color: var(--b3-theme-primary);
+        }
+      }
+    }
+
+    .siyuan-power-buttons__dock-plugin-empty {
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--b3-theme-on-surface-light);
+    }
+  }
 }
 
 @media (max-width: 980px) {
