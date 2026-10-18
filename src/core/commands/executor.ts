@@ -132,6 +132,59 @@ export class CommandExecutor {
           return;
         }
 
+        if (parsed.providerId === "plugin-dock") {
+          const [pluginName, ...rest] = parsed.commandId.split("__");
+          const dockKey = rest.join("__");
+          const plugins = (this.options.getPlugins?.() || []) as Array<{
+            name?: string;
+            docks?: Record<string, unknown>;
+          }>;
+          const targetPlugin = plugins.find(p => p?.name === pluginName);
+          if (!targetPlugin) {
+            await this.notify(this.t("pluginNotInstalledOrDisabled", { providerId: pluginName }), "error");
+            return;
+          }
+
+          // 1. 优先尝试点击思源原生 DOM 中的侧栏按钮
+          let el = typeof document !== "undefined"
+            ? (document.querySelector(`.dock .dock__item[data-type="${dockKey}"]`) ||
+               document.querySelector(`.dock__item[data-type="${dockKey}"]`))
+            : null;
+
+          if (!el && typeof document !== "undefined") {
+            el = document.querySelector(`.dock .dock__item[data-type="${pluginName}${dockKey}"]`) ||
+                 document.querySelector(`.dock__item[data-type="${pluginName}${dockKey}"]`);
+          }
+
+          if (el) {
+            const htmlEl = el as HTMLElement;
+            if (typeof htmlEl.onclick === "function") {
+              htmlEl.onclick(new MouseEvent("click", { bubbles: true, cancelable: true }));
+            } else {
+              htmlEl.click?.();
+              htmlEl.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+            }
+            return;
+          }
+
+          // 2. 尝试调用思源原生 Dock API toggleModel
+          const siyuan = typeof window !== "undefined" ? (window as any).siyuan : null;
+          const layoutDocks = [
+            siyuan?.layout?.leftDock,
+            siyuan?.layout?.rightDock,
+            siyuan?.layout?.bottomDock,
+          ].filter(Boolean);
+          for (const dock of layoutDocks) {
+            if (typeof dock.toggleModel === "function" && (dock.data?.[dockKey] || dock.data?.[`${pluginName}${dockKey}`])) {
+              dock.toggleModel(dock.data?.[dockKey] ? dockKey : `${pluginName}${dockKey}`);
+              return;
+            }
+          }
+
+          await this.notify(this.t("pluginCommandFailed", { commandId: parsed.commandId }), "error");
+          return;
+        }
+
         if (parsed.providerId === "plugin-cmd") {
           const [pluginName, ...rest] = parsed.commandId.split("__");
           const cmdKey = rest.join("__");

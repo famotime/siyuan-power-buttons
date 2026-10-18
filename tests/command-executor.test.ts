@@ -519,4 +519,42 @@ describe("command executor", () => {
 
     expect(notify).toHaveBeenCalledWith("实验点击序列当前无法执行：barSettings", "error");
   });
+
+  it("executes plugin-dock by clicking dock element or calling toggleModel", async () => {
+    const dockEl = document.createElement("span");
+    dockEl.className = "dock__item";
+    dockEl.setAttribute("data-type", "siyuan-plugin-calendar_dock");
+    const clickSpy = vi.fn();
+    dockEl.addEventListener("click", clickSpy);
+    document.body.appendChild(dockEl);
+
+    const mockPlugins = [
+      {
+        name: "siyuan-plugin-calendar",
+        docks: {
+          "siyuan-plugin-calendar_dock": {
+            id: "calendar_dock",
+          },
+        },
+      },
+    ];
+
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      t,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      runBuiltinCommand: vi.fn(),
+      getPlugins: () => mockPlugins,
+    });
+
+    await executor.execute(createItem({
+      actionType: "plugin-command",
+      actionId: "plugin-dock:siyuan-plugin-calendar__siyuan-plugin-calendar_dock",
+    }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    dockEl.remove();
+  });
 });

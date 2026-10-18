@@ -1,4 +1,4 @@
-export type DiscoveredPluginEntryType = 'setting' | 'topbar' | 'command';
+export type DiscoveredPluginEntryType = 'setting' | 'topbar' | 'command' | 'dock';
 
 export interface DiscoveredPluginEntry {
   id: string;
@@ -12,4 +12,5 @@ export interface DiscoveredPluginEntry {
   actionType: 'plugin-command';
   actionId: string;
   initials?: string;
+  enabled?: boolean;
 }

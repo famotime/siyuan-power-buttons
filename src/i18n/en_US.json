@@ -31,6 +31,7 @@
   "unpinFromDock": "Unpin from right dock",
   "badgeSetting": "Setting",
   "badgeTopBar": "TopBar",
+  "badgeDock": "Dock",
   "badgeCommand": "Command",
   "noPluginsFound": "No matching plugin features found",
   "pluginNotInstalledOrDisabled": "Plugin is not installed or disabled",
@@ -38,5 +39,10 @@
   "foldPluginList": "Collapse plugin list",
   "expandPluginList": "Expand plugin list",
   "dockPanelResetLayout": "Reset Layout",
-  "dockPanelResetLayoutConfirm": "Are you sure you want to restore the default right dock layout? Custom sections and pinned buttons will be reset."
+  "dockPanelResetLayoutConfirm": "Are you sure you want to restore the default right dock layout? Custom sections and pinned buttons will be reset.",
+  "enablePlugin": "Enable plugin",
+  "disablePlugin": "Disable plugin",
+  "pluginEnabledSuccess": "Enabled plugin \"{name}\"",
+  "pluginDisabledSuccess": "Disabled plugin \"{name}\"",
+  "togglePluginFailed": "Failed to toggle plugin state: {message}"
 }

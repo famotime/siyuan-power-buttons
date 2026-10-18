@@ -32,6 +32,7 @@
   "unpinFromDock": "取消右侧栏常驻",
   "badgeSetting": "配置",
   "badgeTopBar": "顶栏",
+  "badgeDock": "侧栏",
   "badgeCommand": "命令",
   "noPluginsFound": "未找到匹配的插件功能",
   "pluginNotInstalledOrDisabled": "插件未安装或已停用",
@@ -39,5 +40,10 @@
   "foldPluginList": "折叠插件列表",
   "expandPluginList": "展开插件列表",
   "dockPanelResetLayout": "恢复默认布局",
-  "dockPanelResetLayoutConfirm": "确定恢复右侧栏默认布局吗？已调整的分区和常驻按钮将被重置。"
+  "dockPanelResetLayoutConfirm": "确定恢复右侧栏默认布局吗？已调整的分区和常驻按钮将被重置。",
+  "enablePlugin": "启用插件",
+  "disablePlugin": "停用插件",
+  "pluginEnabledSuccess": "已启用插件「{name}」",
+  "pluginDisabledSuccess": "已停用插件「{name}」",
+  "togglePluginFailed": "切换插件状态失败：{message}"
 }

@@ -20,6 +20,7 @@ import {
   getExperimentalFeatureSupport,
   type ExperimentalFeatureKey,
 } from "@/core/compatibility/version-guard";
+import { PluginStateManager } from "@/core/plugins/plugin-state-manager";
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
@@ -57,6 +58,15 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
   private settingsUiStateStore = new SettingsUiStateStore(this);
   private appVersion: string | null = null;
   private readonly pluginCommandHandlers = new Map<string, () => void | Promise<void>>();
+  private readonly pluginStateManager = new PluginStateManager({
+    fetchPost: (url, data) => fetchSyncPost(url, data),
+    getFrontend,
+    getActivePlugins: () => this.getInstalledPlugins(),
+    notify: (message, type = "info") => {
+      showMessage(message, 5000, type);
+    },
+    t: (key, replacements) => this.t(key, replacements),
+  });
   private readonly externalCommands = new ExternalCommandRegistry({
     getPlugins: () => this.getInstalledPlugins(),
   });
@@ -149,6 +159,7 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
       config => this.configStore.replace(config),
       () => this.getInstalledPlugins(),
       this.settingsUiStateStore,
+      this.pluginStateManager,
     ),
     executor: this.executor,
     exportConfigAsJson,
@@ -168,11 +179,18 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     } catch {
       this.appVersion = null;
     }
+    this.eventBus?.on?.("ws-main", (event: CustomEvent<{ cmd: string; data: any }>) => {
+      const detail = (event as CustomEvent)?.detail || event;
+      if (detail?.cmd === "reloadPlugin") {
+        this.pluginStateManager.handleWsReloadPlugin(detail.data);
+      }
+    });
     await this.runtime.onload();
   }
 
   onLayoutReady(): void {
     this.runtime.onLayoutReady();
+    void this.pluginStateManager.fetchInstalledPackages();
   }
 
   openSetting(): void {

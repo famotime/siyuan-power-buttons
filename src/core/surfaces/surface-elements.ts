@@ -130,6 +130,8 @@ function getCollapseIconSvg(collapsed: boolean): string {
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="siyuan-power-buttons__icon"><path d="m6 9 6 6 6-6"/></svg>`;
 }
 
+let lastInteractedActionId: string | null = null;
+
 function createPluginSearchSection(
   pluginEntries: DiscoveredPluginEntry[],
   pinnedActionIds: Set<string>,
@@ -141,7 +143,11 @@ function createPluginSearchSection(
     onTogglePin?: (entry: DiscoveredPluginEntry) => void | Promise<void>;
     onToggleCollapse?: (collapsed: boolean) => void | Promise<void>;
     onSearchQueryChange?: (query: string) => void;
+    onTogglePluginEnabled?: (pluginName: string, enabled: boolean) => Promise<boolean | void> | boolean | void;
   },
+  sectionOptions: {
+    isPluginEnabled?: (pluginName: string) => boolean;
+  } = {},
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'siyuan-power-buttons__dock-plugin-section';
@@ -156,10 +162,13 @@ function createPluginSearchSection(
   const noPluginsFound = i18n.noPluginsFound || '未找到匹配的插件功能';
   const pinLabel = i18n.pinToDock || '设为右侧栏常驻';
   const unpinLabel = i18n.unpinFromDock || '取消右侧栏常驻';
+  const enablePluginLabel = i18n.enablePlugin || '启用插件';
+  const disablePluginLabel = i18n.disablePlugin || '停用插件';
   const badgeLabels: Record<string, string> = {
     setting: i18n.badgeSetting || '配置',
     topbar: i18n.badgeTopBar || '顶栏',
     command: i18n.badgeCommand || '命令',
+    dock: i18n.badgeDock || '侧栏',
   };
 
   const searchIcon = createIconSvg('iconpark:Search');
@@ -208,9 +217,16 @@ function createPluginSearchSection(
 
     filtered.forEach(entry => {
       const isPinned = pinnedActionIds.has(entry.actionId);
+      const isPluginEnabled = sectionOptions.isPluginEnabled
+        ? sectionOptions.isPluginEnabled(entry.pluginName)
+        : (entry.enabled ?? true);
+
+      const hasToggleSwitch = entry.type === 'topbar' || entry.type === 'dock';
+
       const card = document.createElement('div');
-      card.className = `siyuan-power-buttons__dock-plugin-card ${isPinned ? 'is-pinned' : ''}`;
+      card.className = `siyuan-power-buttons__dock-plugin-card ${isPinned ? 'is-pinned' : ''} ${isPluginEnabled ? '' : 'is-disabled-plugin'}`;
       card.dataset.actionId = entry.actionId;
+      card.dataset.pluginName = entry.pluginName;
       card.innerHTML = `
         <div class="siyuan-power-buttons__dock-plugin-icon">${getIconMarkup(entry as any)}</div>
         <div class="siyuan-power-buttons__dock-plugin-info">
@@ -220,9 +236,20 @@ function createPluginSearchSection(
           </div>
           <div class="siyuan-power-buttons__dock-plugin-title">${escapeAttribute(entry.title)}</div>
         </div>
-        <button type="button" class="siyuan-power-buttons__dock-plugin-pin-btn b3-tooltips b3-tooltips__sw ${isPinned ? 'is-pinned' : ''}" aria-label="${escapeAttribute(isPinned ? unpinLabel : pinLabel)}">
-          ${pushpinIcon}
-        </button>
+        <div class="siyuan-power-buttons__dock-plugin-actions">
+          ${hasToggleSwitch ? `
+            <label class="b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-plugin-toggle-wrapper"
+                   aria-label="${escapeAttribute(isPluginEnabled ? disablePluginLabel : enablePluginLabel)}">
+              <input type="checkbox"
+                     class="b3-switch siyuan-power-buttons__dock-plugin-toggle-switch"
+                     ${isPluginEnabled ? 'checked' : ''}
+                     data-plugin-name="${escapeAttribute(entry.pluginName)}">
+            </label>
+          ` : ''}
+          <button type="button" class="siyuan-power-buttons__dock-plugin-pin-btn b3-tooltips b3-tooltips__sw ${isPinned ? 'is-pinned' : ''}" aria-label="${escapeAttribute(isPinned ? unpinLabel : pinLabel)}">
+            ${pushpinIcon}
+          </button>
+        </div>
       `;
 
       card.addEventListener('click', (e) => {
@@ -235,8 +262,40 @@ function createPluginSearchSection(
 
       card.querySelector('.siyuan-power-buttons__dock-plugin-pin-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        lastInteractedActionId = entry.actionId;
         handlers.onTogglePin?.(entry);
       });
+
+      if (hasToggleSwitch) {
+        const toggleSwitch = card.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-toggle-switch');
+        const toggleLabel = card.querySelector<HTMLLabelElement>('.siyuan-power-buttons__dock-plugin-toggle-wrapper');
+
+        toggleLabel?.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+        toggleSwitch?.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+        toggleSwitch?.addEventListener('change', async (e) => {
+          e.stopPropagation();
+          lastInteractedActionId = entry.actionId;
+          const targetEnabled = toggleSwitch.checked;
+          toggleSwitch.disabled = true;
+          try {
+            const res = await handlers.onTogglePluginEnabled?.(entry.pluginName, targetEnabled);
+            if (res === false) {
+              toggleSwitch.checked = !targetEnabled;
+            }
+          } catch {
+            toggleSwitch.checked = !targetEnabled;
+          } finally {
+            toggleSwitch.disabled = false;
+            const currentChecked = toggleSwitch.checked;
+            toggleLabel?.setAttribute('aria-label', currentChecked ? disablePluginLabel : enablePluginLabel);
+            card.classList.toggle('is-disabled-plugin', !currentChecked);
+          }
+        });
+      }
 
       resultsContainer.appendChild(card);
     });
@@ -301,6 +360,8 @@ export function renderStandaloneDockPanel(
     foldPluginList?: string;
     expandPluginList?: string;
     resetLayout?: string;
+    enablePlugin?: string;
+    disablePlugin?: string;
   } = {},
   handlers: {
     onAddDivider?: () => void | Promise<void>;
@@ -311,12 +372,14 @@ export function renderStandaloneDockPanel(
     onTogglePin?: (entry: DiscoveredPluginEntry) => void | Promise<void>;
     onToggleCollapse?: (collapsed: boolean) => void | Promise<void>;
     onSearchQueryChange?: (query: string) => void;
+    onTogglePluginEnabled?: (pluginName: string, enabled: boolean) => Promise<boolean | void> | boolean | void;
   } = {},
   options: {
     pluginEntries?: DiscoveredPluginEntry[];
     pinnedActionIds?: Set<string>;
     isPluginListCollapsed?: boolean;
     initialSearchQuery?: string;
+    isPluginEnabled?: (pluginName: string) => boolean;
   } = {},
 ): void {
   const title = i18n.title || '随心按';
@@ -334,6 +397,16 @@ export function renderStandaloneDockPanel(
   const settingsIcon = createIconSvg('iconpark:SettingTwo');
   const editIcon = createIconSvg('iconpark:Edit');
   const deleteIcon = createIconSvg('iconpark:Delete');
+
+  const prevContent = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-content');
+  const prevContentScrollTop = prevContent ? prevContent.scrollTop : 0;
+  const prevResults = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-results');
+  const prevResultsScrollTop = prevResults ? prevResults.scrollTop : 0;
+
+  const prevInput = host.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-input');
+  const wasInputFocused = prevInput ? document.activeElement === prevInput : false;
+  const inputSelectionStart = prevInput?.selectionStart;
+  const inputSelectionEnd = prevInput?.selectionEnd;
 
   host.innerHTML = '';
   host.classList.add('fn__flex-1', 'fn__flex-column', 'siyuan-power-buttons__standalone-dock');
@@ -416,6 +489,7 @@ export function renderStandaloneDockPanel(
           executor,
           i18n,
           handlers,
+          { isPluginEnabled: options.isPluginEnabled },
         );
         grid.appendChild(pluginSection);
       }
@@ -535,5 +609,42 @@ export function renderStandaloneDockPanel(
   }
 
   host.appendChild(content);
+
+  const newContent = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-content');
+  const newResults = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-results');
+
+  const restoreScrollAndFocus = () => {
+    if (newContent && prevContentScrollTop > 0) {
+      newContent.scrollTop = prevContentScrollTop;
+    }
+    if (newResults && prevResultsScrollTop > 0) {
+      newResults.scrollTop = prevResultsScrollTop;
+    }
+    if (lastInteractedActionId && newResults) {
+      const targetCard = Array.from(newResults.querySelectorAll<HTMLElement>('.siyuan-power-buttons__dock-plugin-card'))
+        .find(c => c.dataset.actionId === lastInteractedActionId);
+      if (targetCard && typeof targetCard.scrollIntoView === 'function') {
+        targetCard.scrollIntoView({ block: 'nearest' });
+      }
+      lastInteractedActionId = null;
+    }
+  };
+
+  restoreScrollAndFocus();
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      restoreScrollAndFocus();
+    });
+  }
+
+  if (wasInputFocused) {
+    const newInput = host.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-input');
+    if (newInput) {
+      newInput.focus();
+      if (typeof inputSelectionStart === 'number' && typeof inputSelectionEnd === 'number') {
+        newInput.setSelectionRange(inputSelectionStart, inputSelectionEnd);
+      }
+    }
+  }
 }
 

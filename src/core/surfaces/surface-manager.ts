@@ -23,6 +23,7 @@ import type {
 } from "@/shared/types";
 import { scanPluginEntries } from "@/core/plugins/plugin-scanner";
 import type { DiscoveredPluginEntry } from "@/core/plugins/types";
+import type { PluginStateManager } from "@/core/plugins/plugin-state-manager";
 import { confirmDialog, promptDialog } from "@/core/surfaces/dialog-utils";
 import { findCanvasMountTarget } from "@/core/surfaces/canvas-mount-target";
 import { NativeElementSuppressor } from "@/core/surfaces/native-element-suppressor";
@@ -89,6 +90,7 @@ export class SurfaceManager {
   private injectedToolbarItems = new Set<HTMLElement>();
   private isPluginListCollapsed = false;
   private pluginSearchQuery = "";
+  private unsubscribePluginState?: () => void;
 
   constructor(
     private readonly plugin: Plugin,
@@ -99,9 +101,15 @@ export class SurfaceManager {
       snapshot: () => { isPluginListCollapsed?: boolean };
       setPluginListCollapsed: (collapsed: boolean) => Promise<void> | void;
     },
+    private readonly pluginStateManager?: PluginStateManager,
   ) {
     if (this.settingsUiStateStore) {
       this.isPluginListCollapsed = Boolean(this.settingsUiStateStore.snapshot().isPluginListCollapsed);
+    }
+    if (this.pluginStateManager) {
+      this.unsubscribePluginState = this.pluginStateManager.subscribe(() => {
+        this.renderStandaloneDock();
+      });
     }
   }
 
@@ -469,7 +477,9 @@ export class SurfaceManager {
       }
     }
 
-    const pluginEntries = this.getPlugins ? scanPluginEntries(this.getPlugins() as any) : [];
+    const pluginEntries = this.pluginStateManager
+      ? this.pluginStateManager.scanEntries(this.getPlugins ? (this.getPlugins() as any) : undefined)
+      : (this.getPlugins ? scanPluginEntries(this.getPlugins() as any) : []);
     const pinnedActionIds = new Set<string>(
       this.currentConfig.items
         .filter(item => itemHasSurface(item, "dock-panel") && item.actionType === "plugin-command")
@@ -500,12 +510,15 @@ export class SurfaceManager {
         unpinFromDock: this.t("unpinFromDock", "取消右侧栏常驻"),
         badgeSetting: this.t("badgeSetting", "配置"),
         badgeTopBar: this.t("badgeTopBar", "顶栏"),
+        badgeDock: this.t("badgeDock", "侧栏"),
         badgeCommand: this.t("badgeCommand", "命令"),
         noPluginsFound: this.t("noPluginsFound", "未找到匹配的插件功能"),
         togglePluginList: this.t("togglePluginList", "折叠/展开插件列表"),
         foldPluginList: this.t("foldPluginList", "折叠插件列表"),
         expandPluginList: this.t("expandPluginList", "展开插件列表"),
         resetLayout: this.t("dockPanelResetLayout", "恢复默认布局"),
+        enablePlugin: this.t("enablePlugin", "启用插件"),
+        disablePlugin: this.t("disablePlugin", "停用插件"),
       },
       {
         onAddDivider: () => this.handleAddDivider(),
@@ -521,12 +534,14 @@ export class SurfaceManager {
         onSearchQueryChange: (query) => {
           this.pluginSearchQuery = query;
         },
+        onTogglePluginEnabled: (pluginName, enabled) => this.handleTogglePluginEnabled(pluginName, enabled),
       },
       {
         pluginEntries,
         pinnedActionIds,
         isPluginListCollapsed: this.isPluginListCollapsed,
         initialSearchQuery: this.pluginSearchQuery,
+        isPluginEnabled: (pluginName) => this.pluginStateManager?.isPluginEnabled(pluginName) ?? true,
       },
     );
   }
@@ -748,6 +763,13 @@ export class SurfaceManager {
     await this.onSaveConfig?.(this.currentConfig);
   }
 
+  private async handleTogglePluginEnabled(pluginName: string, enabled: boolean): Promise<boolean> {
+    if (this.pluginStateManager) {
+      return await this.pluginStateManager.togglePluginEnabled(pluginName, enabled);
+    }
+    return false;
+  }
+
   private t(key: string, defaultText: string): string {
     const pluginWithT = this.plugin as Plugin & { t?: (k: string) => string };
     if (typeof pluginWithT.t === "function") {
@@ -789,6 +811,9 @@ export class SurfaceManager {
   }
 
   destroy(): void {
+    this.unsubscribePluginState?.();
+    this.unsubscribePluginState = undefined;
+
     this.clearDynamicSurfaces();
 
     if (this.standaloneDockRegistration && hasDockRemove(this.standaloneDockRegistration.model)) {
