@@ -45,5 +45,13 @@
   "disablePlugin": "停用插件",
   "pluginEnabledSuccess": "已启用插件「{name}」",
   "pluginDisabledSuccess": "已停用插件「{name}」",
-  "togglePluginFailed": "切换插件状态失败：{message}"
+  "togglePluginFailed": "切换插件状态失败：{message}",
+  "appearanceSettings": "外观设置",
+  "cardColor": "侧栏卡片颜色",
+  "cardColorHint": "设置侧栏卡片的柔和浅底色，便于分类与快速识别；其它紧凑表面不显示颜色。",
+  "editAppearance": "修改外观",
+  "defaultColor": "默认无色",
+  "customColor": "自定义颜色",
+  "moreSettings": "更多设置...",
+  "changeIcon": "更换图标"
 }

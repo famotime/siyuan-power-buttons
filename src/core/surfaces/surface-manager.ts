@@ -36,6 +36,7 @@ import {
   type DockRegistration,
   getIconMarkup,
   hasDockRemove,
+  closeActiveAppearancePopover,
   renderStandaloneDockPanel,
 } from "@/core/surfaces/surface-elements";
 
@@ -331,6 +332,26 @@ export class SurfaceManager {
     }
   }
 
+
+  private async handleUpdateItemAppearance(
+    itemId: string,
+    patch: { color?: string; iconType?: PowerButtonItem['iconType']; iconValue?: string },
+  ): Promise<void> {
+    if (!this.currentConfig) return;
+    const item = this.currentConfig.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    if ('color' in patch) {
+      item.color = patch.color;
+    }
+    if (patch.iconType && patch.iconValue) {
+      item.iconType = patch.iconType;
+      item.iconValue = patch.iconValue;
+    }
+
+    await this.onSaveConfig?.(this.currentConfig);
+  }
+
   private getSelectionToolbarElementKey(element: HTMLElement): string | null {
     const customId = element.dataset.powerButtonsItemId
       || element.dataset.type?.replace(/^power-buttons:/, "");
@@ -519,6 +540,13 @@ export class SurfaceManager {
         resetLayout: this.t("dockPanelResetLayout", "恢复默认布局"),
         enablePlugin: this.t("enablePlugin", "启用插件"),
         disablePlugin: this.t("disablePlugin", "停用插件"),
+        appearanceSettings: this.t("appearanceSettings", "外观设置"),
+        cardColor: this.t("cardColor", "侧栏卡片颜色"),
+        editAppearance: this.t("editAppearance", "修改外观"),
+        defaultColor: this.t("defaultColor", "默认无色"),
+        customColor: this.t("customColor", "自定义颜色"),
+        moreSettings: this.t("moreSettings", "更多设置..."),
+        changeIcon: this.t("changeIcon", "更换图标"),
       },
       {
         onAddDivider: () => this.handleAddDivider(),
@@ -535,6 +563,7 @@ export class SurfaceManager {
           this.pluginSearchQuery = query;
         },
         onTogglePluginEnabled: (pluginName, enabled) => this.handleTogglePluginEnabled(pluginName, enabled),
+        onUpdateItemAppearance: (itemId, patch) => this.handleUpdateItemAppearance(itemId, patch),
       },
       {
         pluginEntries,
@@ -779,6 +808,7 @@ export class SurfaceManager {
   }
 
   private clearDynamicSurfaces(): void {
+    closeActiveAppearancePopover();
     this.nativeSuppressor.clear();
     this.toolbarPatchObserver?.disconnect();
     this.toolbarPatchObserver = null;

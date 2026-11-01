@@ -1301,6 +1301,58 @@
     transition: all 0.15s ease;
     user-select: none;
     min-height: 72px;
+    position: relative;
+
+    &.has-custom-color {
+      background: var(--dock-card-custom-bg, var(--b3-theme-surface));
+      border-color: var(--dock-card-custom-border, var(--b3-border-color));
+
+      &:hover {
+        background: var(--dock-card-custom-hover-bg, color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface)));
+        border-color: var(--dock-card-custom-accent, var(--b3-theme-primary));
+      }
+
+      &:active {
+        background: var(--dock-card-custom-active-bg, var(--dock-card-custom-hover-bg));
+      }
+    }
+
+    .siyuan-power-buttons__dock-card-edit {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--b3-theme-on-surface);
+      opacity: 0;
+      cursor: pointer;
+      transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+
+      svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      &:hover {
+        background: var(--b3-theme-background-hover, rgba(0, 0, 0, 0.08));
+        color: var(--b3-theme-primary);
+      }
+    }
+
+    &:hover .siyuan-power-buttons__dock-card-edit {
+      opacity: 0.65;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
 
     &.is-dragging {
       opacity: 0.35;
@@ -1718,5 +1770,266 @@
 
   .surface-summary__controls {
     justify-content: flex-start;
+  }
+}
+
+
+/* 快捷修改外观 Popover */
+.siyuan-power-buttons__appearance-popover {
+  position: fixed;
+  z-index: 9999;
+  width: 240px;
+  background: var(--b3-theme-surface);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  box-shadow: var(--b3-dialog-shadow, 0 8px 24px rgba(0, 0, 0, 0.18));
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  user-select: none;
+
+  .siyuan-power-buttons__popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 13px;
+
+    .siyuan-power-buttons__popover-close-btn {
+      border: none;
+      background: transparent;
+      padding: 2px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--b3-theme-on-surface-light);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background: var(--b3-theme-background-hover);
+        color: var(--b3-theme-on-surface);
+      }
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+
+  .siyuan-power-buttons__popover-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .siyuan-power-buttons__popover-label {
+    font-size: 11px;
+    color: var(--b3-theme-on-surface-light);
+  }
+
+  .siyuan-power-buttons__popover-colors {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    align-items: center;
+  }
+
+  .siyuan-power-buttons__color-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      transform: scale(1.15);
+    }
+
+    &.is-active {
+      border-color: var(--b3-theme-primary);
+      box-shadow: 0 0 0 1px var(--b3-theme-surface), 0 0 0 2px var(--b3-theme-primary);
+    }
+
+    &.is-none {
+      background: var(--b3-theme-background);
+      border: 1px dashed var(--b3-border-color);
+
+      .dot-none-line {
+        width: 16px;
+        height: 1.5px;
+        background: var(--b3-theme-on-surface-light);
+        transform: rotate(-45deg);
+      }
+    }
+
+    &.is-custom {
+      background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+      overflow: hidden;
+
+      .siyuan-power-buttons__color-input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+
+      .dot-custom-icon {
+        font-size: 11px;
+        pointer-events: none;
+      }
+    }
+  }
+
+  .siyuan-power-buttons__popover-icons {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+
+  .siyuan-power-buttons__quick-icon-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--b3-theme-on-surface);
+    padding: 0;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: var(--b3-theme-background-hover);
+    }
+
+    &.is-active {
+      background: color-mix(in srgb, var(--b3-theme-primary) 15%, var(--b3-theme-surface));
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-primary);
+    }
+  }
+
+  .siyuan-power-buttons__popover-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+    border-top: 1px solid var(--b3-border-color);
+
+    .siyuan-power-buttons__popover-more-btn {
+      font-size: 11px;
+      padding: 2px 6px;
+    }
+  }
+}
+
+/* 主设置弹窗中的颜色选择区域 */
+.color-picker-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--b3-border-color);
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    span {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--b3-theme-on-surface);
+    }
+
+    small {
+      font-size: 11px;
+      color: var(--b3-theme-on-surface-light);
+    }
+  }
+}
+
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  &__item {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      transform: scale(1.15);
+    }
+
+    &.is-active {
+      border-color: var(--b3-theme-primary);
+      box-shadow: 0 0 0 1px var(--b3-theme-surface), 0 0 0 2px var(--b3-theme-primary);
+    }
+
+    &--none {
+      background: var(--b3-theme-background);
+      border: 1px dashed var(--b3-border-color);
+
+      .color-palette__none-line {
+        width: 16px;
+        height: 1.5px;
+        background: var(--b3-theme-on-surface-light);
+        transform: rotate(-45deg);
+      }
+    }
+
+    &--custom {
+      background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+      overflow: hidden;
+
+      .color-palette__input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+
+      .color-palette__custom-icon {
+        font-size: 12px;
+        pointer-events: none;
+      }
+    }
+  }
+
+  &__check {
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
   }
 }

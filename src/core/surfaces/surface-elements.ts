@@ -2,6 +2,7 @@ import type { Dock } from 'siyuan';
 import { DEFAULT_ICONPARK_ICON, DEFAULT_PLUGIN_COMMAND, PLUGIN_ENTRY_DIVIDER_ID } from '@/shared/constants';
 import { hardenStrokeOnlySvgFill, renderIconMarkup } from '@/shared/icon-renderer';
 import type { PowerButtonItem } from '@/shared/types';
+import { getDockCardColorStyle, PRESET_COLORS } from '@/shared/color-utils';
 import { CommandExecutor } from '@/core/commands';
 import type { CanvasMountTarget } from '@/core/surfaces/canvas-mount-target';
 import type { DiscoveredPluginEntry } from '@/core/plugins/types';
@@ -335,6 +336,243 @@ function createPluginSearchSection(
   return container;
 }
 
+
+const POPUP_QUICK_ICONS = [
+  { type: 'iconpark' as const, value: 'iconpark:Star', label: '星标' },
+  { type: 'iconpark' as const, value: 'iconpark:Heart', label: '喜爱' },
+  { type: 'iconpark' as const, value: 'iconpark:Bookmark', label: '书签' },
+  { type: 'iconpark' as const, value: 'iconpark:CheckOne', label: '完成' },
+  { type: 'iconpark' as const, value: 'iconpark:SettingTwo', label: '设置' },
+  { type: 'iconpark' as const, value: 'iconpark:Lightning', label: '快捷' },
+  { type: 'iconpark' as const, value: 'iconpark:Fire', label: '重点' },
+  { type: 'iconpark' as const, value: 'iconpark:Search', label: '搜索' },
+  { type: 'iconpark' as const, value: 'iconpark:FileText', label: '文档' },
+  { type: 'iconpark' as const, value: 'iconpark:Folder', label: '目录' },
+  { type: 'iconpark' as const, value: 'iconpark:Tag', label: '标签' },
+  { type: 'iconpark' as const, value: 'iconpark:Tool', label: '工具' },
+];
+
+let activeAppearancePopover: HTMLElement | null = null;
+let activePopoverCleanup: (() => void) | null = null;
+
+export function closeActiveAppearancePopover(): void {
+  if (activePopoverCleanup) {
+    activePopoverCleanup();
+    activePopoverCleanup = null;
+  }
+  if (activeAppearancePopover) {
+    activeAppearancePopover.remove();
+    activeAppearancePopover = null;
+  }
+}
+
+function showCardAppearancePopover(
+  cardEl: HTMLElement,
+  item: PowerButtonItem,
+  onOpenSettings: () => void,
+  i18n: Record<string, string | undefined>,
+  handlers: {
+    onUpdateItemAppearance?: (itemId: string, patch: { color?: string; iconType?: PowerButtonItem['iconType']; iconValue?: string }) => void | Promise<void>;
+  },
+): void {
+  closeActiveAppearancePopover();
+
+  const title = i18n.editAppearance || '修改外观';
+  const cardColorLabel = i18n.cardColor || '侧栏卡片颜色';
+  const defaultColorLabel = i18n.defaultColor || '默认无色';
+  const customColorLabel = i18n.customColor || '自定义颜色';
+  const changeIconLabel = i18n.changeIcon || '更换图标';
+  const moreSettingsLabel = i18n.moreSettings || '更多设置...';
+  const closeIcon = createIconSvg('iconpark:CloseSmall') || '✕';
+
+  const popover = document.createElement('div');
+  popover.className = 'siyuan-power-buttons__appearance-popover';
+
+  let currentColor = item.color;
+
+  popover.innerHTML = `
+    <div class="siyuan-power-buttons__popover-header">
+      <span class="siyuan-power-buttons__popover-title">${escapeAttribute(title)}</span>
+      <button type="button" class="siyuan-power-buttons__popover-close-btn" aria-label="关闭">${closeIcon}</button>
+    </div>
+    <div class="siyuan-power-buttons__popover-section">
+      <div class="siyuan-power-buttons__popover-label">${escapeAttribute(cardColorLabel)}</div>
+      <div class="siyuan-power-buttons__popover-colors">
+        <button type="button" class="siyuan-power-buttons__color-dot is-none ${!currentColor ? 'is-active' : ''}" title="${escapeAttribute(defaultColorLabel)}" data-color="none">
+          <span class="dot-none-line"></span>
+        </button>
+        ${PRESET_COLORS.map(c => `
+          <button type="button" class="siyuan-power-buttons__color-dot ${currentColor?.toLowerCase() === c.hex.toLowerCase() ? 'is-active' : ''}"
+                  style="background-color: ${c.hex};"
+                  data-color="${c.hex}"
+                  title="${escapeAttribute(c.label)}">
+          </button>
+        `).join('')}
+        <label class="siyuan-power-buttons__color-dot is-custom" title="${escapeAttribute(customColorLabel)}">
+          <input type="color" class="siyuan-power-buttons__color-input" value="${currentColor || '#3b82f6'}">
+          <span class="dot-custom-icon">🎨</span>
+        </label>
+      </div>
+    </div>
+    <div class="siyuan-power-buttons__popover-section">
+      <div class="siyuan-power-buttons__popover-label">${escapeAttribute(changeIconLabel)}</div>
+      <div class="siyuan-power-buttons__popover-icons">
+        ${POPUP_QUICK_ICONS.map(icon => `
+          <button type="button" class="siyuan-power-buttons__quick-icon-btn ${item.iconValue === icon.value ? 'is-active' : ''}"
+                  data-icon-type="${icon.type}"
+                  data-icon-value="${icon.value}"
+                  title="${escapeAttribute(icon.label)}">
+            ${createIconSvg(icon.value)}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+    <div class="siyuan-power-buttons__popover-footer">
+      <button type="button" class="b3-button b3-button--text siyuan-power-buttons__popover-more-btn">
+        ${escapeAttribute(moreSettingsLabel)}
+      </button>
+    </div>
+  `;
+
+  const applyColor = (newColor?: string) => {
+    currentColor = newColor;
+    if (newColor) {
+      cardEl.classList.add('has-custom-color');
+      const styles = getDockCardColorStyle(newColor);
+      for (const [k, v] of Object.entries(styles)) {
+        cardEl.style.setProperty(k, v);
+      }
+    } else {
+      cardEl.classList.remove('has-custom-color');
+      cardEl.style.removeProperty('--dock-card-custom-bg');
+      cardEl.style.removeProperty('--dock-card-custom-hover-bg');
+      cardEl.style.removeProperty('--dock-card-custom-border');
+      cardEl.style.removeProperty('--dock-card-custom-active-bg');
+      cardEl.style.removeProperty('--dock-card-custom-accent');
+    }
+
+    popover.querySelectorAll<HTMLElement>('.siyuan-power-buttons__color-dot').forEach(el => {
+      const c = el.dataset.color;
+      if (c === 'none') {
+        el.classList.toggle('is-active', !newColor);
+      } else if (c) {
+        el.classList.toggle('is-active', Boolean(newColor && c.toLowerCase() === newColor.toLowerCase()));
+      }
+    });
+
+    handlers.onUpdateItemAppearance?.(item.id, { color: newColor });
+  };
+
+  const applyIcon = (iconType: PowerButtonItem['iconType'], iconValue: string) => {
+    const iconEl = cardEl.querySelector('.siyuan-power-buttons__dock-card-icon');
+    if (iconEl) {
+      iconEl.innerHTML = getIconMarkup({ ...item, iconType, iconValue });
+    }
+
+    popover.querySelectorAll<HTMLElement>('.siyuan-power-buttons__quick-icon-btn').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.iconValue === iconValue);
+    });
+
+    handlers.onUpdateItemAppearance?.(item.id, { iconType, iconValue });
+  };
+
+  popover.querySelectorAll<HTMLElement>('.siyuan-power-buttons__color-dot').forEach(el => {
+    const c = el.dataset.color;
+    if (c === 'none') {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyColor(undefined);
+      });
+    } else if (c) {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyColor(c);
+      });
+    }
+  });
+
+  const customColorInput = popover.querySelector<HTMLInputElement>('.siyuan-power-buttons__color-input');
+  const onColorInput = (e: Event) => {
+    e.stopPropagation();
+    const val = customColorInput?.value;
+    if (val) {
+      applyColor(val);
+    }
+  };
+  customColorInput?.addEventListener('input', onColorInput);
+  customColorInput?.addEventListener('change', onColorInput);
+
+  popover.querySelectorAll<HTMLElement>('.siyuan-power-buttons__quick-icon-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const type = (btn.dataset.iconType || 'iconpark') as PowerButtonItem['iconType'];
+      const val = btn.dataset.iconValue || '';
+      if (val) {
+        applyIcon(type, val);
+      }
+    });
+  });
+
+  popover.querySelector('.siyuan-power-buttons__popover-close-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeActiveAppearancePopover();
+  });
+
+  popover.querySelector('.siyuan-power-buttons__popover-more-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeActiveAppearancePopover();
+    onOpenSettings();
+  });
+
+  popover.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  document.body.appendChild(popover);
+  activeAppearancePopover = popover;
+
+  const rect = cardEl.getBoundingClientRect();
+  const popoverWidth = 240;
+  let top = rect.bottom + 6;
+  let left = rect.left + (rect.width - popoverWidth) / 2;
+
+  if (typeof window !== 'undefined') {
+    if (left + popoverWidth > window.innerWidth - 12) {
+      left = window.innerWidth - popoverWidth - 12;
+    }
+    if (left < 12) {
+      left = 12;
+    }
+    if (top + 280 > window.innerHeight - 12) {
+      top = Math.max(12, rect.top - 280 - 6);
+    }
+  }
+
+  popover.style.top = top + 'px';
+  popover.style.left = left + 'px';
+
+  const onDocumentClick = (e: MouseEvent) => {
+    if (!popover.contains(e.target as Node) && !cardEl.contains(e.target as Node)) {
+      closeActiveAppearancePopover();
+    }
+  };
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      closeActiveAppearancePopover();
+    }
+  };
+
+  setTimeout(() => {
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onKeyDown);
+  }, 0);
+
+  activePopoverCleanup = () => {
+    document.removeEventListener('click', onDocumentClick);
+    document.removeEventListener('keydown', onKeyDown);
+  };
+}
+
 export function renderStandaloneDockPanel(
   host: HTMLElement,
   items: Array<PowerButtonItem | DockPanelEntry>,
@@ -362,6 +600,13 @@ export function renderStandaloneDockPanel(
     resetLayout?: string;
     enablePlugin?: string;
     disablePlugin?: string;
+    appearanceSettings?: string;
+    cardColor?: string;
+    editAppearance?: string;
+    defaultColor?: string;
+    customColor?: string;
+    moreSettings?: string;
+    changeIcon?: string;
   } = {},
   handlers: {
     onAddDivider?: () => void | Promise<void>;
@@ -373,6 +618,7 @@ export function renderStandaloneDockPanel(
     onToggleCollapse?: (collapsed: boolean) => void | Promise<void>;
     onSearchQueryChange?: (query: string) => void;
     onTogglePluginEnabled?: (pluginName: string, enabled: boolean) => Promise<boolean | void> | boolean | void;
+    onUpdateItemAppearance?: (itemId: string, patch: { color?: string; iconType?: PowerButtonItem['iconType']; iconValue?: string }) => void | Promise<void>;
   } = {},
   options: {
     pluginEntries?: DiscoveredPluginEntry[];
@@ -562,10 +808,29 @@ export function renderStandaloneDockPanel(
         card.dataset.powerButtonsItemId = item.id;
         card.dataset.dockIndex = String(index);
         card.draggable = true;
+
+        if (item.color) {
+          card.classList.add('has-custom-color');
+          const styles = getDockCardColorStyle(item.color);
+          for (const [k, v] of Object.entries(styles)) {
+            card.style.setProperty(k, v);
+          }
+        }
+
+        const editAppearanceLabel = i18n.editAppearance || '修改外观';
+        const editIcon = createIconSvg('iconpark:Edit');
+
         card.innerHTML = `
+          <span class="siyuan-power-buttons__dock-card-edit b3-tooltips b3-tooltips__s" aria-label="${escapeAttribute(editAppearanceLabel)}">${editIcon}</span>
           <span class="siyuan-power-buttons__dock-card-icon">${getIconMarkup(item)}</span>
           <span class="siyuan-power-buttons__dock-card-title">${escapeAttribute(item.title)}</span>
         `;
+
+        card.querySelector('.siyuan-power-buttons__dock-card-edit')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          showCardAppearancePopover(card, item, onOpenSettings, i18n, handlers);
+        });
 
         card.addEventListener('click', (e) => {
           e.stopPropagation();

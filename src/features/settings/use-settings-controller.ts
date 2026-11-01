@@ -208,6 +208,7 @@ export function useSettingsController(props: SettingsAppProps) {
       itemId: item.id,
       title: item.title || "未命名按钮",
       visible: item.visible,
+      color: item.color,
       surface: item.surface,
       surfaces: getItemSurfaces(item),
       order: item.order + 1000,

@@ -44,5 +44,13 @@
   "disablePlugin": "Disable plugin",
   "pluginEnabledSuccess": "Enabled plugin \"{name}\"",
   "pluginDisabledSuccess": "Disabled plugin \"{name}\"",
-  "togglePluginFailed": "Failed to toggle plugin state: {message}"
+  "togglePluginFailed": "Failed to toggle plugin state: {message}",
+  "appearanceSettings": "Appearance Settings",
+  "cardColor": "Dock Card Color",
+  "cardColorHint": "Set a soft background tint for dock cards for easier categorization; compact surfaces remain uncolored.",
+  "editAppearance": "Edit Appearance",
+  "defaultColor": "Default / No Color",
+  "customColor": "Custom Color",
+  "moreSettings": "More Settings...",
+  "changeIcon": "Change Icon"
 }

@@ -68,6 +68,7 @@ export interface PowerButtonItem {
   visible: boolean;
   iconType: IconType;
   iconValue: string;
+  color?: string;
   surface: SurfaceType;
   surfaces?: SurfaceType[];
   order: number;

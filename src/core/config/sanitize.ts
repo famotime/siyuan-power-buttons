@@ -284,6 +284,7 @@ function sanitizeItem(value: unknown, index: number, isLegacy: boolean): PowerBu
     actionType,
     actionId,
     tooltip: typeof raw.tooltip === "string" ? raw.tooltip : "",
+    color: typeof raw.color === "string" && raw.color.trim() ? raw.color.trim() : undefined,
   };
 
   if (actionType === "experimental-shortcut") {

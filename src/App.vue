@@ -350,7 +350,57 @@
           </section>
 
           <section class="editor-card">
-            <div class="editor-card__title">图标设置</div>
+            <div class="editor-card__title">外观设置</div>
+
+            <div class="color-picker-section">
+              <div class="color-picker-section__header">
+                <span>侧栏卡片颜色</span>
+                <small>设置侧栏卡片的柔和浅底色，便于分类与快速识别；其它表面不显示颜色。</small>
+              </div>
+              <div class="color-palette">
+                <button
+                  type="button"
+                  class="color-palette__item color-palette__item--none"
+                  :class="{ 'is-active': !selectedItem.color }"
+                  title="默认无色"
+                  aria-label="默认无色"
+                  @click="setSelectedItemColor(undefined)"
+                >
+                  <span class="color-palette__none-line" />
+                </button>
+                <button
+                  v-for="color in presetColors"
+                  :key="color.id"
+                  type="button"
+                  class="color-palette__item"
+                  :class="{ 'is-active': selectedItem.color?.toLowerCase() === color.hex.toLowerCase() }"
+                  :style="{ backgroundColor: color.hex }"
+                  :title="color.label"
+                  :aria-label="color.label"
+                  @click="setSelectedItemColor(color.hex)"
+                >
+                  <span v-if="selectedItem.color?.toLowerCase() === color.hex.toLowerCase()" class="color-palette__check">✓</span>
+                </button>
+                <label
+                  class="color-palette__item color-palette__item--custom"
+                  :class="{ 'is-active': isCustomColorSelected }"
+                  :style="isCustomColorSelected ? { backgroundColor: selectedItem.color } : {}"
+                  title="自定义颜色"
+                  aria-label="自定义颜色"
+                >
+                  <input
+                    type="color"
+                    class="color-palette__input"
+                    :value="customColorInputValue"
+                    @input="handleCustomColorChange(($event.target as HTMLInputElement).value)"
+                    @change="handleCustomColorChange(($event.target as HTMLInputElement).value)"
+                  />
+                  <span v-if="!isCustomColorSelected" class="color-palette__custom-icon">🎨</span>
+                  <span v-else class="color-palette__check">✓</span>
+                </label>
+              </div>
+            </div>
+
             <div class="icon-tabs" role="tablist" aria-label="图标类型">
               <button
                 v-for="iconType in iconTypes"
@@ -654,6 +704,7 @@
                       type="button"
                       class="workspace-chip"
                       :class="previewChipClass(item)"
+                      :style="getPreviewDockChipStyle(item)"
                       :draggable="item.draggable ?? item.editable"
                       :title="previewChipTitle(item)"
                       @click="handlePreviewChipClick(item)"
@@ -830,11 +881,13 @@
 
 <script setup lang="ts">
 import {
+  computed,
   onBeforeUnmount,
   onMounted,
   ref,
   watch,
 } from "vue";
+import { PRESET_COLORS, hexToRgba } from "@/shared/color-utils";
 import {
   BUILTIN_COMMANDS,
   PLUGIN_COMMANDS,
@@ -928,6 +981,42 @@ const {
   toggleSelectedShortcutOption,
   toggleVisible,
 } = useSettingsController(props);
+
+const presetColors = PRESET_COLORS;
+
+const isCustomColorSelected = computed(() => {
+  if (!selectedItem.value?.color) return false;
+  const current = selectedItem.value.color.toLowerCase();
+  return !presetColors.some(c => c.hex.toLowerCase() === current);
+});
+
+const customColorInputValue = computed(() => {
+  if (selectedItem.value?.color && /^#[0-9a-fA-F]{6}$/.test(selectedItem.value.color)) {
+    return selectedItem.value.color;
+  }
+  return "#3b82f6";
+});
+
+function setSelectedItemColor(color?: string) {
+  selectedItem.value.color = color;
+  if (!selectedItem.value) return;
+  selectedItem.value.color = color;
+  persist();
+}
+
+function handleCustomColorChange(color: string) {
+  if (!selectedItem.value || !color) return;
+  selectedItem.value.color = color;
+  persist();
+}
+
+function getPreviewDockChipStyle(item: any) {
+    if (!item?.color) return {};
+  return {
+    backgroundColor: hexToRgba(item.color, 0.15) || item.color,
+    borderColor: hexToRgba(item.color, 0.35) || item.color,
+  };
+}
 
 const iconTypeTabId = (iconType: string) => `icon-type-tab-${iconType}`;
 const iconTypePanelId = "icon-type-panel";

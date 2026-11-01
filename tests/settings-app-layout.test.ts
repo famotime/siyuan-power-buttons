@@ -1965,4 +1965,51 @@ describe("settings app layout", () => {
 
     unmount();
   });
+  it("supports setting dock card color and reflects it in dock-panel preview", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const initialConfig = createDefaultConfig();
+    initialConfig.items = [
+      createButtonItem({
+        id: "test-color-btn",
+        title: "彩色测试按钮",
+        surface: "dock-panel",
+        surfaces: ["dock-panel"],
+        color: undefined,
+      }),
+    ];
+
+    const onChange = vi.fn();
+    const unmount = mountSettingsApp(target, {
+      initialConfig,
+      builtinCommands: [],
+      pluginCommands: [],
+      onChange,
+      onNotify: vi.fn(),
+      onReadCurrentLayout: vi.fn().mockResolvedValue([]),
+    });
+
+    await flushAll();
+
+    expect(target.textContent).toContain("外观设置");
+    expect(target.textContent).toContain("侧栏卡片颜色");
+
+    const blueBtn = target.querySelector<HTMLButtonElement>('.color-palette__item[title="晴空蓝"]');
+    expect(blueBtn).not.toBeNull();
+
+    blueBtn?.click();
+    await flushAll();
+
+    expect(onChange).toHaveBeenCalled();
+    const updated = onChange.mock.calls.at(-1)?.[0];
+    const item = updated.items.find((i: { id: string }) => i.id === "test-color-btn");
+    expect(item.color).toBe("#3b82f6");
+
+        const dockPreviewChip = target.querySelector<HTMLElement>(".workspace-preview__dock-panel .workspace-chip.is-active");
+    expect(dockPreviewChip).not.toBeNull();
+    expect(dockPreviewChip?.style.backgroundColor).toContain("rgba(59, 130, 246");
+
+    unmount();
+  });
 });

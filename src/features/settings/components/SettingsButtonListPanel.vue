@@ -24,7 +24,7 @@
       >
         <button type="button" class="button-list__main" @click="selectItem(item.id)">
           <span class="button-list__drag">⋮⋮</span>
-          <span class="button-list__icon" v-html="renderBuiltinIconMarkup(item)" />
+          <span class="button-list__icon" :style="item.color ? { backgroundColor: hexToRgba(item.color, 0.18), borderRadius: '4px' } : {}" v-html="renderBuiltinIconMarkup(item)" />
           <span class="button-list__content">
             <strong>{{ item.title || '未命名按钮' }}</strong>
             <small>{{ itemSurfacesLabel ? itemSurfacesLabel(item) : surfaceLabel(item.surface) }}</small>
@@ -57,6 +57,7 @@
 
 <script setup lang="ts">
 import { renderNamedIcon } from '@/features/settings/view-helpers';
+import { hexToRgba } from '@/shared/color-utils';
 import type { PowerButtonItem, PowerButtonsConfig } from '@/shared/types';
 
 defineProps<{
