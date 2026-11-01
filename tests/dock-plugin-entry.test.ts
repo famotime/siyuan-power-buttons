@@ -671,4 +671,103 @@ describe('dock panel plugin entry and search', () => {
       enabled: false,
     });
   });
+  it('dynamically adapts plugin results max-height to fill available bottom space', async () => {
+    let resizeCallback: (() => void) | undefined;
+    class MockResizeObserver {
+      constructor(callback: () => void) {
+        resizeCallback = callback;
+      }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', MockResizeObserver);
+
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const addDock = vi.fn().mockImplementation((options) => {
+      dockInit = options.init;
+      return { model: {} };
+    });
+
+    const plugin = {
+      addTopBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addStatusBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addDock,
+    } as never;
+
+    const executor = new CommandExecutor({
+      plugin,
+      notify: vi.fn(),
+      t: (key: string) => key,
+      pluginCommands: new Map(),
+      openUrl: vi.fn(),
+      runBuiltinCommand: vi.fn(),
+    });
+
+    const pluginStateManager = new PluginStateManager({
+      fetchPost: vi.fn().mockResolvedValue({ code: 0 }),
+      getFrontend: () => 'desktop',
+      getActivePlugins: () => [],
+      notify: vi.fn(),
+      t: (key: string) => key,
+    });
+
+    const config = createDefaultConfig();
+    const manager = new SurfaceManager(
+      plugin,
+      executor,
+      undefined,
+      () => [
+        {
+          name: 'plugin-a',
+          displayName: '插件A',
+          topBarIcons: [{ id: 'tb1', title: '功能1' }],
+        },
+      ],
+      undefined,
+      pluginStateManager,
+    );
+
+    manager.render(config);
+
+    const dockElement = document.createElement('div');
+    document.body.appendChild(dockElement);
+    dockInit?.({ element: dockElement });
+
+    const content = dockElement.querySelector<HTMLElement>('.siyuan-power-buttons__dock-content');
+    const results = dockElement.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-results');
+
+    expect(content).not.toBeNull();
+    expect(results).not.toBeNull();
+
+    vi.spyOn(content!, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      bottom: 800,
+      height: 800,
+      left: 0,
+      right: 320,
+      width: 320,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    vi.spyOn(results!, 'getBoundingClientRect').mockReturnValue({
+      top: 200,
+      bottom: 480,
+      height: 280,
+      left: 0,
+      right: 320,
+      width: 320,
+      x: 0,
+      y: 200,
+      toJSON: () => {},
+    });
+
+    resizeCallback?.();
+
+    expect(results?.style.maxHeight).toBe('588px');
+
+    manager.destroy();
+    vi.unstubAllGlobals();
+  });
 });

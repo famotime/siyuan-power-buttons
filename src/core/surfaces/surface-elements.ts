@@ -326,6 +326,19 @@ function createPluginSearchSection(
     collapseBtn.innerHTML = getCollapseIconSvg(isCollapsed);
     collapseBtn.setAttribute('aria-label', getCollapseLabel(isCollapsed));
     resultsContainer.classList.toggle('fn__none', isCollapsed);
+    if (!isCollapsed && typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        const contentEl = container.closest('.siyuan-power-buttons__dock-content') as HTMLElement;
+        if (contentEl) {
+          const contentRect = contentEl.getBoundingClientRect();
+          const resultsRect = resultsContainer.getBoundingClientRect();
+          const available = contentRect.bottom - resultsRect.top - 12;
+          if (contentRect.height > 0 && available > 0) {
+            resultsContainer.style.maxHeight = `${Math.max(160, Math.floor(available))}px`;
+          }
+        }
+      });
+    }
     handlers.onToggleCollapse?.(isCollapsed);
   });
 
@@ -351,6 +364,16 @@ const POPUP_QUICK_ICONS = [
   { type: 'iconpark' as const, value: 'iconpark:Tag', label: '标签' },
   { type: 'iconpark' as const, value: 'iconpark:Tool', label: '工具' },
 ];
+
+
+let activeDockResizeObserver: ResizeObserver | null = null;
+
+export function disconnectDockResizeObserver(): void {
+  if (activeDockResizeObserver) {
+    activeDockResizeObserver.disconnect();
+    activeDockResizeObserver = null;
+  }
+}
 
 let activeAppearancePopover: HTMLElement | null = null;
 let activePopoverCleanup: (() => void) | null = null;
@@ -649,6 +672,7 @@ export function renderStandaloneDockPanel(
   const prevResults = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-results');
   const prevResultsScrollTop = prevResults ? prevResults.scrollTop : 0;
 
+  disconnectDockResizeObserver();
   const prevInput = host.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-input');
   const wasInputFocused = prevInput ? document.activeElement === prevInput : false;
   const inputSelectionStart = prevInput?.selectionStart;
@@ -910,6 +934,31 @@ export function renderStandaloneDockPanel(
         newInput.setSelectionRange(inputSelectionStart, inputSelectionEnd);
       }
     }
+  }
+
+  const adjustPluginResultsHeight = () => {
+    if (!newContent || !newResults || newResults.classList.contains('fn__none')) return;
+    const contentRect = newContent.getBoundingClientRect();
+    const resultsRect = newResults.getBoundingClientRect();
+    const available = contentRect.bottom - resultsRect.top - 12;
+    if (contentRect.height > 0 && available > 0) {
+      const targetMaxHeight = Math.max(160, Math.floor(available));
+      newResults.style.maxHeight = `${targetMaxHeight}px`;
+    }
+  };
+
+  adjustPluginResultsHeight();
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      adjustPluginResultsHeight();
+    });
+  }
+
+  if (typeof ResizeObserver !== 'undefined' && newContent) {
+    activeDockResizeObserver = new ResizeObserver(() => {
+      adjustPluginResultsHeight();
+    });
+    activeDockResizeObserver.observe(newContent);
   }
 }
 

@@ -37,6 +37,7 @@ import {
   getIconMarkup,
   hasDockRemove,
   closeActiveAppearancePopover,
+  disconnectDockResizeObserver,
   renderStandaloneDockPanel,
 } from "@/core/surfaces/surface-elements";
 
@@ -809,6 +810,7 @@ export class SurfaceManager {
 
   private clearDynamicSurfaces(): void {
     closeActiveAppearancePopover();
+    disconnectDockResizeObserver();
     this.nativeSuppressor.clear();
     this.toolbarPatchObserver?.disconnect();
     this.toolbarPatchObserver = null;
