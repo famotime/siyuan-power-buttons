@@ -1,4 +1,4 @@
-import type { Dock } from 'siyuan';
+import type { Dock, Plugin } from 'siyuan';
 import { DEFAULT_ICONPARK_ICON, DEFAULT_PLUGIN_COMMAND, PLUGIN_ENTRY_DIVIDER_ID } from '@/shared/constants';
 import { hardenStrokeOnlySvgFill, renderIconMarkup } from '@/shared/icon-renderer';
 import type { PowerButtonItem } from '@/shared/types';
@@ -27,7 +27,7 @@ function escapeAttribute(value: string): string {
 
 function createIconSvg(icon: string): string {
   if (icon.trim().startsWith('<svg')) {
-    return hardenStrokeOnlySvgFill(icon, document);
+    return hardenStrokeOnlySvgFill(icon);
   }
   return renderIconMarkup({
     iconType: 'iconpark',
@@ -145,9 +145,11 @@ function createPluginSearchSection(
     onToggleCollapse?: (collapsed: boolean) => void | Promise<void>;
     onSearchQueryChange?: (query: string) => void;
     onTogglePluginEnabled?: (pluginName: string, enabled: boolean) => Promise<boolean | void> | boolean | void;
+    onToggleGroupExpanded?: (pluginName: string, expanded: boolean) => void | Promise<void>;
   },
   sectionOptions: {
     isPluginEnabled?: (pluginName: string) => boolean;
+    initialExpandedPluginGroups?: string[];
   } = {},
 ): HTMLElement {
   const container = document.createElement('div');
@@ -165,6 +167,9 @@ function createPluginSearchSection(
   const unpinLabel = i18n.unpinFromDock || '取消右侧栏常驻';
   const enablePluginLabel = i18n.enablePlugin || '启用插件';
   const disablePluginLabel = i18n.disablePlugin || '停用插件';
+  const expandGroupLabel = i18n.expandPluginGroup || '展开插件命令';
+  const collapseGroupLabel = i18n.collapsePluginGroup || '折叠插件命令';
+  const groupCountTooltipSuffix = i18n.pluginGroupCountSuffix || '项命令';
   const badgeLabels: Record<string, string> = {
     setting: i18n.badgeSetting || '配置',
     topbar: i18n.badgeTopBar || '顶栏',
@@ -196,6 +201,195 @@ function createPluginSearchSection(
   const resultsContainer = document.createElement('div');
   resultsContainer.className = `siyuan-power-buttons__dock-plugin-results ${isCollapsed ? 'fn__none' : ''}`;
 
+  // 按插件分组的展开状态：记录用户显式展开过的插件名，未记录的默认折叠
+  const expandedGroups = new Set<string>(sectionOptions.initialExpandedPluginGroups ?? []);
+  // 停用插件只生成一张占位卡（无子项可分组），保持平铺渲染
+  const isDisabledPlaceholderEntry = (entry: DiscoveredPluginEntry) =>
+    entry.actionId === `plugin-topbar:${entry.pluginName}__main`;
+
+  const buildToggleMarkup = (pluginName: string, isPluginEnabled: boolean): string => `
+    <label class="b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-plugin-toggle-wrapper"
+           aria-label="${escapeAttribute(isPluginEnabled ? disablePluginLabel : enablePluginLabel)}">
+      <input type="checkbox"
+             class="b3-switch siyuan-power-buttons__dock-plugin-toggle-switch"
+             ${isPluginEnabled ? 'checked' : ''}
+             data-plugin-name="${escapeAttribute(pluginName)}">
+    </label>
+  `;
+
+  const bindToggleHandlers = (
+    scopeEl: HTMLElement,
+    pluginName: string,
+    interactionActionId: string,
+    onEnabledChange: (disabled: boolean) => void,
+  ): void => {
+    const toggleSwitch = scopeEl.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-toggle-switch');
+    const toggleLabel = scopeEl.querySelector<HTMLLabelElement>('.siyuan-power-buttons__dock-plugin-toggle-wrapper');
+
+    toggleLabel?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    toggleSwitch?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    toggleSwitch?.addEventListener('change', async (e) => {
+      e.stopPropagation();
+      lastInteractedActionId = interactionActionId;
+      const targetEnabled = toggleSwitch.checked;
+      toggleSwitch.disabled = true;
+      try {
+        const res = await handlers.onTogglePluginEnabled?.(pluginName, targetEnabled);
+        if (res === false) {
+          toggleSwitch.checked = !targetEnabled;
+        }
+      } catch {
+        toggleSwitch.checked = !targetEnabled;
+      } finally {
+        toggleSwitch.disabled = false;
+        const currentChecked = toggleSwitch.checked;
+        toggleLabel?.setAttribute('aria-label', currentChecked ? disablePluginLabel : enablePluginLabel);
+        onEnabledChange(!currentChecked);
+      }
+    });
+  };
+
+  const createPluginEntryCard = (entry: DiscoveredPluginEntry, cardOptions: { includeToggle: boolean }): HTMLElement => {
+    const isPinned = pinnedActionIds.has(entry.actionId);
+    const isPluginEnabled = sectionOptions.isPluginEnabled
+      ? sectionOptions.isPluginEnabled(entry.pluginName)
+      : (entry.enabled ?? true);
+
+    const hasToggleSwitch = cardOptions.includeToggle && (entry.type === 'topbar' || entry.type === 'dock');
+
+    const card = document.createElement('div');
+    card.className = `siyuan-power-buttons__dock-plugin-card ${isPinned ? 'is-pinned' : ''} ${isPluginEnabled ? '' : 'is-disabled-plugin'}`;
+    card.dataset.actionId = entry.actionId;
+    card.dataset.pluginName = entry.pluginName;
+    card.innerHTML = `
+      <div class="siyuan-power-buttons__dock-plugin-icon">${getIconMarkup(entry as any)}</div>
+      <div class="siyuan-power-buttons__dock-plugin-info">
+        <div class="siyuan-power-buttons__dock-plugin-row-top">
+          <span class="siyuan-power-buttons__dock-plugin-title">${escapeAttribute(entry.title)}</span>
+          <span class="siyuan-power-buttons__dock-plugin-badge is-${entry.type}">${escapeAttribute(badgeLabels[entry.type] || entry.type)}</span>
+        </div>
+      </div>
+      <div class="siyuan-power-buttons__dock-plugin-actions">
+        ${hasToggleSwitch ? buildToggleMarkup(entry.pluginName, isPluginEnabled) : ''}
+        <button type="button" class="siyuan-power-buttons__dock-plugin-pin-btn b3-tooltips b3-tooltips__sw ${isPinned ? 'is-pinned' : ''}" aria-label="${escapeAttribute(isPinned ? unpinLabel : pinLabel)}">
+          ${pushpinIcon}
+        </button>
+      </div>
+    `;
+
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void executor.execute({
+        actionType: entry.actionType,
+        actionId: entry.actionId,
+      } as any);
+    });
+
+    card.querySelector('.siyuan-power-buttons__dock-plugin-pin-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      lastInteractedActionId = entry.actionId;
+      handlers.onTogglePin?.(entry);
+    });
+
+    if (hasToggleSwitch) {
+      bindToggleHandlers(card, entry.pluginName, entry.actionId, (disabled) => {
+        card.classList.toggle('is-disabled-plugin', disabled);
+      });
+    }
+
+    return card;
+  };
+
+  const createPluginGroupCard = (
+    group: { pluginName: string; pluginDisplayName: string; entries: DiscoveredPluginEntry[] },
+    groupOptions: { forceExpanded: boolean },
+  ): HTMLElement => {
+    const commandCount = group.entries.filter(entry => entry.type === 'command').length;
+    const hasCommands = commandCount > 0;
+    // 搜索过滤时渲染出来的组必然含命中项，强制展开以便看到匹配子项
+    const isExpanded = !hasCommands || groupOptions.forceExpanded || expandedGroups.has(group.pluginName);
+    // 卡头启停开关与图标取该插件的顶栏/侧栏入口（去重后只需一个），取不到时用统一插件图标
+    const toggleEntry = group.entries.find(entry => entry.type === 'topbar' || entry.type === 'dock');
+    const iconEntry = toggleEntry;
+    const isPluginEnabled = sectionOptions.isPluginEnabled
+      ? sectionOptions.isPluginEnabled(group.pluginName)
+      : (toggleEntry?.enabled ?? true);
+
+    const groupEl = document.createElement('div');
+    groupEl.className = `siyuan-power-buttons__dock-plugin-group ${isPluginEnabled ? '' : 'is-disabled-plugin'}`;
+    groupEl.dataset.pluginName = group.pluginName;
+
+    const header = document.createElement('div');
+    header.className = 'siyuan-power-buttons__dock-plugin-card siyuan-power-buttons__dock-plugin-group-header';
+    header.dataset.pluginName = group.pluginName;
+    header.setAttribute('aria-expanded', String(isExpanded));
+    if (hasCommands) {
+      header.setAttribute('aria-label', isExpanded ? collapseGroupLabel : expandGroupLabel);
+    }
+    header.innerHTML = `
+      <div class="siyuan-power-buttons__dock-plugin-icon">${getIconMarkup({
+        iconType: iconEntry?.iconType ?? 'iconpark',
+        iconValue: iconEntry?.iconValue ?? 'iconpark:ApplicationMenu',
+      } as any)}</div>
+      <div class="siyuan-power-buttons__dock-plugin-info">
+        <div class="siyuan-power-buttons__dock-plugin-row-top">
+          <span class="siyuan-power-buttons__dock-plugin-name siyuan-power-buttons__dock-plugin-group-name">${escapeAttribute(group.pluginDisplayName)}</span>
+          ${hasCommands ? `<span class="siyuan-power-buttons__dock-plugin-group-count" title="${commandCount} ${escapeAttribute(groupCountTooltipSuffix)}">${commandCount}</span>` : ''}
+        </div>
+      </div>
+      <div class="siyuan-power-buttons__dock-plugin-actions">
+        ${toggleEntry ? buildToggleMarkup(group.pluginName, isPluginEnabled) : ''}
+        ${hasCommands ? `<span class="siyuan-power-buttons__dock-plugin-group-chevron">${getCollapseIconSvg(!isExpanded)}</span>` : ''}
+      </div>
+    `;
+
+    const childrenEl = document.createElement('div');
+    childrenEl.className = `siyuan-power-buttons__dock-plugin-group-children ${isExpanded ? '' : 'fn__none'}`;
+    group.entries.forEach(entry => {
+      childrenEl.appendChild(createPluginEntryCard(entry, { includeToggle: false }));
+    });
+
+    if (hasCommands) {
+      const applyGroupExpanded = (expanded: boolean): void => {
+        childrenEl.classList.toggle('fn__none', !expanded);
+        const chevronEl = header.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-chevron');
+        if (chevronEl) {
+          chevronEl.innerHTML = getCollapseIconSvg(!expanded);
+        }
+        header.setAttribute('aria-expanded', String(expanded));
+        header.setAttribute('aria-label', expanded ? collapseGroupLabel : expandGroupLabel);
+      };
+
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nextExpanded = !expandedGroups.has(group.pluginName);
+        if (nextExpanded) {
+          expandedGroups.add(group.pluginName);
+        } else {
+          expandedGroups.delete(group.pluginName);
+        }
+        applyGroupExpanded(nextExpanded);
+        handlers.onToggleGroupExpanded?.(group.pluginName, nextExpanded);
+      });
+    } else {
+      header.style.cursor = 'default';
+    }
+
+    if (toggleEntry) {
+      bindToggleHandlers(header, group.pluginName, toggleEntry.actionId, (disabled) => {
+        groupEl.classList.toggle('is-disabled-plugin', disabled);
+      });
+    }
+
+    groupEl.appendChild(header);
+    groupEl.appendChild(childrenEl);
+    return groupEl;
+  };
+
   const renderResults = (query: string) => {
     resultsContainer.innerHTML = '';
     const q = query.trim();
@@ -216,89 +410,40 @@ function createPluginSearchSection(
       return;
     }
 
+    // 按插件名归类，保持扫描排序（插件名 -> 类型）的先后顺序；
+    // 搜索命中插件名时该插件所有 entry 都会命中 pluginDisplayName，整组自然全部保留
+    type PluginResultGroup = { kind: 'group'; pluginName: string; pluginDisplayName: string; entries: DiscoveredPluginEntry[] };
+    type PluginResultItem = PluginResultGroup | { kind: 'flat'; entry: DiscoveredPluginEntry };
+
+    const resultItems: PluginResultItem[] = [];
+    const groupByPlugin = new Map<string, PluginResultGroup>();
+
     filtered.forEach(entry => {
-      const isPinned = pinnedActionIds.has(entry.actionId);
-      const isPluginEnabled = sectionOptions.isPluginEnabled
-        ? sectionOptions.isPluginEnabled(entry.pluginName)
-        : (entry.enabled ?? true);
-
-      const hasToggleSwitch = entry.type === 'topbar' || entry.type === 'dock';
-
-      const card = document.createElement('div');
-      card.className = `siyuan-power-buttons__dock-plugin-card ${isPinned ? 'is-pinned' : ''} ${isPluginEnabled ? '' : 'is-disabled-plugin'}`;
-      card.dataset.actionId = entry.actionId;
-      card.dataset.pluginName = entry.pluginName;
-      card.innerHTML = `
-        <div class="siyuan-power-buttons__dock-plugin-icon">${getIconMarkup(entry as any)}</div>
-        <div class="siyuan-power-buttons__dock-plugin-info">
-          <div class="siyuan-power-buttons__dock-plugin-row-top">
-            <span class="siyuan-power-buttons__dock-plugin-name">${escapeAttribute(entry.pluginDisplayName)}</span>
-            <span class="siyuan-power-buttons__dock-plugin-badge is-${entry.type}">${escapeAttribute(badgeLabels[entry.type] || entry.type)}</span>
-          </div>
-          <div class="siyuan-power-buttons__dock-plugin-title">${escapeAttribute(entry.title)}</div>
-        </div>
-        <div class="siyuan-power-buttons__dock-plugin-actions">
-          ${hasToggleSwitch ? `
-            <label class="b3-tooltips b3-tooltips__sw siyuan-power-buttons__dock-plugin-toggle-wrapper"
-                   aria-label="${escapeAttribute(isPluginEnabled ? disablePluginLabel : enablePluginLabel)}">
-              <input type="checkbox"
-                     class="b3-switch siyuan-power-buttons__dock-plugin-toggle-switch"
-                     ${isPluginEnabled ? 'checked' : ''}
-                     data-plugin-name="${escapeAttribute(entry.pluginName)}">
-            </label>
-          ` : ''}
-          <button type="button" class="siyuan-power-buttons__dock-plugin-pin-btn b3-tooltips b3-tooltips__sw ${isPinned ? 'is-pinned' : ''}" aria-label="${escapeAttribute(isPinned ? unpinLabel : pinLabel)}">
-            ${pushpinIcon}
-          </button>
-        </div>
-      `;
-
-      card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        void executor.execute({
-          actionType: entry.actionType,
-          actionId: entry.actionId,
-        } as any);
-      });
-
-      card.querySelector('.siyuan-power-buttons__dock-plugin-pin-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        lastInteractedActionId = entry.actionId;
-        handlers.onTogglePin?.(entry);
-      });
-
-      if (hasToggleSwitch) {
-        const toggleSwitch = card.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-toggle-switch');
-        const toggleLabel = card.querySelector<HTMLLabelElement>('.siyuan-power-buttons__dock-plugin-toggle-wrapper');
-
-        toggleLabel?.addEventListener('click', (e) => {
-          e.stopPropagation();
-        });
-        toggleSwitch?.addEventListener('click', (e) => {
-          e.stopPropagation();
-        });
-        toggleSwitch?.addEventListener('change', async (e) => {
-          e.stopPropagation();
-          lastInteractedActionId = entry.actionId;
-          const targetEnabled = toggleSwitch.checked;
-          toggleSwitch.disabled = true;
-          try {
-            const res = await handlers.onTogglePluginEnabled?.(entry.pluginName, targetEnabled);
-            if (res === false) {
-              toggleSwitch.checked = !targetEnabled;
-            }
-          } catch {
-            toggleSwitch.checked = !targetEnabled;
-          } finally {
-            toggleSwitch.disabled = false;
-            const currentChecked = toggleSwitch.checked;
-            toggleLabel?.setAttribute('aria-label', currentChecked ? disablePluginLabel : enablePluginLabel);
-            card.classList.toggle('is-disabled-plugin', !currentChecked);
-          }
-        });
+      if (isDisabledPlaceholderEntry(entry)) {
+        resultItems.push({ kind: 'flat', entry });
+        return;
       }
+      const existingGroup = groupByPlugin.get(entry.pluginName);
+      if (existingGroup) {
+        existingGroup.entries.push(entry);
+      } else {
+        const group: PluginResultGroup = {
+          kind: 'group',
+          pluginName: entry.pluginName,
+          pluginDisplayName: entry.pluginDisplayName,
+          entries: [entry],
+        };
+        groupByPlugin.set(entry.pluginName, group);
+        resultItems.push(group);
+      }
+    });
 
-      resultsContainer.appendChild(card);
+    resultItems.forEach(resultItem => {
+      if (resultItem.kind === 'flat') {
+        resultsContainer.appendChild(createPluginEntryCard(resultItem.entry, { includeToggle: true }));
+      } else {
+        resultsContainer.appendChild(createPluginGroupCard(resultItem, { forceExpanded: Boolean(q) }));
+      }
     });
   };
 
@@ -615,6 +760,7 @@ export function renderStandaloneDockPanel(
     unpinFromDock?: string;
     badgeSetting?: string;
     badgeTopBar?: string;
+    badgeDock?: string;
     badgeCommand?: string;
     noPluginsFound?: string;
     togglePluginList?: string;
@@ -623,6 +769,9 @@ export function renderStandaloneDockPanel(
     resetLayout?: string;
     enablePlugin?: string;
     disablePlugin?: string;
+    expandPluginGroup?: string;
+    collapsePluginGroup?: string;
+    pluginGroupCountSuffix?: string;
     appearanceSettings?: string;
     cardColor?: string;
     editAppearance?: string;
@@ -641,6 +790,7 @@ export function renderStandaloneDockPanel(
     onToggleCollapse?: (collapsed: boolean) => void | Promise<void>;
     onSearchQueryChange?: (query: string) => void;
     onTogglePluginEnabled?: (pluginName: string, enabled: boolean) => Promise<boolean | void> | boolean | void;
+    onToggleGroupExpanded?: (pluginName: string, expanded: boolean) => void | Promise<void>;
     onUpdateItemAppearance?: (itemId: string, patch: { color?: string; iconType?: PowerButtonItem['iconType']; iconValue?: string }) => void | Promise<void>;
   } = {},
   options: {
@@ -648,6 +798,7 @@ export function renderStandaloneDockPanel(
     pinnedActionIds?: Set<string>;
     isPluginListCollapsed?: boolean;
     initialSearchQuery?: string;
+    initialExpandedPluginGroups?: string[];
     isPluginEnabled?: (pluginName: string) => boolean;
   } = {},
 ): void {
@@ -759,7 +910,7 @@ export function renderStandaloneDockPanel(
           executor,
           i18n,
           handlers,
-          { isPluginEnabled: options.isPluginEnabled },
+          { isPluginEnabled: options.isPluginEnabled, initialExpandedPluginGroups: options.initialExpandedPluginGroups },
         );
         grid.appendChild(pluginSection);
       }

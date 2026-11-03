@@ -1720,6 +1720,72 @@
       }
     }
 
+    .siyuan-power-buttons__dock-plugin-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      &.is-disabled-plugin {
+        opacity: 0.68;
+
+        .siyuan-power-buttons__dock-plugin-group-header {
+          background: color-mix(in srgb, var(--b3-theme-surface) 70%, transparent);
+
+          .siyuan-power-buttons__dock-plugin-group-name {
+            color: var(--b3-theme-on-surface-light);
+          }
+
+          .siyuan-power-buttons__dock-plugin-icon {
+            filter: grayscale(80%);
+            opacity: 0.7;
+          }
+        }
+      }
+
+      .siyuan-power-buttons__dock-plugin-group-header {
+        .siyuan-power-buttons__dock-plugin-group-name {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--b3-theme-on-surface);
+        }
+
+        .siyuan-power-buttons__dock-plugin-group-count {
+          font-size: 10px;
+          line-height: 14px;
+          padding: 0 6px;
+          border-radius: 8px;
+          font-weight: 500;
+          color: var(--b3-theme-on-surface-light);
+          background: var(--b3-theme-surface-lighter);
+          white-space: nowrap;
+        }
+
+        .siyuan-power-buttons__dock-plugin-group-chevron {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          flex-shrink: 0;
+          color: var(--b3-theme-on-surface-light);
+
+          svg {
+            width: 14px;
+            height: 14px;
+          }
+        }
+      }
+
+      .siyuan-power-buttons__dock-plugin-group-children {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-left: 12px;
+        padding-left: 10px;
+        border-left: 2px solid color-mix(in srgb, var(--b3-border-color) 75%, transparent);
+      }
+    }
+
     .siyuan-power-buttons__dock-plugin-empty {
       padding: 16px;
       text-align: center;

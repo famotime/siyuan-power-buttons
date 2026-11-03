@@ -8,7 +8,6 @@ import {
   getDockPosition,
   getItemSurfaces,
   isDockSurface,
-  isStatusBarSurface,
   itemHasSurface,
 } from "@/shared/surface-metadata";
 import {
@@ -91,6 +90,7 @@ export class SurfaceManager {
   private selectionToolbarLayout: SelectionToolbarLayoutItem[] = [];
   private injectedToolbarItems = new Set<HTMLElement>();
   private isPluginListCollapsed = false;
+  private expandedPluginGroups: string[] = [];
   private pluginSearchQuery = "";
   private unsubscribePluginState?: () => void;
 
@@ -100,13 +100,18 @@ export class SurfaceManager {
     private readonly onSaveConfig?: (config: PowerButtonsConfig) => Promise<void> | void,
     private readonly getPlugins?: () => unknown[] | undefined,
     private readonly settingsUiStateStore?: {
-      snapshot: () => { isPluginListCollapsed?: boolean };
+      snapshot: () => { isPluginListCollapsed?: boolean; expandedPluginGroups?: string[] };
       setPluginListCollapsed: (collapsed: boolean) => Promise<void> | void;
+      setExpandedPluginGroups: (pluginNames: string[]) => Promise<void> | void;
     },
     private readonly pluginStateManager?: PluginStateManager,
   ) {
     if (this.settingsUiStateStore) {
-      this.isPluginListCollapsed = Boolean(this.settingsUiStateStore.snapshot().isPluginListCollapsed);
+      const uiSnapshot = this.settingsUiStateStore.snapshot();
+      this.isPluginListCollapsed = Boolean(uiSnapshot.isPluginListCollapsed);
+      this.expandedPluginGroups = Array.isArray(uiSnapshot.expandedPluginGroups)
+        ? uiSnapshot.expandedPluginGroups.filter(name => typeof name === "string")
+        : [];
     }
     if (this.pluginStateManager) {
       this.unsubscribePluginState = this.pluginStateManager.subscribe(() => {
@@ -541,6 +546,9 @@ export class SurfaceManager {
         resetLayout: this.t("dockPanelResetLayout", "恢复默认布局"),
         enablePlugin: this.t("enablePlugin", "启用插件"),
         disablePlugin: this.t("disablePlugin", "停用插件"),
+        expandPluginGroup: this.t("expandPluginGroup", "展开插件命令"),
+        collapsePluginGroup: this.t("collapsePluginGroup", "折叠插件命令"),
+        pluginGroupCountSuffix: this.t("pluginGroupCountSuffix", "项命令"),
         appearanceSettings: this.t("appearanceSettings", "外观设置"),
         cardColor: this.t("cardColor", "侧栏卡片颜色"),
         editAppearance: this.t("editAppearance", "修改外观"),
@@ -560,6 +568,16 @@ export class SurfaceManager {
           this.isPluginListCollapsed = collapsed;
           await this.settingsUiStateStore?.setPluginListCollapsed(collapsed);
         },
+        onToggleGroupExpanded: (pluginName, expanded) => {
+          const nextExpanded = new Set(this.expandedPluginGroups);
+          if (expanded) {
+            nextExpanded.add(pluginName);
+          } else {
+            nextExpanded.delete(pluginName);
+          }
+          this.expandedPluginGroups = Array.from(nextExpanded);
+          void this.settingsUiStateStore?.setExpandedPluginGroups(this.expandedPluginGroups);
+        },
         onSearchQueryChange: (query) => {
           this.pluginSearchQuery = query;
         },
@@ -571,6 +589,7 @@ export class SurfaceManager {
         pinnedActionIds,
         isPluginListCollapsed: this.isPluginListCollapsed,
         initialSearchQuery: this.pluginSearchQuery,
+        initialExpandedPluginGroups: this.expandedPluginGroups,
         isPluginEnabled: (pluginName) => this.pluginStateManager?.isPluginEnabled(pluginName) ?? true,
       },
     );

@@ -88,36 +88,64 @@ describe('dock panel plugin entry and search', () => {
     const input = host.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-input');
     expect(input).not.toBeNull();
 
-    // Verify all plugin cards are rendered initially (3 entries from doc-assist + 1 from sample = 4)
-    let cards = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-card');
-    expect(cards.length).toBe(4);
+    const groupHeaders = () => host.querySelectorAll<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-header');
+    const childCards = () => host.querySelectorAll<HTMLElement>(
+      '.siyuan-power-buttons__dock-plugin-group-children .siyuan-power-buttons__dock-plugin-card',
+    );
+    const getGroup = (pluginName: string) =>
+      host.querySelector<HTMLElement>(`.siyuan-power-buttons__dock-plugin-group[data-plugin-name="${pluginName}"]`);
 
-    // 2. Test search filter with Chinese text
+    // Entries are grouped under plugin cards: 2 group headers + 4 child cards (3 doc-assist + 1 sample)
+    expect(groupHeaders().length).toBe(2);
+    expect(childCards().length).toBe(4);
+
+    const docGroup = getGroup('siyuan-doc-assist');
+    expect(docGroup).not.toBeNull();
+    // Plugin with commands shows a command count badge and starts collapsed
+    expect(docGroup!.querySelector('.siyuan-power-buttons__dock-plugin-group-count')?.textContent).toBe('1');
+    expect(docGroup!.querySelector('.siyuan-power-buttons__dock-plugin-group-children')?.classList.contains('fn__none')).toBe(true);
+
+    const sampleGroup = getGroup('siyuan-plugin-sample');
+    expect(sampleGroup).not.toBeNull();
+    // Plugin without commands is not collapsible: no count badge, no chevron, children always visible
+    expect(sampleGroup!.querySelector('.siyuan-power-buttons__dock-plugin-group-count')).toBeNull();
+    expect(sampleGroup!.querySelector('.siyuan-power-buttons__dock-plugin-group-chevron')).toBeNull();
+    expect(sampleGroup!.querySelector('.siyuan-power-buttons__dock-plugin-group-children')?.classList.contains('fn__none')).toBe(false);
+
+    // Command child card shows the command title instead of repeating the plugin name
+    const commandCard = docGroup!.querySelector<HTMLElement>('[data-action-id="plugin-cmd:siyuan-doc-assist__exportDoc"]');
+    expect(commandCard?.textContent).toContain('导出当前文档');
+    expect(commandCard?.querySelector('.siyuan-power-buttons__dock-plugin-badge.is-command')).not.toBeNull();
+
+    // 2. Test search filter with Chinese text (plugin name match keeps the whole group)
     input!.value = '文档助手';
     input!.dispatchEvent(new Event('input'));
-    cards = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-card');
-    expect(cards.length).toBe(3);
+    expect(groupHeaders().length).toBe(1);
+    expect(childCards().length).toBe(3);
+    // Matched groups are force-expanded during search
+    expect(getGroup('siyuan-doc-assist')!.querySelector('.siyuan-power-buttons__dock-plugin-group-children')?.classList.contains('fn__none')).toBe(false);
 
     // 3. Test search filter with Pinyin initials (wdzs -> 文档助手)
     input!.value = 'wdzs';
     input!.dispatchEvent(new Event('input'));
-    cards = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-card');
-    expect(cards.length).toBe(3);
+    expect(groupHeaders().length).toBe(1);
+    expect(childCards().length).toBe(3);
 
     // 4. Test search filter with non-matching query
     input!.value = 'notfoundkeyword123';
     input!.dispatchEvent(new Event('input'));
-    cards = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-card');
-    expect(cards.length).toBe(0);
+    expect(groupHeaders().length).toBe(0);
+    expect(childCards().length).toBe(0);
     expect(host.querySelector('.siyuan-power-buttons__dock-plugin-empty')?.textContent).toBe('未找到匹配的插件功能');
 
-    // 5. Test clear button
+    // 5. Test clear button restores grouping and the collapse memory
     const clearBtn = host.querySelector<HTMLButtonElement>('.siyuan-power-buttons__dock-plugin-clear-btn');
     expect(clearBtn).not.toBeNull();
     clearBtn?.click();
     expect(input!.value).toBe('');
-    cards = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-card');
-    expect(cards.length).toBe(4);
+    expect(groupHeaders().length).toBe(2);
+    expect(childCards().length).toBe(4);
+    expect(getGroup('siyuan-doc-assist')!.querySelector('.siyuan-power-buttons__dock-plugin-group-children')?.classList.contains('fn__none')).toBe(true);
   });
 
   it('supports pinning and unpinning plugin entries as dock-panel buttons', async () => {
@@ -432,13 +460,15 @@ describe('dock panel plugin entry and search', () => {
     const host = document.createElement('div');
     dockInit?.({ element: host });
 
-    // 1. Verify cards rendering (active-plugin has 1 setting + 1 topbar, disabled-plugin has 1 topbar = 3 total)
-    const cards = host.querySelectorAll<HTMLElement>('.siyuan-power-buttons__dock-plugin-card');
-    expect(cards.length).toBe(3);
+    // 1. Group structure: active-plugin renders as a group header + 2 children; disabled-plugin stays a flat placeholder card
+    const activeGroup = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group[data-plugin-name="active-plugin"]');
+    expect(activeGroup).not.toBeNull();
+    const activeGroupHeader = activeGroup!.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-header');
+    expect(activeGroupHeader).not.toBeNull();
 
-    const settingCard = Array.from(cards).find(c => c.textContent?.includes('设置'));
-    const activeTopbarCard = Array.from(cards).find(c => c.textContent?.includes('顶栏按钮'));
-    const disabledCard = Array.from(cards).find(c => c.textContent?.includes('停用插件'));
+    const settingCard = activeGroup!.querySelector<HTMLElement>('[data-action-id="plugin-setting:active-plugin"]');
+    const activeTopbarCard = activeGroup!.querySelector<HTMLElement>('[data-action-id="plugin-topbar:active-plugin__tb-active"]');
+    const disabledCard = host.querySelector<HTMLElement>('[data-action-id="plugin-topbar:disabled-plugin__main"]');
 
     expect(settingCard).toBeDefined();
     expect(activeTopbarCard).toBeDefined();
@@ -448,11 +478,13 @@ describe('dock panel plugin entry and search', () => {
     expect(settingCard?.querySelector('.siyuan-power-buttons__dock-plugin-toggle-switch')).toBeNull();
     expect(settingCard?.querySelector('.siyuan-power-buttons__dock-plugin-pin-btn')).not.toBeNull();
 
-    // 3. Topbar cards MUST have a toggle switch inside a tooltip wrapper label
-    const activeWrapper = activeTopbarCard?.querySelector<HTMLLabelElement>('.siyuan-power-buttons__dock-plugin-toggle-wrapper');
-    const disabledWrapper = disabledCard?.querySelector<HTMLLabelElement>('.siyuan-power-buttons__dock-plugin-toggle-wrapper');
-    const activeSwitch = activeTopbarCard?.querySelector<HTMLInputElement>('input.siyuan-power-buttons__dock-plugin-toggle-switch');
-    const disabledSwitch = disabledCard?.querySelector<HTMLInputElement>('input.siyuan-power-buttons__dock-plugin-toggle-switch');
+    // 3. Toggle switches are promoted to the plugin group header; child cards no longer carry them
+    const activeWrapper = activeGroupHeader!.querySelector<HTMLLabelElement>('.siyuan-power-buttons__dock-plugin-toggle-wrapper');
+    const disabledWrapper = disabledCard!.querySelector<HTMLLabelElement>('.siyuan-power-buttons__dock-plugin-toggle-wrapper');
+    const activeSwitch = activeGroupHeader!.querySelector<HTMLInputElement>('input.siyuan-power-buttons__dock-plugin-toggle-switch');
+    const disabledSwitch = disabledCard!.querySelector<HTMLInputElement>('input.siyuan-power-buttons__dock-plugin-toggle-switch');
+
+    expect(activeTopbarCard?.querySelector('.siyuan-power-buttons__dock-plugin-toggle-switch')).toBeNull();
 
     expect(activeWrapper).not.toBeNull();
     expect(disabledWrapper).not.toBeNull();
@@ -467,7 +499,7 @@ describe('dock panel plugin entry and search', () => {
     expect(activeSwitch?.checked).toBe(true);
     expect(disabledSwitch?.checked).toBe(false);
     expect(disabledCard?.classList.contains('is-disabled-plugin')).toBe(true);
-    expect(activeTopbarCard?.classList.contains('is-disabled-plugin')).toBe(false);
+    expect(activeGroup?.classList.contains('is-disabled-plugin')).toBe(false);
 
     // 4. Toggle switch state on disabled plugin
     disabledSwitch!.checked = true;
@@ -642,12 +674,13 @@ describe('dock panel plugin entry and search', () => {
     const host = document.createElement('div');
     dockInit?.({ element: host });
 
-    // 搜索结果卡片检查
-    const cards = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-card');
-    // 应该包含一个设置卡片和一个侧栏卡片
-    expect(cards.length).toBe(2);
+    // 搜索结果卡片检查：1 个插件组卡头 + 2 个子卡（设置 + 侧栏）
+    const groupHeaders = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-group-header');
+    expect(groupHeaders.length).toBe(1);
+    const childCards = host.querySelectorAll('.siyuan-power-buttons__dock-plugin-group-children .siyuan-power-buttons__dock-plugin-card');
+    expect(childCards.length).toBe(2);
 
-    const dockCard = Array.from(cards).find(
+    const dockCard = Array.from(childCards).find(
       (c) => (c as HTMLElement).dataset.actionId === 'plugin-dock:siyuan-plugin-graph__siyuan-plugin-graph_dock',
     );
     expect(dockCard).toBeDefined();
@@ -657,8 +690,10 @@ describe('dock panel plugin entry and search', () => {
     expect(badge).not.toBeNull();
     expect(badge?.textContent).toBe('侧栏');
 
-    // 检查侧栏卡片也拥有启停开关
-    const toggleSwitch = dockCard!.querySelector<HTMLInputElement>('input.siyuan-power-buttons__dock-plugin-toggle-switch');
+    // 启停开关提升到插件组卡头上
+    const groupHeader = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-header');
+    expect(groupHeader).not.toBeNull();
+    const toggleSwitch = groupHeader!.querySelector<HTMLInputElement>('input.siyuan-power-buttons__dock-plugin-toggle-switch');
     expect(toggleSwitch).not.toBeNull();
     expect(toggleSwitch?.checked).toBe(true);
 
@@ -769,5 +804,254 @@ describe('dock panel plugin entry and search', () => {
 
     manager.destroy();
     vi.unstubAllGlobals();
+  });
+
+  it('groups plugin entries under plugin cards and persists per-plugin expand/collapse state', async () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const addDock = vi.fn().mockImplementation((options) => {
+      dockInit = options.init;
+      return { model: {} };
+    });
+
+    const plugin = {
+      addTopBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addStatusBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addDock,
+    } as never;
+
+    const mockPlugins = [
+      {
+        name: 'sample',
+        displayName: '样例插件',
+        openSetting: vi.fn(),
+        commands: [
+          { langKey: 'cmdOne', langText: '命令一', callback: vi.fn() },
+          { langKey: 'cmdTwo', langText: '命令二', callback: vi.fn() },
+        ],
+      },
+      {
+        name: 'plain',
+        displayName: '朴素插件',
+        openSetting: vi.fn(),
+      },
+    ];
+
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      t: (key) => key,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      getPlugins: () => mockPlugins,
+    });
+
+    const setExpandedPluginGroups = vi.fn();
+    const uiStateStore = {
+      snapshot: () => ({ isPluginListCollapsed: false, expandedPluginGroups: [] }),
+      setPluginListCollapsed: vi.fn(),
+      setExpandedPluginGroups,
+    };
+
+    const manager = new SurfaceManager(
+      plugin,
+      executor,
+      vi.fn(),
+      () => mockPlugins,
+      uiStateStore,
+    );
+
+    const config = createDefaultConfig();
+    manager.render(config);
+
+    const host = document.createElement('div');
+    dockInit?.({ element: host });
+
+    const getGroup = (pluginName: string) =>
+      host.querySelector<HTMLElement>(`.siyuan-power-buttons__dock-plugin-group[data-plugin-name="${pluginName}"]`);
+    const sampleGroup = getGroup('sample')!;
+    const plainGroup = getGroup('plain')!;
+    expect(sampleGroup).not.toBeNull();
+    expect(plainGroup).not.toBeNull();
+
+    const sampleChildren = sampleGroup.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-children')!;
+    const sampleHeader = sampleGroup.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-header')!;
+
+    // 1. Default collapsed: children hidden, right-pointing chevron, aria-expanded false, count badge shows 2 commands
+    expect(sampleChildren.classList.contains('fn__none')).toBe(true);
+    expect(sampleHeader.getAttribute('aria-expanded')).toBe('false');
+    // aria-label follows the codebase convention: it names the action the next click performs
+    expect(sampleHeader.getAttribute('aria-label')).toBe('展开插件命令');
+    expect(sampleGroup.querySelector('.siyuan-power-buttons__dock-plugin-group-chevron')!.innerHTML).toContain('m9 18 6-6-6-6');
+    expect(sampleGroup.querySelector('.siyuan-power-buttons__dock-plugin-group-count')?.textContent).toBe('2');
+
+    // 2. Plugin without commands: always expanded, no chevron
+    const plainChildren = plainGroup.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-children')!;
+    expect(plainChildren.classList.contains('fn__none')).toBe(false);
+    expect(plainGroup.querySelector('.siyuan-power-buttons__dock-plugin-group-chevron')).toBeNull();
+    expect(plainGroup.querySelector('.siyuan-power-buttons__dock-plugin-group-header')!.getAttribute('aria-expanded')).toBe('true');
+
+    // 3. Header click expands the group and persists the state
+    sampleHeader.click();
+    expect(sampleChildren.classList.contains('fn__none')).toBe(false);
+    expect(sampleHeader.getAttribute('aria-expanded')).toBe('true');
+    expect(sampleHeader.getAttribute('aria-label')).toBe('折叠插件命令');
+    expect(sampleGroup.querySelector('.siyuan-power-buttons__dock-plugin-group-chevron')!.innerHTML).toContain('m6 9 6 6 6-6');
+    expect(setExpandedPluginGroups).toHaveBeenLastCalledWith(['sample']);
+
+    // 4. Clicking a child command still executes instead of toggling the group
+    const commandCard = sampleChildren.querySelector<HTMLElement>('[data-action-id="plugin-cmd:sample__cmdOne"]')!;
+    commandCard.click();
+    expect(setExpandedPluginGroups).toHaveBeenCalledTimes(1);
+
+    // 5. Second header click collapses and persists the empty state
+    sampleHeader.click();
+    expect(sampleChildren.classList.contains('fn__none')).toBe(true);
+    expect(setExpandedPluginGroups).toHaveBeenLastCalledWith([]);
+  });
+
+  it('force-expands matched groups during search and restores collapse state after clearing', async () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const addDock = vi.fn().mockImplementation((options) => {
+      dockInit = options.init;
+      return { model: {} };
+    });
+
+    const plugin = {
+      addTopBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addStatusBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addDock,
+    } as never;
+
+    const mockPlugins = [
+      {
+        name: 'sample',
+        displayName: '样例插件',
+        openSetting: vi.fn(),
+        commands: [
+          { langKey: 'cmdOne', langText: '命令一', callback: vi.fn() },
+          { langKey: 'cmdTwo', langText: '命令二', callback: vi.fn() },
+        ],
+      },
+      {
+        name: 'plain',
+        displayName: '朴素插件',
+        openSetting: vi.fn(),
+      },
+    ];
+
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      t: (key) => key,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      getPlugins: () => mockPlugins,
+    });
+
+    const uiStateStore = {
+      snapshot: () => ({ isPluginListCollapsed: false, expandedPluginGroups: [] }),
+      setPluginListCollapsed: vi.fn(),
+      setExpandedPluginGroups: vi.fn(),
+    };
+
+    const manager = new SurfaceManager(
+      plugin,
+      executor,
+      vi.fn(),
+      () => mockPlugins,
+      uiStateStore,
+    );
+
+    const config = createDefaultConfig();
+    manager.render(config);
+
+    const host = document.createElement('div');
+    dockInit?.({ element: host });
+
+    const input = host.querySelector<HTMLInputElement>('.siyuan-power-buttons__dock-plugin-input')!;
+    const getGroup = (pluginName: string) =>
+      host.querySelector<HTMLElement>(`.siyuan-power-buttons__dock-plugin-group[data-plugin-name="${pluginName}"]`);
+
+    // Default collapsed
+    expect(getGroup('sample')!.querySelector('.siyuan-power-buttons__dock-plugin-group-children')!.classList.contains('fn__none')).toBe(true);
+
+    // 1. Searching a command inside the collapsed group shows the group expanded with only matching children
+    input.value = '命令一';
+    input.dispatchEvent(new Event('input'));
+    const sampleGroup = getGroup('sample')!;
+    const sampleChildren = sampleGroup.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-children')!;
+    expect(sampleChildren.classList.contains('fn__none')).toBe(false);
+    expect(sampleChildren.querySelectorAll('.siyuan-power-buttons__dock-plugin-card').length).toBe(1);
+    // Non-matching groups are hidden entirely
+    expect(getGroup('plain')).toBeNull();
+
+    // 2. Clearing the search restores the previous collapse state
+    const clearBtn = host.querySelector<HTMLButtonElement>('.siyuan-power-buttons__dock-plugin-clear-btn')!;
+    clearBtn.click();
+    expect(getGroup('sample')!.querySelector('.siyuan-power-buttons__dock-plugin-group-children')!.classList.contains('fn__none')).toBe(true);
+    expect(getGroup('plain')).not.toBeNull();
+  });
+
+  it('renders groups expanded according to the persisted expanded state', async () => {
+    let dockInit: ((dock: { element: HTMLElement }) => void) | undefined;
+    const addDock = vi.fn().mockImplementation((options) => {
+      dockInit = options.init;
+      return { model: {} };
+    });
+
+    const plugin = {
+      addTopBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addStatusBar: vi.fn().mockReturnValue(document.createElement('div')),
+      addDock,
+    } as never;
+
+    const mockPlugins = [
+      {
+        name: 'sample',
+        displayName: '样例插件',
+        openSetting: vi.fn(),
+        commands: [
+          { langKey: 'cmdOne', langText: '命令一', callback: vi.fn() },
+        ],
+      },
+    ];
+
+    const executor = new CommandExecutor({
+      plugin: { globalCommand: vi.fn() } as never,
+      notify: vi.fn(),
+      t: (key) => key,
+      openUrl: vi.fn(),
+      pluginCommands: new Map(),
+      getPlugins: () => mockPlugins,
+    });
+
+    const uiStateStore = {
+      snapshot: () => ({ isPluginListCollapsed: false, expandedPluginGroups: ['sample'] }),
+      setPluginListCollapsed: vi.fn(),
+      setExpandedPluginGroups: vi.fn(),
+    };
+
+    const manager = new SurfaceManager(
+      plugin,
+      executor,
+      vi.fn(),
+      () => mockPlugins,
+      uiStateStore,
+    );
+
+    const config = createDefaultConfig();
+    manager.render(config);
+
+    const host = document.createElement('div');
+    dockInit?.({ element: host });
+
+    const sampleGroup = host.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group[data-plugin-name="sample"]')!;
+    const sampleChildren = sampleGroup.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-children')!;
+    const sampleHeader = sampleGroup.querySelector<HTMLElement>('.siyuan-power-buttons__dock-plugin-group-header')!;
+
+    expect(sampleChildren.classList.contains('fn__none')).toBe(false);
+    expect(sampleHeader.getAttribute('aria-expanded')).toBe('true');
+    expect(sampleHeader.getAttribute('aria-label')).toBe('折叠插件命令');
+    expect(sampleGroup.querySelector('.siyuan-power-buttons__dock-plugin-group-chevron')!.innerHTML).toContain('m6 9 6 6 6-6');
   });
 });
