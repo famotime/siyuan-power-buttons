@@ -1,32 +1,32 @@
-import {
-  DEFAULT_ICONPARK_ICON,
-  PLUGIN_ENTRY_DIVIDER_ID,
-} from "@/shared/constants";
-import {
-  createExperimentalClickSequenceConfig,
-  createExperimentalShortcutConfig,
-  getDefaultActionId,
-} from "@/core/config/item-defaults";
-import {
-  createId,
-  normalizeItemOrder,
-} from "@/shared/utils";
-import { normalizeSurface } from "@/shared/surface-metadata";
 import type {
   ActionType,
   IconType,
   PowerButtonItem,
   PowerButtonsConfig,
   SurfaceType,
-} from "@/shared/types";
+} from "@/shared/types"
+import {
+  createExperimentalClickSequenceConfig,
+  createExperimentalShortcutConfig,
+  getDefaultActionId,
+} from "@/core/config/item-defaults"
+import {
+  DEFAULT_ICONPARK_ICON,
+  PLUGIN_ENTRY_DIVIDER_ID,
+} from "@/shared/constants"
+import { normalizeSurface } from "@/shared/surface-metadata"
+import {
+  createId,
+  normalizeItemOrder,
+} from "@/shared/utils"
 
 export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): PowerButtonItem {
-  const actionType = (overrides.actionType || "builtin-global-command") as ActionType;
-  const actionId = overrides.actionId ?? getDefaultActionId(actionType);
-  const surface = normalizeSurface((overrides.surface || "dock-panel") as SurfaceType);
+  const actionType = (overrides.actionType || "builtin-global-command") as ActionType
+  const actionId = overrides.actionId ?? getDefaultActionId(actionType)
+  const surface = normalizeSurface((overrides.surface || "dock-panel") as SurfaceType)
   const surfaces = overrides.surfaces && overrides.surfaces.length > 0
     ? Array.from(new Set(overrides.surfaces.map(normalizeSurface)))
-    : [surface];
+    : [surface]
 
   return {
     id: overrides.id || createId(),
@@ -43,16 +43,16 @@ export function createButtonItem(overrides: Partial<PowerButtonItem> = {}): Powe
     tooltip: overrides.tooltip || "",
     experimentalShortcut: actionType === "experimental-shortcut"
       ? createExperimentalShortcutConfig({
-        shortcut: overrides.experimentalShortcut?.shortcut ?? actionId,
-        sendEscapeBefore: overrides.experimentalShortcut?.sendEscapeBefore,
-        dispatchTarget: overrides.experimentalShortcut?.dispatchTarget,
-        allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
-      }, actionId)
+          shortcut: overrides.experimentalShortcut?.shortcut ?? actionId,
+          sendEscapeBefore: overrides.experimentalShortcut?.sendEscapeBefore,
+          dispatchTarget: overrides.experimentalShortcut?.dispatchTarget,
+          allowDirectWindowDispatch: overrides.experimentalShortcut?.allowDirectWindowDispatch,
+        }, actionId)
       : overrides.experimentalShortcut,
     experimentalClickSequence: actionType === "experimental-click-sequence"
       ? createExperimentalClickSequenceConfig(overrides.experimentalClickSequence, actionId)
       : overrides.experimentalClickSequence,
-  };
+  }
 }
 
 export function createDefaultConfig(): PowerButtonsConfig {
@@ -314,7 +314,7 @@ export function createDefaultConfig(): PowerButtonsConfig {
       actionId: "siyuan-doc-assist:export-current",
       tooltip: "",
     }),
-  ]);
+  ])
 
   return {
     version: 2,
@@ -325,39 +325,113 @@ export function createDefaultConfig(): PowerButtonsConfig {
     selectionToolbarLayout: [],
     surfaceLayouts: {
       "dock-panel": [
-        { type: "divider", id: "divider-dock-docs", title: "文档与视图" },
-        { type: "button", id: "pb-378f4f34-6cca-47a2-99d9-a240a248e31a" },
-        { type: "button", id: "pb-b2c3d4e5-6789-4012-bcde-f0123456789a" },
-        { type: "button", id: "pb-b695ca42-26cb-4028-98e3-5121b6d0e625" },
+        {
+          type: "divider",
+          id: "divider-dock-docs",
+          title: "文档与视图",
+        },
+        {
+          type: "button",
+          id: "pb-378f4f34-6cca-47a2-99d9-a240a248e31a",
+        },
+        {
+          type: "button",
+          id: "pb-b2c3d4e5-6789-4012-bcde-f0123456789a",
+        },
+        {
+          type: "button",
+          id: "pb-b695ca42-26cb-4028-98e3-5121b6d0e625",
+        },
 
-        { type: "divider", id: "divider-dock-tools", title: "实用工具" },
-        { type: "button", id: "pb-76916412-1ea9-4cc4-b8cf-a3773a7ba003" },
-        { type: "button", id: "pb-88b89a52-3e8f-4f15-8cf9-99def14d42c7" },
-        { type: "button", id: "pb-ac74263a-43a7-438a-93fa-0e97a8a97859" },
+        {
+          type: "divider",
+          id: "divider-dock-tools",
+          title: "实用工具",
+        },
+        {
+          type: "button",
+          id: "pb-76916412-1ea9-4cc4-b8cf-a3773a7ba003",
+        },
+        {
+          type: "button",
+          id: "pb-88b89a52-3e8f-4f15-8cf9-99def14d42c7",
+        },
+        {
+          type: "button",
+          id: "pb-ac74263a-43a7-438a-93fa-0e97a8a97859",
+        },
 
-        { type: "divider", id: "divider-dock-plugins", title: "插件命令" },
-        { type: "button", id: "pb-d4e5f6a7-8901-4234-def0-123456789abc" },
-        { type: "button", id: "pb-e5f6a7b8-9012-4345-ef01-23456789abcd" },
-        { type: "button", id: "pb-f6a7b8c9-0123-4456-f012-3456789abcde" },
+        {
+          type: "divider",
+          id: "divider-dock-plugins",
+          title: "插件命令",
+        },
+        {
+          type: "button",
+          id: "pb-d4e5f6a7-8901-4234-def0-123456789abc",
+        },
+        {
+          type: "button",
+          id: "pb-e5f6a7b8-9012-4345-ef01-23456789abcd",
+        },
+        {
+          type: "button",
+          id: "pb-f6a7b8c9-0123-4456-f012-3456789abcde",
+        },
 
-        { type: "divider", id: "divider-dock-prefs", title: "偏好与设置" },
-        { type: "button", id: "pb-d367924d-a9ac-4eae-91ec-69dcd19eaffd" },
-        { type: "button", id: "pb-72370934-8420-4c2b-abfa-928764ca6d84" },
-        { type: "button", id: "pb-4b654804-355d-4a3d-960f-8437e0f36e9b" },
+        {
+          type: "divider",
+          id: "divider-dock-prefs",
+          title: "偏好与设置",
+        },
+        {
+          type: "button",
+          id: "pb-d367924d-a9ac-4eae-91ec-69dcd19eaffd",
+        },
+        {
+          type: "button",
+          id: "pb-72370934-8420-4c2b-abfa-928764ca6d84",
+        },
+        {
+          type: "button",
+          id: "pb-4b654804-355d-4a3d-960f-8437e0f36e9b",
+        },
 
-        { type: "divider", id: PLUGIN_ENTRY_DIVIDER_ID, title: "插件入口" },
+        {
+          type: "divider",
+          id: PLUGIN_ENTRY_DIVIDER_ID,
+          title: "插件入口",
+        },
       ],
       "statusbar-right": [
-        { type: "button", id: "pb-378f4f34-6cca-47a2-99d9-a240a248e31a" },
-        { type: "button", id: "pb-b2c3d4e5-6789-4012-bcde-f0123456789a" },
-        { type: "button", id: "pb-b695ca42-26cb-4028-98e3-5121b6d0e625" },
-        { type: "button", id: "pb-ac74263a-43a7-438a-93fa-0e97a8a97859" },
-        { type: "button", id: "pb-4b654804-355d-4a3d-960f-8437e0f36e9b" },
+        {
+          type: "button",
+          id: "pb-378f4f34-6cca-47a2-99d9-a240a248e31a",
+        },
+        {
+          type: "button",
+          id: "pb-b2c3d4e5-6789-4012-bcde-f0123456789a",
+        },
+        {
+          type: "button",
+          id: "pb-b695ca42-26cb-4028-98e3-5121b6d0e625",
+        },
+        {
+          type: "button",
+          id: "pb-ac74263a-43a7-438a-93fa-0e97a8a97859",
+        },
+        {
+          type: "button",
+          id: "pb-4b654804-355d-4a3d-960f-8437e0f36e9b",
+        },
       ],
-      canvas: [
-        { type: "button", id: "pb-4f7c5741-8099-4f3a-b5b3-7921f1f74355" },
+      "canvas": [
+        {
+          type: "button",
+          id: "pb-4f7c5741-8099-4f3a-b5b3-7921f1f74355",
+        },
       ],
-      topbar: [],
+      "topbar": [],
       "selection-toolbar": [],
     },
     experimental: {
@@ -366,5 +440,5 @@ export function createDefaultConfig(): PowerButtonsConfig {
       shortcutAdapter: true,
       clickSequenceAdapter: true,
     },
-  };
+  }
 }

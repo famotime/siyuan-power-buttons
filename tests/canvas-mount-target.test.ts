@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from 'vitest';
-import { findCanvasMountTarget } from '@/core/surfaces/canvas-mount-target';
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
+import { findCanvasMountTarget } from '@/core/surfaces/canvas-mount-target'
 
 describe('canvas mount target', () => {
   it('prefers the visible breadcrumb readonly anchor over the util host', () => {
@@ -16,13 +20,13 @@ describe('canvas mount target', () => {
           <div class="block__icons"></div>
         </div>
       </div>
-    `;
+    `
 
-    const target = findCanvasMountTarget(document);
+    const target = findCanvasMountTarget(document)
 
-    expect(target?.kind).toBe('breadcrumb');
-    expect(target?.anchor?.getAttribute('data-type')).toBe('readonly');
-  });
+    expect(target?.kind).toBe('breadcrumb')
+    expect(target?.anchor?.getAttribute('data-type')).toBe('readonly')
+  })
 
   it('falls back to the util host when the breadcrumb anchor is hidden', () => {
     document.body.innerHTML = `
@@ -36,12 +40,12 @@ describe('canvas mount target', () => {
           </div>
         </div>
       </div>
-    `;
+    `
 
-    const target = findCanvasMountTarget(document);
+    const target = findCanvasMountTarget(document)
 
-    expect(target?.kind).toBe('util');
-    expect(target?.anchor).toBeNull();
-    expect(target?.container.classList.contains('block__icons')).toBe(true);
-  });
-});
+    expect(target?.kind).toBe('util')
+    expect(target?.anchor).toBeNull()
+    expect(target?.container.classList.contains('block__icons')).toBe(true)
+  })
+})

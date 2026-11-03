@@ -1,25 +1,29 @@
-import { describe, expect, it } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
 import {
   createButtonItem,
   createDefaultConfig,
   exportConfigAsJson,
   importConfigFromJson,
   mergeImportedButtons,
-} from "@/core/config";
+} from "@/core/config"
 
 describe("config import and export", () => {
   it("exports formatted json that can be imported back", () => {
-    const config = createDefaultConfig();
+    const config = createDefaultConfig()
 
-    const serialized = exportConfigAsJson(config);
-    const imported = importConfigFromJson(serialized);
+    const serialized = exportConfigAsJson(config)
+    const imported = importConfigFromJson(serialized)
 
-    expect(imported).toEqual(config);
-  });
+    expect(imported).toEqual(config)
+  })
 
   it("rejects invalid json documents", () => {
-    expect(() => importConfigFromJson("{ broken json")).toThrow(/JSON/);
-  });
+    expect(() => importConfigFromJson("{ broken json")).toThrow(/JSON/)
+  })
 
   it("round-trips experimental shortcut settings through import/export", () => {
     const config = importConfigFromJson(JSON.stringify({
@@ -50,13 +54,13 @@ describe("config import and export", () => {
         shortcutAdapter: true,
         clickSequenceAdapter: false,
       },
-    }));
+    }))
 
-    const serialized = exportConfigAsJson(config);
-    const roundTripped = importConfigFromJson(serialized);
+    const serialized = exportConfigAsJson(config)
+    const roundTripped = importConfigFromJson(serialized)
 
-    expect(roundTripped).toEqual(config);
-  });
+    expect(roundTripped).toEqual(config)
+  })
 
   it("preserves empty experimental shortcut values when importing and exporting", () => {
     const config = importConfigFromJson(JSON.stringify({
@@ -88,14 +92,14 @@ describe("config import and export", () => {
         shortcutAdapter: true,
         clickSequenceAdapter: false,
       },
-    }));
+    }))
 
-    const serialized = exportConfigAsJson(config);
-    const roundTripped = importConfigFromJson(serialized);
+    const serialized = exportConfigAsJson(config)
+    const roundTripped = importConfigFromJson(serialized)
 
-    expect(roundTripped.items[0].actionId).toBe("");
-    expect(roundTripped.items[0].experimentalShortcut?.shortcut).toBe("");
-  });
+    expect(roundTripped.items[0].actionId).toBe("")
+    expect(roundTripped.items[0].experimentalShortcut?.shortcut).toBe("")
+  })
 
   it("round-trips experimental click sequence settings through import/export", () => {
     const config = importConfigFromJson(JSON.stringify({
@@ -144,13 +148,13 @@ describe("config import and export", () => {
         shortcutAdapter: false,
         clickSequenceAdapter: true,
       },
-    }));
+    }))
 
-    const serialized = exportConfigAsJson(config);
-    const roundTripped = importConfigFromJson(serialized);
+    const serialized = exportConfigAsJson(config)
+    const roundTripped = importConfigFromJson(serialized)
 
-    expect(roundTripped).toEqual(config);
-  });
+    expect(roundTripped).toEqual(config)
+  })
 
   it("round-trips experimental click sequence form-value settings through import/export", () => {
     const config = importConfigFromJson(JSON.stringify({
@@ -189,13 +193,13 @@ describe("config import and export", () => {
         shortcutAdapter: false,
         clickSequenceAdapter: true,
       },
-    }));
+    }))
 
-    expect(importConfigFromJson(exportConfigAsJson(config))).toEqual(config);
-  });
+    expect(importConfigFromJson(exportConfigAsJson(config))).toEqual(config)
+  })
 
   it("merges imported buttons by action type and action id without replacing existing config", () => {
-    const currentConfig = createDefaultConfig();
+    const currentConfig = createDefaultConfig()
     currentConfig.items = [
       createButtonItem({
         id: "existing-daily-note",
@@ -213,10 +217,10 @@ describe("config import and export", () => {
         surface: "statusbar-right",
         order: 1,
       }),
-    ];
-    currentConfig.desktopOnly = false;
+    ]
+    currentConfig.desktopOnly = false
 
-    const importedConfig = createDefaultConfig();
+    const importedConfig = createDefaultConfig()
     importedConfig.items = [
       createButtonItem({
         id: "duplicate-daily-note",
@@ -234,14 +238,14 @@ describe("config import and export", () => {
         surface: "statusbar-right",
         order: 1,
       }),
-    ];
-    importedConfig.desktopOnly = true;
+    ]
+    importedConfig.desktopOnly = true
 
-    const merged = mergeImportedButtons(currentConfig, importedConfig);
+    const merged = mergeImportedButtons(currentConfig, importedConfig)
 
-    expect(merged.desktopOnly).toBe(false);
-    expect(merged.items.map(item => item.title)).toEqual(["今日日记", "全局搜索", "数据历史"]);
-    expect(merged.items.map(item => item.actionId)).toEqual(["dailyNote", "Ctrl+P", "Alt+H"]);
-    expect(merged.items.map(item => item.order)).toEqual([0, 1, 2]);
-  });
-});
+    expect(merged.desktopOnly).toBe(false)
+    expect(merged.items.map((item) => item.title)).toEqual(["今日日记", "全局搜索", "数据历史"])
+    expect(merged.items.map((item) => item.actionId)).toEqual(["dailyNote", "Ctrl+P", "Alt+H"])
+    expect(merged.items.map((item) => item.order)).toEqual([0, 1, 2])
+  })
+})

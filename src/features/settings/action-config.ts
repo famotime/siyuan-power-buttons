@@ -1,53 +1,57 @@
-import { formatExternalCommandActionId } from "@/core/commands";
-import {
-  createClickSequenceStep,
-  createExperimentalClickSequenceConfig,
-  createExperimentalShortcutConfig,
-  getDefaultActionId,
-} from "@/core/config/item-defaults";
-import { DEFAULT_ICONPARK_ICON } from "@/shared/constants";
+import type { SettingsExternalCommandProvider } from "@/features/settings/types"
 import type {
   BuiltinCommandDefinition,
   ExperimentalClickSequenceConfig,
   PluginCommandDefinition,
   PowerButtonItem,
-} from "@/shared/types";
-import { INTERNAL_PLUGIN_PROVIDER_ID } from "@/shared/constants";
-import type { SettingsExternalCommandProvider } from "@/features/settings/types";
+} from "@/shared/types"
+import { formatExternalCommandActionId } from "@/core/commands"
+import {
+  createClickSequenceStep,
+  createExperimentalClickSequenceConfig,
+  createExperimentalShortcutConfig,
+  getDefaultActionId,
+} from "@/core/config/item-defaults"
+import {
+  DEFAULT_ICONPARK_ICON,
+  INTERNAL_PLUGIN_PROVIDER_ID,
+
+} from "@/shared/constants"
+
 
 export function ensureExperimentalShortcutConfig(item: PowerButtonItem) {
   if (!item.experimentalShortcut) {
-    item.experimentalShortcut = createExperimentalShortcutConfig();
+    item.experimentalShortcut = createExperimentalShortcutConfig()
   }
-  return item.experimentalShortcut;
+  return item.experimentalShortcut
 }
 
-export const createDefaultClickSequenceStep = createClickSequenceStep;
+export const createDefaultClickSequenceStep = createClickSequenceStep
 
 export function ensureExperimentalClickSequenceConfig(item: PowerButtonItem): ExperimentalClickSequenceConfig {
-  const hasSteps = item.experimentalClickSequence?.steps?.length;
+  const hasSteps = item.experimentalClickSequence?.steps?.length
   const overrides = hasSteps
     ? item.experimentalClickSequence
     : item.experimentalClickSequence
       ? { stopOnFailure: item.experimentalClickSequence.stopOnFailure }
-      : {};
-  item.experimentalClickSequence = createExperimentalClickSequenceConfig(overrides, item.actionId);
-  return item.experimentalClickSequence;
+      : {}
+  item.experimentalClickSequence = createExperimentalClickSequenceConfig(overrides, item.actionId)
+  return item.experimentalClickSequence
 }
 
 export function ensureSelectedActionConfiguration(item: PowerButtonItem): void {
   if (item.actionType === "experimental-shortcut") {
-    ensureExperimentalShortcutConfig(item);
-    return;
+    ensureExperimentalShortcutConfig(item)
+    return
   }
 
   if (item.actionType === "experimental-click-sequence") {
-    ensureExperimentalClickSequenceConfig(item);
+    ensureExperimentalClickSequenceConfig(item)
   }
 }
 
 export function summarizeClickSequence(sequence: ExperimentalClickSequenceConfig): string {
-  return sequence.steps[0]?.selector || "text:设置";
+  return sequence.steps[0]?.selector || "text:设置"
 }
 
 export function applyActionTypeDefaults(
@@ -57,47 +61,47 @@ export function applyActionTypeDefaults(
   externalCommandProviders: SettingsExternalCommandProvider[] = [],
 ): void {
   if (item.actionType === "builtin-global-command") {
-    const fallbackId = getDefaultActionId("builtin-global-command");
-    item.actionId = builtinCommands.some(command => command.id === fallbackId)
+    const fallbackId = getDefaultActionId("builtin-global-command")
+    item.actionId = builtinCommands.some((command) => command.id === fallbackId)
       ? fallbackId
-      : (builtinCommands[0]?.id || fallbackId);
-    return;
+      : (builtinCommands[0]?.id || fallbackId)
+    return
   }
 
   if (item.actionType === "plugin-command") {
     if (pluginCommands[0]) {
-      item.actionId = formatExternalCommandActionId(INTERNAL_PLUGIN_PROVIDER_ID, pluginCommands[0].id);
-      return;
+      item.actionId = formatExternalCommandActionId(INTERNAL_PLUGIN_PROVIDER_ID, pluginCommands[0].id)
+      return
     }
 
-    const provider = externalCommandProviders[0];
-    const command = provider?.commands[0];
+    const provider = externalCommandProviders[0]
+    const command = provider?.commands[0]
     item.actionId = provider && command
       ? formatExternalCommandActionId(provider.providerId, command.id)
-      : getDefaultActionId("plugin-command");
-    return;
+      : getDefaultActionId("plugin-command")
+    return
   }
 
   if (item.actionType === "experimental-shortcut") {
-    item.actionId = ensureExperimentalShortcutConfig(item).shortcut.trim();
-    return;
+    item.actionId = ensureExperimentalShortcutConfig(item).shortcut.trim()
+    return
   }
 
   if (item.actionType === "experimental-click-sequence") {
-    item.actionId = summarizeClickSequence(ensureExperimentalClickSequenceConfig(item));
+    item.actionId = summarizeClickSequence(ensureExperimentalClickSequenceConfig(item))
   }
 }
 
 export function applyIconTypeDefaults(item: PowerButtonItem): void {
   if (item.iconType === "iconpark") {
-    item.iconValue = DEFAULT_ICONPARK_ICON;
-    return;
+    item.iconValue = DEFAULT_ICONPARK_ICON
+    return
   }
 
   if (item.iconType === "emoji") {
-    item.iconValue = "⚡";
-    return;
+    item.iconValue = "⚡"
+    return
   }
 
-  item.iconValue = `<svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>`;
+  item.iconValue = `<svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>`
 }

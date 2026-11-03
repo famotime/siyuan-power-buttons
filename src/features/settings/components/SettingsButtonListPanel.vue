@@ -6,8 +6,19 @@
         <p>共 {{ config.items.length }} 个按钮，拖拽可排序</p>
       </div>
       <div class="panel-title__actions">
-        <button class="b3-button" @click="addItem">新建</button>
-        <button class="b3-button b3-button--outline" :disabled="!selectedItem" @click="duplicateItem">复制</button>
+        <button
+          class="b3-button"
+          @click="addItem"
+        >
+          新建
+        </button>
+        <button
+          class="b3-button b3-button--outline"
+          :disabled="!selectedItem"
+          @click="duplicateItem"
+        >
+          复制
+        </button>
       </div>
     </div>
 
@@ -22,9 +33,20 @@
         @dragover.prevent
         @drop="onListDrop(index)"
       >
-        <button type="button" class="button-list__main" @click="selectItem(item.id)">
+        <button
+          type="button"
+          class="button-list__main"
+          @click="selectItem(item.id)"
+        >
           <span class="button-list__drag">⋮⋮</span>
-          <span class="button-list__icon" :style="item.color ? { backgroundColor: hexToRgba(item.color, 0.18), borderRadius: '4px' } : {}" v-html="renderBuiltinIconMarkup(item)" />
+          <span
+            class="button-list__icon"
+            :style="item.color ? {
+              backgroundColor: hexToRgba(item.color, 0.18),
+              borderRadius: '4px',
+            } : {}"
+            v-html="renderBuiltinIconMarkup(item)"
+          />
           <span class="button-list__content">
             <strong>{{ item.title || '未命名按钮' }}</strong>
             <small>{{ itemSurfacesLabel ? itemSurfacesLabel(item) : surfaceLabel(item.surface) }}</small>
@@ -56,25 +78,28 @@
 </template>
 
 <script setup lang="ts">
-import { renderNamedIcon } from '@/features/settings/view-helpers';
-import { hexToRgba } from '@/shared/color-utils';
-import type { PowerButtonItem, PowerButtonsConfig } from '@/shared/types';
+import type {
+  PowerButtonItem,
+  PowerButtonsConfig,
+} from '@/shared/types'
+import { renderNamedIcon } from '@/features/settings/view-helpers'
+import { hexToRgba } from '@/shared/color-utils'
 
 defineProps<{
-  config: PowerButtonsConfig;
-  selectedId: string;
-  selectedItem?: PowerButtonItem;
-  renderBuiltinIconMarkup: (item: Pick<PowerButtonItem, 'iconType' | 'iconValue'>) => string;
-  surfaceLabel: (value: string) => string;
-  itemSurfacesLabel?: (item: PowerButtonItem) => string;
-  addItem: () => void | Promise<void>;
-  duplicateItem: () => void | Promise<void>;
-  selectItem: (itemId: string) => void;
-  toggleVisible: (itemId: string) => void | Promise<void>;
-  removeItem: (itemId: string) => void | Promise<void>;
-  onListDragStart: (index: number) => void;
-  onListDrop: (index: number) => void | Promise<void>;
-}>();
+  config: PowerButtonsConfig
+  selectedId: string
+  selectedItem?: PowerButtonItem
+  renderBuiltinIconMarkup: (item: Pick<PowerButtonItem, 'iconType' | 'iconValue'>) => string
+  surfaceLabel: (value: string) => string
+  itemSurfacesLabel?: (item: PowerButtonItem) => string
+  addItem: () => void | Promise<void>
+  duplicateItem: () => void | Promise<void>
+  selectItem: (itemId: string) => void
+  toggleVisible: (itemId: string) => void | Promise<void>
+  removeItem: (itemId: string) => void | Promise<void>
+  onListDragStart: (index: number) => void
+  onListDrop: (index: number) => void | Promise<void>
+}>()
 
-const TRASH_ICON = renderNamedIcon('iconpark:Delete');
+const TRASH_ICON = renderNamedIcon('iconpark:Delete')
 </script>

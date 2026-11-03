@@ -1,9 +1,9 @@
-import type { PluginCommandDefinition } from "@/shared/types";
+import type { PluginCommandDefinition } from "@/shared/types"
+import { formatExternalCommandActionId } from "@/core/commands/external-command-types"
 import {
   INTERNAL_PLUGIN_PROVIDER_ID,
   INTERNAL_PLUGIN_PROVIDER_NAME,
-} from "@/shared/constants";
-import { formatExternalCommandActionId } from "@/core/commands/external-command-types";
+} from "@/shared/constants"
 
 export const PLUGIN_COMMANDS: PluginCommandDefinition[] = [
   {
@@ -26,12 +26,12 @@ export const PLUGIN_COMMANDS: PluginCommandDefinition[] = [
     title: "恢复默认按钮",
     description: "恢复到默认预设。",
   },
-];
+]
 
 export function formatInternalPluginCommandActionId(commandId: string): string {
-  return formatExternalCommandActionId(INTERNAL_PLUGIN_PROVIDER_ID, commandId);
+  return formatExternalCommandActionId(INTERNAL_PLUGIN_PROVIDER_ID, commandId)
 }
 
 export function formatPluginCommandMenuTitle(commandTitle: string, pluginName = INTERNAL_PLUGIN_PROVIDER_NAME): string {
-  return `动作类型（插件命令）-${pluginName}-${commandTitle}`;
+  return `动作类型（插件命令）-${pluginName}-${commandTitle}`
 }

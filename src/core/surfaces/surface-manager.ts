@@ -1,98 +1,108 @@
 import type {
   Plugin,
-} from "siyuan";
-import { CommandExecutor } from "@/core/commands";
-import { DEFAULT_PLUGIN_COMMAND, PLUGIN_ENTRY_DIVIDER_ID } from "@/shared/constants";
-import { createDefaultConfig } from "@/core/config/defaults";
-import {
-  getDockPosition,
-  getItemSurfaces,
-  isDockSurface,
-  itemHasSurface,
-} from "@/shared/surface-metadata";
-import {
-  createId,
-  sortItems,
-} from "@/shared/utils";
+} from "siyuan"
+import type { PluginStateManager } from "@/core/plugins/plugin-state-manager"
+import type { DiscoveredPluginEntry } from "@/core/plugins/types"
+import type {
+  DockPanelEntry,
+  DockRegistration,
+} from "@/core/surfaces/surface-elements"
 import type {
   PowerButtonItem,
   PowerButtonsConfig,
   SelectionToolbarLayoutItem,
   SurfaceType,
-} from "@/shared/types";
-import { scanPluginEntries } from "@/core/plugins/plugin-scanner";
-import type { DiscoveredPluginEntry } from "@/core/plugins/types";
-import type { PluginStateManager } from "@/core/plugins/plugin-state-manager";
-import { confirmDialog, promptDialog } from "@/core/surfaces/dialog-utils";
-import { findCanvasMountTarget } from "@/core/surfaces/canvas-mount-target";
-import { NativeElementSuppressor } from "@/core/surfaces/native-element-suppressor";
+} from "@/shared/types"
+import { CommandExecutor } from "@/core/commands"
+import { createDefaultConfig } from "@/core/config/defaults"
+import { scanPluginEntries } from "@/core/plugins/plugin-scanner"
+import { findCanvasMountTarget } from "@/core/surfaces/canvas-mount-target"
 import {
+  confirmDialog,
+  promptDialog,
+} from "@/core/surfaces/dialog-utils"
+import { NativeElementSuppressor } from "@/core/surfaces/native-element-suppressor"
+import {
+  closeActiveAppearancePopover,
   createCanvasElement,
   createDockPanel,
   createFixedSettingsTopbar,
   createStatusElement,
-  type DockPanelEntry,
-  type DockRegistration,
+  disconnectDockResizeObserver,
+
+
   getIconMarkup,
   hasDockRemove,
-  closeActiveAppearancePopover,
-  disconnectDockResizeObserver,
   renderStandaloneDockPanel,
-} from "@/core/surfaces/surface-elements";
+} from "@/core/surfaces/surface-elements"
+import {
+  DEFAULT_PLUGIN_COMMAND,
+  PLUGIN_ENTRY_DIVIDER_ID,
+} from "@/shared/constants"
+import {
+  getDockPosition,
+  getItemSurfaces,
+  isDockSurface,
+  itemHasSurface,
+} from "@/shared/surface-metadata"
+import {
+  createId,
+  sortItems,
+} from "@/shared/utils"
 
-export const STANDALONE_DOCK_TYPE = "siyuan-power-buttons-dock-panel";
-export const STANDALONE_DOCK_ICON_SYMBOL = "iconPowerButtonsDock";
+export const STANDALONE_DOCK_TYPE = "siyuan-power-buttons-dock-panel"
+export const STANDALONE_DOCK_ICON_SYMBOL = "iconPowerButtonsDock"
 
-const ASTERISK_KEY_SYMBOL_SVG = `<svg style="display:none;" id="siyuan-power-buttons-symbols"><symbol id="${STANDALONE_DOCK_ICON_SYMBOL}" viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 16V32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.447 19.4114L30.5535 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M30.5532 19.4114L17.4468 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>`;
+const ASTERISK_KEY_SYMBOL_SVG = `<svg style="display:none;" id="siyuan-power-buttons-symbols"><symbol id="${STANDALONE_DOCK_ICON_SYMBOL}" viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 16V32" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M17.447 19.4114L30.5535 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M30.5532 19.4114L17.4468 28.5886" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>`
 
 function getOrderedSurfaceButtons(config: PowerButtonsConfig, surface: SurfaceType): PowerButtonItem[] {
-  const visibleButtons = config.items.filter(item => itemHasSurface(item, surface) && item.visible);
-  const layout = config.surfaceLayouts?.[surface];
+  const visibleButtons = config.items.filter((item) => itemHasSurface(item, surface) && item.visible)
+  const layout = config.surfaceLayouts?.[surface]
   if (!layout) {
-    return sortItems(visibleButtons);
+    return sortItems(visibleButtons)
   }
-  const buttonMap = new Map<string, PowerButtonItem>(visibleButtons.map(item => [item.id, item]));
-  const ordered: PowerButtonItem[] = [];
-  const usedIds = new Set<string>();
+  const buttonMap = new Map<string, PowerButtonItem>(visibleButtons.map((item) => [item.id, item]))
+  const ordered: PowerButtonItem[] = []
+  const usedIds = new Set<string>()
 
   for (const entry of layout) {
     if (entry.type === "button") {
-      const item = buttonMap.get(entry.id);
+      const item = buttonMap.get(entry.id)
       if (item) {
-        ordered.push(item);
-        usedIds.add(entry.id);
+        ordered.push(item)
+        usedIds.add(entry.id)
       }
     }
   }
 
   for (const item of sortItems(visibleButtons)) {
     if (!usedIds.has(item.id)) {
-      ordered.push(item);
+      ordered.push(item)
     }
   }
 
-  return ordered;
+  return ordered
 }
 
 export class SurfaceManager {
-  private topbarElements: HTMLElement[] = [];
-  private statusElements: HTMLElement[] = [];
-  private canvasElements: HTMLElement[] = [];
-  private dockRegistrations: DockRegistration[] = [];
-  private standaloneDockRegistration: DockRegistration | null = null;
-  private standaloneDockHost: HTMLElement | null = null;
-  private currentConfig: PowerButtonsConfig | null = null;
-  private nativeSuppressor = new NativeElementSuppressor();
-  private toolbarPatchObserver: MutationObserver | null = null;
-  private disabledToolbarNames = new Set<string>();
-  private patchedToolbarItems = new Set<HTMLElement>();
-  private customToolbarItems: PowerButtonItem[] = [];
-  private selectionToolbarLayout: SelectionToolbarLayoutItem[] = [];
-  private injectedToolbarItems = new Set<HTMLElement>();
-  private isPluginListCollapsed = false;
-  private expandedPluginGroups: string[] = [];
-  private pluginSearchQuery = "";
-  private unsubscribePluginState?: () => void;
+  private topbarElements: HTMLElement[] = []
+  private statusElements: HTMLElement[] = []
+  private canvasElements: HTMLElement[] = []
+  private dockRegistrations: DockRegistration[] = []
+  private standaloneDockRegistration: DockRegistration | null = null
+  private standaloneDockHost: HTMLElement | null = null
+  private currentConfig: PowerButtonsConfig | null = null
+  private nativeSuppressor = new NativeElementSuppressor()
+  private toolbarPatchObserver: MutationObserver | null = null
+  private disabledToolbarNames = new Set<string>()
+  private patchedToolbarItems = new Set<HTMLElement>()
+  private customToolbarItems: PowerButtonItem[] = []
+  private selectionToolbarLayout: SelectionToolbarLayoutItem[] = []
+  private injectedToolbarItems = new Set<HTMLElement>()
+  private isPluginListCollapsed = false
+  private expandedPluginGroups: string[] = []
+  private pluginSearchQuery = ""
+  private unsubscribePluginState?: () => void
 
   constructor(
     private readonly plugin: Plugin,
@@ -100,34 +110,34 @@ export class SurfaceManager {
     private readonly onSaveConfig?: (config: PowerButtonsConfig) => Promise<void> | void,
     private readonly getPlugins?: () => unknown[] | undefined,
     private readonly settingsUiStateStore?: {
-      snapshot: () => { isPluginListCollapsed?: boolean; expandedPluginGroups?: string[] };
-      setPluginListCollapsed: (collapsed: boolean) => Promise<void> | void;
-      setExpandedPluginGroups: (pluginNames: string[]) => Promise<void> | void;
+      snapshot: () => { isPluginListCollapsed?: boolean, expandedPluginGroups?: string[] }
+      setPluginListCollapsed: (collapsed: boolean) => Promise<void> | void
+      setExpandedPluginGroups: (pluginNames: string[]) => Promise<void> | void
     },
     private readonly pluginStateManager?: PluginStateManager,
   ) {
     if (this.settingsUiStateStore) {
-      const uiSnapshot = this.settingsUiStateStore.snapshot();
-      this.isPluginListCollapsed = Boolean(uiSnapshot.isPluginListCollapsed);
+      const uiSnapshot = this.settingsUiStateStore.snapshot()
+      this.isPluginListCollapsed = Boolean(uiSnapshot.isPluginListCollapsed)
       this.expandedPluginGroups = Array.isArray(uiSnapshot.expandedPluginGroups)
-        ? uiSnapshot.expandedPluginGroups.filter(name => typeof name === "string")
-        : [];
+        ? uiSnapshot.expandedPluginGroups.filter((name) => typeof name === "string")
+        : []
     }
     if (this.pluginStateManager) {
       this.unsubscribePluginState = this.pluginStateManager.subscribe(() => {
-        this.renderStandaloneDock();
-      });
+        this.renderStandaloneDock()
+      })
     }
   }
 
   render(config: PowerButtonsConfig): void {
-    this.currentConfig = config;
-    this.clearDynamicSurfaces();
+    this.currentConfig = config
+    this.clearDynamicSurfaces()
 
-    this.ensureStandaloneDock();
-    this.renderStandaloneDock();
+    this.ensureStandaloneDock()
+    this.renderStandaloneDock()
 
-    this.topbarElements.push(createFixedSettingsTopbar(this.plugin, this.executor));
+    this.topbarElements.push(createFixedSettingsTopbar(this.plugin, this.executor))
 
     // 1. 顶栏按钮
     for (const item of getOrderedSurfaceButtons(config, "topbar")) {
@@ -136,12 +146,12 @@ export class SurfaceManager {
           icon: item.iconType === "iconpark" ? getIconMarkup(item) : getIconMarkup(item),
           title: item.tooltip || item.title,
           callback: () => {
-            void this.executor.execute(item);
+            void this.executor.execute(item)
           },
-        });
-        element.dataset.powerButtonsOwned = "true";
-        element.dataset.powerButtonsItemId = item.id;
-        this.topbarElements.push(element);
+        })
+        element.dataset.powerButtonsOwned = "true"
+        element.dataset.powerButtonsItemId = item.id
+        this.topbarElements.push(element)
       }
     }
 
@@ -150,30 +160,30 @@ export class SurfaceManager {
       const element = this.plugin.addStatusBar({
         element: createStatusElement(item, this.executor),
         position: "right",
-      });
-      this.statusElements.push(element);
+      })
+      this.statusElements.push(element)
     }
 
     // 3. 编辑区按钮
-    const canvasMount = findCanvasMountTarget(document);
+    const canvasMount = findCanvasMountTarget(document)
     if (canvasMount) {
       for (const item of getOrderedSurfaceButtons(config, "canvas")) {
-        const element = createCanvasElement(item, this.executor, canvasMount.kind);
+        const element = createCanvasElement(item, this.executor, canvasMount.kind)
         if (canvasMount.anchor) {
-          canvasMount.container.insertBefore(element, canvasMount.anchor);
+          canvasMount.container.insertBefore(element, canvasMount.anchor)
         } else {
-          canvasMount.container.appendChild(element);
+          canvasMount.container.appendChild(element)
         }
-        this.canvasElements.push(element);
+        this.canvasElements.push(element)
       }
     }
 
     // 4. 单独 Dock 按钮
-    const visibleItems = sortItems(config.items).filter(item => item.visible);
+    const visibleItems = sortItems(config.items).filter((item) => item.visible)
     for (const item of visibleItems) {
       for (const surface of getItemSurfaces(item)) {
         if (isDockSurface(surface)) {
-          const type = `siyuan-power-buttons-${item.id}-${surface}`;
+          const type = `siyuan-power-buttons-${item.id}-${surface}`
           const registration = this.plugin.addDock({
             type,
             data: {
@@ -182,39 +192,45 @@ export class SurfaceManager {
             config: {
               position: getDockPosition(surface),
               size: surface.startsWith("dock-bottom")
-                ? { width: null, height: 220 }
-                : { width: 280, height: null },
+                ? {
+                    width: null,
+                    height: 220,
+                  }
+                : {
+                    width: 280,
+                    height: null,
+                  },
               icon: getIconMarkup(item),
               title: item.title,
               index: item.order,
               show: true,
             },
-            init: dock => {
-              createDockPanel(item, this.executor, dock.element);
+            init: (dock) => {
+              createDockPanel(item, this.executor, dock.element)
             },
-          });
+          })
           if (registration) {
             this.dockRegistrations.push({
               type,
               model: registration.model,
-            });
+            })
           }
         }
       }
     }
 
-    this.nativeSuppressor.apply(config.disabledNativeButtons, document);
+    this.nativeSuppressor.apply(config.disabledNativeButtons, document)
 
     // 禁用浮动工具栏原生按钮
     this.disabledToolbarNames = new Set(
-      config.disabledSelectionToolbarItems.map(item => item.name),
-    );
+      config.disabledSelectionToolbarItems.map((item) => item.name),
+    )
     // 缓存浮动工具栏自定义按钮，供 DOM 注入使用
     this.customToolbarItems = config.items
-      .filter(item => itemHasSurface(item, "selection-toolbar") && item.visible)
-      .sort((a, b) => a.order - b.order);
-    this.selectionToolbarLayout = config.selectionToolbarLayout;
-    this.patchSelectionToolbar();
+      .filter((item) => itemHasSurface(item, "selection-toolbar") && item.visible)
+      .sort((a, b) => a.order - b.order)
+    this.selectionToolbarLayout = config.selectionToolbarLayout
+    this.patchSelectionToolbar()
   }
 
   /**
@@ -226,42 +242,42 @@ export class SurfaceManager {
    * 已打开的编辑器不会因配置变更而刷新。此方法通过 DOM 操作弥补。
    */
   private patchSelectionToolbar(): void {
-    this.toolbarPatchObserver?.disconnect();
-    this.toolbarPatchObserver = null;
-    this.restoreToolbarPatch();
+    this.toolbarPatchObserver?.disconnect()
+    this.toolbarPatchObserver = null
+    this.restoreToolbarPatch()
 
     const needsPatch = this.disabledToolbarNames.size > 0
       || this.customToolbarItems.length > 0
-      || this.selectionToolbarLayout.length > 0;
+      || this.selectionToolbarLayout.length > 0
     if (!needsPatch) {
-      return;
+      return
     }
 
-    this.applyToolbarPatch();
+    this.applyToolbarPatch()
 
     // protyle-toolbar 是浮动元素，挂载在 body 下而非 .layout__center 内部
     this.toolbarPatchObserver = new MutationObserver(() => {
-      this.applyToolbarPatch();
-    });
+      this.applyToolbarPatch()
+    })
     this.toolbarPatchObserver.observe(document.body, {
       childList: true,
       subtree: true,
-    });
+    })
   }
 
   private applyToolbarPatch(): void {
-    const needsNativePatch = this.disabledToolbarNames.size > 0;
-    const needsCustomInject = this.customToolbarItems.length > 0;
+    const needsNativePatch = this.disabledToolbarNames.size > 0
+    const needsCustomInject = this.customToolbarItems.length > 0
 
     for (const toolbar of document.querySelectorAll<HTMLElement>(".protyle-toolbar")) {
       // 隐藏被禁用的原生按钮
       if (needsNativePatch) {
         for (const item of toolbar.querySelectorAll<HTMLElement>("[data-type]")) {
-          const type = item.dataset.type;
-          if (!type || !this.disabledToolbarNames.has(type)) continue;
-          if (this.patchedToolbarItems.has(item)) continue;
-          item.style.display = "none";
-          this.patchedToolbarItems.add(item);
+          const type = item.dataset.type
+          if (!type || !this.disabledToolbarNames.has(type)) continue
+          if (this.patchedToolbarItems.has(item)) continue
+          item.style.display = "none"
+          this.patchedToolbarItems.add(item)
         }
       }
 
@@ -270,16 +286,16 @@ export class SurfaceManager {
       // 因为 IMenuItem.name 在 SiYuan 中渲染为 data-type 属性
       if (needsCustomInject) {
         for (const config of this.customToolbarItems) {
-          const selector = `[data-power-buttons-item-id="${config.id}"], [data-type="power-buttons:${config.id}"]`;
-          if (toolbar.querySelector(selector)) continue;
-          const element = this.createCustomToolbarButton(config);
-          this.injectedToolbarItems.add(element);
-          toolbar.appendChild(element);
+          const selector = `[data-power-buttons-item-id="${config.id}"], [data-type="power-buttons:${config.id}"]`
+          if (toolbar.querySelector(selector)) continue
+          const element = this.createCustomToolbarButton(config)
+          this.injectedToolbarItems.add(element)
+          toolbar.appendChild(element)
         }
       }
 
       if (this.selectionToolbarLayout.length > 0) {
-        this.sortSelectionToolbar(toolbar);
+        this.sortSelectionToolbar(toolbar)
       }
     }
   }
@@ -287,90 +303,90 @@ export class SurfaceManager {
   private sortSelectionToolbar(toolbar: HTMLElement): void {
     const itemEntries = Array.from(toolbar.children)
       .filter((node): node is HTMLElement => node instanceof HTMLElement)
-      .map(element => ({
+      .map((element) => ({
         element,
         key: this.getSelectionToolbarElementKey(element),
-      }));
-    const byKey = new Map<string, HTMLElement>();
-    const originalKeys: string[] = [];
+      }))
+    const byKey = new Map<string, HTMLElement>()
+    const originalKeys: string[] = []
 
     for (const entry of itemEntries) {
       if (!entry.key) {
-        continue;
+        continue
       }
-      byKey.set(entry.key, entry.element);
-      originalKeys.push(entry.key);
+      byKey.set(entry.key, entry.element)
+      originalKeys.push(entry.key)
     }
 
-    const ordered: HTMLElement[] = [];
-    const usedKeys = new Set<string>();
+    const ordered: HTMLElement[] = []
+    const usedKeys = new Set<string>()
     for (const item of this.selectionToolbarLayout) {
-      const key = `${item.type}:${item.id}`;
-      const element = byKey.get(key);
+      const key = `${item.type}:${item.id}`
+      const element = byKey.get(key)
       if (!element || usedKeys.has(key)) {
-        continue;
+        continue
       }
-      ordered.push(element);
-      usedKeys.add(key);
+      ordered.push(element)
+      usedKeys.add(key)
     }
 
     for (const key of originalKeys) {
-      const element = byKey.get(key);
+      const element = byKey.get(key)
       if (!element || usedKeys.has(key)) {
-        continue;
+        continue
       }
-      ordered.push(element);
-      usedKeys.add(key);
+      ordered.push(element)
+      usedKeys.add(key)
     }
 
     const currentOrderedElements = itemEntries
-      .filter(entry => Boolean(entry.key))
-      .map(entry => entry.element);
+      .filter((entry) => Boolean(entry.key))
+      .map((entry) => entry.element)
     if (
       currentOrderedElements.length === ordered.length
       && currentOrderedElements.every((element, index) => element === ordered[index])
     ) {
-      return;
+      return
     }
 
     for (const element of ordered) {
-      toolbar.appendChild(element);
+      toolbar.appendChild(element)
     }
   }
 
 
   private async handleUpdateItemAppearance(
     itemId: string,
-    patch: { color?: string; iconType?: PowerButtonItem['iconType']; iconValue?: string },
+    patch: { color?: string, iconType?: PowerButtonItem['iconType'], iconValue?: string },
   ): Promise<void> {
-    if (!this.currentConfig) return;
-    const item = this.currentConfig.items.find(i => i.id === itemId);
-    if (!item) return;
+    if (!this.currentConfig) return
+    const item = this.currentConfig.items.find((i) => i.id === itemId)
+    if (!item) return
 
     if ('color' in patch) {
-      item.color = patch.color;
+      item.color = patch.color
     }
     if (patch.iconType && patch.iconValue) {
-      item.iconType = patch.iconType;
-      item.iconValue = patch.iconValue;
+      item.iconType = patch.iconType
+      item.iconValue = patch.iconValue
     }
 
-    await this.onSaveConfig?.(this.currentConfig);
+    await this.onSaveConfig?.(this.currentConfig)
   }
 
   private getSelectionToolbarElementKey(element: HTMLElement): string | null {
     const customId = element.dataset.powerButtonsItemId
-      || element.dataset.type?.replace(/^power-buttons:/, "");
+      || element.dataset.type?.replace(/^power-buttons:/, "")
     if (customId && element.dataset.type?.startsWith("power-buttons:")) {
-      return `custom:${customId}`;
+      return `custom:${customId}`
     }
 
-    const nativeType = element.dataset.type;
+    const nativeType = element.dataset.type
     if (nativeType && !nativeType.startsWith("power-buttons:")) {
-      return `native:${nativeType}`;
+      return `native:${nativeType}`
     }
 
-    return null;
+    return null
   }
 
   /**
@@ -379,9 +395,9 @@ export class SurfaceManager {
    */
   private restoreToolbarPatch(): void {
     for (const item of this.patchedToolbarItems) {
-      item.style.display = "";
+      item.style.display = ""
     }
-    this.patchedToolbarItems.clear();
+    this.patchedToolbarItems.clear()
 
     // 移除所有自定义按钮——同时处理 DOM 注入和 hook 注入两种来源
     // hook 注入的按钮通过 SiYuan 渲染为 data-type="power-buttons:xxx"
@@ -389,129 +405,142 @@ export class SurfaceManager {
     for (const toolbar of document.querySelectorAll<HTMLElement>(".protyle-toolbar")) {
       const customButtons = toolbar.querySelectorAll<HTMLElement>(
         'button[data-type^="power-buttons:"]',
-      );
+      )
       for (const btn of customButtons) {
-        btn.remove();
+        btn.remove()
       }
     }
-    this.injectedToolbarItems.clear();
+    this.injectedToolbarItems.clear()
   }
 
   private createCustomToolbarButton(config: PowerButtonItem): HTMLElement {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "protyle-toolbar__item b3-tooltips b3-tooltips__n";
-    button.setAttribute("aria-label", config.tooltip || config.title);
-    button.dataset.powerButtonsOwned = "true";
-    button.dataset.powerButtonsItemId = config.id;
+    const button = document.createElement("button")
+    button.type = "button"
+    button.className = "protyle-toolbar__item b3-tooltips b3-tooltips__n"
+    button.setAttribute("aria-label", config.tooltip || config.title)
+    button.dataset.powerButtonsOwned = "true"
+    button.dataset.powerButtonsItemId = config.id
     // 同时设置 data-type，与 updateProtyleToolbar hook 注入的按钮保持一致
-    button.dataset.type = `power-buttons:${config.id}`;
-    button.innerHTML = getIconMarkup(config);
+    button.dataset.type = `power-buttons:${config.id}`
+    button.innerHTML = getIconMarkup(config)
     button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      void this.executor.execute(config);
-    });
-    return button;
+      event.stopPropagation()
+      void this.executor.execute(config)
+    })
+    return button
   }
 
   private ensureStandaloneDock(): void {
     if (this.standaloneDockRegistration) {
-      return;
+      return
     }
 
-    const pluginWithAddIcons = this.plugin as Plugin & { addIcons?: (svg: string) => void };
+    const pluginWithAddIcons = this.plugin as Plugin & { addIcons?: (svg: string) => void }
     if (typeof pluginWithAddIcons.addIcons === "function") {
-      pluginWithAddIcons.addIcons(ASTERISK_KEY_SYMBOL_SVG);
+      pluginWithAddIcons.addIcons(ASTERISK_KEY_SYMBOL_SVG)
     } else if (typeof document !== "undefined" && !document.getElementById("siyuan-power-buttons-symbols")) {
-      document.body.insertAdjacentHTML("afterbegin", ASTERISK_KEY_SYMBOL_SVG);
+      document.body.insertAdjacentHTML("afterbegin", ASTERISK_KEY_SYMBOL_SVG)
     }
 
-    const title = this.t("dockPanelTitle", "随心按");
+    const title = this.t("dockPanelTitle", "随心按")
     const registration = this.plugin.addDock({
       type: STANDALONE_DOCK_TYPE,
       data: {},
       config: {
         position: "RightTop",
-        size: { width: 320, height: null },
+        size: {
+          width: 320,
+          height: null,
+        },
         icon: STANDALONE_DOCK_ICON_SYMBOL,
         title,
         index: 0,
         show: true,
       },
-      init: dock => {
-        this.standaloneDockHost = dock.element;
-        this.renderStandaloneDock();
+      init: (dock) => {
+        this.standaloneDockHost = dock.element
+        this.renderStandaloneDock()
       },
       update: () => {
-        this.renderStandaloneDock();
+        this.renderStandaloneDock()
       },
-    });
+    })
 
     if (registration) {
       this.standaloneDockRegistration = {
         type: STANDALONE_DOCK_TYPE,
         model: registration.model,
-      };
+      }
     }
 
-    this.syncStandaloneDockIcon();
+    this.syncStandaloneDockIcon()
   }
 
   private syncStandaloneDockIcon(): void {
     if (typeof document === "undefined") {
-      return;
+      return
     }
-    const dockItem = document.querySelector<HTMLElement>(`.dock__item[data-type="${STANDALONE_DOCK_TYPE}"]`);
+    const dockItem = document.querySelector<HTMLElement>(`.dock__item[data-type="${STANDALONE_DOCK_TYPE}"]`)
     if (dockItem) {
-      const use = dockItem.querySelector("svg use");
+      const use = dockItem.querySelector("svg use")
       if (use && use.getAttribute("xlink:href") !== `#${STANDALONE_DOCK_ICON_SYMBOL}`) {
-        use.setAttribute("xlink:href", `#${STANDALONE_DOCK_ICON_SYMBOL}`);
+        use.setAttribute("xlink:href", `#${STANDALONE_DOCK_ICON_SYMBOL}`)
       }
     }
   }
 
   private renderStandaloneDock(): void {
-    this.syncStandaloneDockIcon();
+    this.syncStandaloneDockIcon()
     if (!this.standaloneDockHost || !this.currentConfig) {
-      return;
+      return
     }
 
-    const layout = this.currentConfig.surfaceLayouts?.["dock-panel"] || [];
+    const layout = this.currentConfig.surfaceLayouts?.["dock-panel"] || []
     const buttonMap = new Map<string, PowerButtonItem>(
       this.currentConfig.items
-        .filter(item => itemHasSurface(item, "dock-panel") && item.visible)
-        .map(item => [item.id, item]),
-    );
+        .filter((item) => itemHasSurface(item, "dock-panel") && item.visible)
+        .map((item) => [item.id, item]),
+    )
 
-    const dockPanelEntries: DockPanelEntry[] = [];
-    const usedButtonIds = new Set<string>();
+    const dockPanelEntries: DockPanelEntry[] = []
+    const usedButtonIds = new Set<string>()
 
     for (const entry of layout) {
       if (entry.type === "button") {
-        const item = buttonMap.get(entry.id);
+        const item = buttonMap.get(entry.id)
         if (item) {
-          dockPanelEntries.push({ type: "button", item });
-          usedButtonIds.add(entry.id);
+          dockPanelEntries.push({
+            type: "button",
+            item,
+          })
+          usedButtonIds.add(entry.id)
         }
       } else if (entry.type === "divider") {
-        dockPanelEntries.push({ type: "divider", id: entry.id, title: entry.title });
+        dockPanelEntries.push({
+          type: "divider",
+          id: entry.id,
+          title: entry.title,
+        })
       }
     }
 
     for (const [id, item] of buttonMap) {
       if (!usedButtonIds.has(id)) {
-        dockPanelEntries.push({ type: "button", item });
+        dockPanelEntries.push({
+          type: "button",
+          item,
+        })
       }
     }
 
     const pluginEntries = this.pluginStateManager
       ? this.pluginStateManager.scanEntries(this.getPlugins ? (this.getPlugins() as any) : undefined)
-      : (this.getPlugins ? scanPluginEntries(this.getPlugins() as any) : []);
+      : (this.getPlugins ? scanPluginEntries(this.getPlugins() as any) : [])
     const pinnedActionIds = new Set<string>(
       this.currentConfig.items
-        .filter(item => itemHasSurface(item, "dock-panel") && item.actionType === "plugin-command")
-        .map(item => item.actionId),
-    );
+        .filter((item) => itemHasSurface(item, "dock-panel") && item.actionType === "plugin-command")
+        .map((item) => item.actionId),
+    )
 
     renderStandaloneDockPanel(
       this.standaloneDockHost,
@@ -521,7 +550,7 @@ export class SurfaceManager {
         void this.executor.execute({
           actionType: "plugin-command",
           actionId: DEFAULT_PLUGIN_COMMAND,
-        });
+        })
       },
       {
         title: this.t("dockPanelTitle", "随心按"),
@@ -565,21 +594,21 @@ export class SurfaceManager {
         onMoveItem: (fromIndex, toIndex) => this.handleMoveDockItem(fromIndex, toIndex),
         onTogglePin: (entry) => this.handleTogglePinPluginEntry(entry),
         onToggleCollapse: async (collapsed) => {
-          this.isPluginListCollapsed = collapsed;
-          await this.settingsUiStateStore?.setPluginListCollapsed(collapsed);
+          this.isPluginListCollapsed = collapsed
+          await this.settingsUiStateStore?.setPluginListCollapsed(collapsed)
         },
         onToggleGroupExpanded: (pluginName, expanded) => {
-          const nextExpanded = new Set(this.expandedPluginGroups);
+          const nextExpanded = new Set(this.expandedPluginGroups)
           if (expanded) {
-            nextExpanded.add(pluginName);
+            nextExpanded.add(pluginName)
           } else {
-            nextExpanded.delete(pluginName);
+            nextExpanded.delete(pluginName)
           }
-          this.expandedPluginGroups = Array.from(nextExpanded);
-          void this.settingsUiStateStore?.setExpandedPluginGroups(this.expandedPluginGroups);
+          this.expandedPluginGroups = Array.from(nextExpanded)
+          void this.settingsUiStateStore?.setExpandedPluginGroups(this.expandedPluginGroups)
         },
         onSearchQueryChange: (query) => {
-          this.pluginSearchQuery = query;
+          this.pluginSearchQuery = query
         },
         onTogglePluginEnabled: (pluginName, enabled) => this.handleTogglePluginEnabled(pluginName, enabled),
         onUpdateItemAppearance: (itemId, patch) => this.handleUpdateItemAppearance(itemId, patch),
@@ -592,42 +621,45 @@ export class SurfaceManager {
         initialExpandedPluginGroups: this.expandedPluginGroups,
         isPluginEnabled: (pluginName) => this.pluginStateManager?.isPluginEnabled(pluginName) ?? true,
       },
-    );
+    )
   }
 
   private async handleTogglePinPluginEntry(entry: DiscoveredPluginEntry): Promise<void> {
-    if (!this.currentConfig) return;
+    if (!this.currentConfig) return
     if (!this.currentConfig.surfaceLayouts) {
-      this.currentConfig.surfaceLayouts = {};
+      this.currentConfig.surfaceLayouts = {}
     }
     if (!this.currentConfig.surfaceLayouts["dock-panel"]) {
       this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.items
-        .filter(item => itemHasSurface(item, "dock-panel"))
-        .map(item => ({ type: "button", id: item.id }));
+        .filter((item) => itemHasSurface(item, "dock-panel"))
+        .map((item) => ({
+          type: "button",
+          id: item.id,
+        }))
     }
 
-    const layout = this.currentConfig.surfaceLayouts["dock-panel"]!;
+    const layout = this.currentConfig.surfaceLayouts["dock-panel"]!
     const existingIndex = this.currentConfig.items.findIndex(
-      item => item.actionType === entry.actionType && item.actionId === entry.actionId && itemHasSurface(item, "dock-panel"),
-    );
+      (item) => item.actionType === entry.actionType && item.actionId === entry.actionId && itemHasSurface(item, "dock-panel"),
+    )
 
     if (existingIndex >= 0) {
-      const existingItem = this.currentConfig.items[existingIndex];
-      const layoutIdx = layout.findIndex(e => e.type === "button" && e.id === existingItem.id);
+      const existingItem = this.currentConfig.items[existingIndex]
+      const layoutIdx = layout.findIndex((e) => e.type === "button" && e.id === existingItem.id)
       if (layoutIdx >= 0) {
-        layout.splice(layoutIdx, 1);
+        layout.splice(layoutIdx, 1)
       }
-      const surfaces = (existingItem.surfaces || [existingItem.surface]).filter(s => s !== "dock-panel");
+      const surfaces = (existingItem.surfaces || [existingItem.surface]).filter((s) => s !== "dock-panel")
       if (surfaces.length === 0) {
-        this.currentConfig.items.splice(existingIndex, 1);
+        this.currentConfig.items.splice(existingIndex, 1)
       } else {
-        existingItem.surfaces = surfaces;
+        existingItem.surfaces = surfaces
         if (existingItem.surface === "dock-panel") {
-          existingItem.surface = surfaces[0];
+          existingItem.surface = surfaces[0]
         }
       }
     } else {
-      const newItemId = createId();
+      const newItemId = createId()
       const newItem: PowerButtonItem = {
         id: newItemId,
         title: entry.title,
@@ -640,238 +672,250 @@ export class SurfaceManager {
         actionType: entry.actionType,
         actionId: entry.actionId,
         tooltip: entry.description || entry.title,
-      };
-      this.currentConfig.items.push(newItem);
+      }
+      this.currentConfig.items.push(newItem)
 
       const dividerIdx = layout.findIndex(
-        e => e.type === "divider" && (e.id === PLUGIN_ENTRY_DIVIDER_ID || e.title === "插件入口" || e.title === "Plugin Shortcuts"),
-      );
+        (e) => e.type === "divider" && (e.id === PLUGIN_ENTRY_DIVIDER_ID || e.title === "插件入口" || e.title === "Plugin Shortcuts"),
+      )
 
       if (dividerIdx >= 0) {
-        let insertIdx = dividerIdx + 1;
+        let insertIdx = dividerIdx + 1
         while (insertIdx < layout.length && layout[insertIdx].type === "button") {
-          insertIdx++;
+          insertIdx++
         }
-        layout.splice(insertIdx, 0, { type: "button", id: newItemId });
+        layout.splice(insertIdx, 0, {
+          type: "button",
+          id: newItemId,
+        })
       } else {
-        layout.push({ type: "button", id: newItemId });
+        layout.push({
+          type: "button",
+          id: newItemId,
+        })
       }
     }
 
-    this.renderStandaloneDock();
-    await this.onSaveConfig?.(this.currentConfig);
+    this.renderStandaloneDock()
+    await this.onSaveConfig?.(this.currentConfig)
   }
 
   private async handleAddDivider(): Promise<void> {
-    if (!this.currentConfig) return;
+    if (!this.currentConfig) return
     const title = await promptDialog({
       title: this.t("dockPanelAddDivider", "添加分割线"),
       placeholder: this.t("dockPanelDividerTitlePrompt", "请输入分区名称（可选，留空为纯分割线）："),
       confirmText: this.t("confirm", "确定"),
       cancelText: this.t("cancel", "取消"),
-    });
-    if (title === null) return;
+    })
+    if (title === null) return
     if (!this.currentConfig.surfaceLayouts) {
-      this.currentConfig.surfaceLayouts = {};
+      this.currentConfig.surfaceLayouts = {}
     }
     if (!this.currentConfig.surfaceLayouts["dock-panel"]) {
       this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.items
-        .filter(item => itemHasSurface(item, "dock-panel"))
-        .map(item => ({ type: "button", id: item.id }));
+        .filter((item) => itemHasSurface(item, "dock-panel"))
+        .map((item) => ({
+          type: "button",
+          id: item.id,
+        }))
     }
-    const newId = `divider-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const trimmed = title.trim();
+    const newId = `divider-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    const trimmed = title.trim()
     this.currentConfig.surfaceLayouts["dock-panel"]!.push({
       type: "divider",
       id: newId,
       ...(trimmed ? { title: trimmed } : {}),
-    });
-    this.renderStandaloneDock();
-    await this.onSaveConfig?.(this.currentConfig);
+    })
+    this.renderStandaloneDock()
+    await this.onSaveConfig?.(this.currentConfig)
   }
 
   private async handleEditDivider(id: string, currentTitle?: string): Promise<void> {
-    if (!this.currentConfig?.surfaceLayouts?.["dock-panel"]) return;
-    const list = this.currentConfig.surfaceLayouts["dock-panel"];
-    const target = list.find(e => e.id === id && e.type === "divider");
-    if (!target) return;
+    if (!this.currentConfig?.surfaceLayouts?.["dock-panel"]) return
+    const list = this.currentConfig.surfaceLayouts["dock-panel"]
+    const target = list.find((e) => e.id === id && e.type === "divider")
+    if (!target) return
     const title = await promptDialog({
       title: this.t("dockPanelEditDivider", "修改分区名称"),
       placeholder: this.t("dockPanelDividerEditPrompt", "修改分区名称（留空为纯分割线）："),
       initialValue: currentTitle || "",
       confirmText: this.t("confirm", "确定"),
       cancelText: this.t("cancel", "取消"),
-    });
-    if (title === null) return;
-    const trimmed = title.trim();
+    })
+    if (title === null) return
+    const trimmed = title.trim()
     if (trimmed) {
-      target.title = trimmed;
+      target.title = trimmed
     } else {
-      delete target.title;
+      delete target.title
     }
-    this.renderStandaloneDock();
-    await this.onSaveConfig?.(this.currentConfig);
+    this.renderStandaloneDock()
+    await this.onSaveConfig?.(this.currentConfig)
   }
 
   private async handleRemoveDivider(id: string): Promise<void> {
-    if (!this.currentConfig?.surfaceLayouts?.["dock-panel"]) return;
+    if (!this.currentConfig?.surfaceLayouts?.["dock-panel"]) return
     const shouldDelete = await confirmDialog({
       title: this.t("dockPanelDeleteDivider", "删除分割线"),
       message: this.t("dockPanelDividerDeleteConfirm", "确定删除此分割线吗？"),
       confirmText: this.t("confirm", "确定"),
       cancelText: this.t("cancel", "取消"),
-    });
-    if (!shouldDelete) return;
+    })
+    if (!shouldDelete) return
     this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.surfaceLayouts["dock-panel"]
-      .filter(e => e.id !== id);
-    this.renderStandaloneDock();
-    await this.onSaveConfig?.(this.currentConfig);
+      .filter((e) => e.id !== id)
+    this.renderStandaloneDock()
+    await this.onSaveConfig?.(this.currentConfig)
   }
 
   private async handleResetDockLayout(): Promise<void> {
-    if (!this.currentConfig) return;
+    if (!this.currentConfig) return
 
     const confirmed = await confirmDialog({
       title: this.t("dockPanelResetLayout", "恢复默认布局"),
       message: this.t("dockPanelResetLayoutConfirm", "确定恢复右侧栏默认布局吗？已调整的分区和常驻按钮将被重置。"),
       confirmText: this.t("confirm", "确定"),
       cancelText: this.t("cancel", "取消"),
-    });
-    if (!confirmed) return;
+    })
+    if (!confirmed) return
 
-    const defaultConfig = createDefaultConfig();
-    const defaultDockLayout = defaultConfig.surfaceLayouts["dock-panel"] || [];
+    const defaultConfig = createDefaultConfig()
+    const defaultDockLayout = defaultConfig.surfaceLayouts["dock-panel"] || []
     const defaultDockButtonIds = new Set(
       defaultDockLayout
-        .filter(e => e.type === "button")
-        .map(e => e.id),
-    );
+        .filter((e) => e.type === "button")
+        .map((e) => e.id),
+    )
 
     // 1. 清理非默认 dock 按钮，或将其从 dock-panel 表面移除
-    const remainingItems: PowerButtonItem[] = [];
+    const remainingItems: PowerButtonItem[] = []
     for (const item of this.currentConfig.items) {
       if (itemHasSurface(item, "dock-panel")) {
         if (!defaultDockButtonIds.has(item.id)) {
           // 该按钮不是默认 dock 按钮，从 dock-panel 表面移除
-          const updatedSurfaces = (item.surfaces || [item.surface]).filter(s => s !== "dock-panel");
+          const updatedSurfaces = (item.surfaces || [item.surface]).filter((s) => s !== "dock-panel")
           if (updatedSurfaces.length > 0) {
-            item.surfaces = updatedSurfaces;
+            item.surfaces = updatedSurfaces
             if (item.surface === "dock-panel") {
-              item.surface = updatedSurfaces[0];
+              item.surface = updatedSurfaces[0]
             }
-            remainingItems.push(item);
+            remainingItems.push(item)
           }
         } else {
           // 默认 dock 按钮，保留并确保包含 dock-panel 表面
           if (!item.surfaces) {
-            item.surfaces = [item.surface];
+            item.surfaces = [item.surface]
           }
           if (!item.surfaces.includes("dock-panel")) {
-            item.surfaces.push("dock-panel");
+            item.surfaces.push("dock-panel")
           }
-          remainingItems.push(item);
+          remainingItems.push(item)
         }
       } else {
-        remainingItems.push(item);
+        remainingItems.push(item)
       }
     }
 
     // 2. 检查是否有缺失的默认 dock 按钮，若有则从 defaultConfig 中恢复补充
-    const existingIds = new Set(remainingItems.map(item => item.id));
+    const existingIds = new Set(remainingItems.map((item) => item.id))
     for (const defaultItem of defaultConfig.items) {
       if (defaultDockButtonIds.has(defaultItem.id) && !existingIds.has(defaultItem.id)) {
-        remainingItems.push(JSON.parse(JSON.stringify(defaultItem)));
+        remainingItems.push(JSON.parse(JSON.stringify(defaultItem)))
       }
     }
 
-    this.currentConfig.items = remainingItems;
+    this.currentConfig.items = remainingItems
 
     // 3. 恢复 surfaceLayouts["dock-panel"] 为默认布局
     if (!this.currentConfig.surfaceLayouts) {
-      this.currentConfig.surfaceLayouts = {};
+      this.currentConfig.surfaceLayouts = {}
     }
-    this.currentConfig.surfaceLayouts["dock-panel"] = JSON.parse(JSON.stringify(defaultDockLayout));
+    this.currentConfig.surfaceLayouts["dock-panel"] = JSON.parse(JSON.stringify(defaultDockLayout))
 
-    this.renderStandaloneDock();
-    await this.onSaveConfig?.(this.currentConfig);
+    this.renderStandaloneDock()
+    await this.onSaveConfig?.(this.currentConfig)
   }
 
   private async handleMoveDockItem(fromIndex: number, toIndex: number): Promise<void> {
-    if (!this.currentConfig) return;
+    if (!this.currentConfig) return
     if (!this.currentConfig.surfaceLayouts?.["dock-panel"]) {
-      this.currentConfig.surfaceLayouts = this.currentConfig.surfaceLayouts || {};
+      this.currentConfig.surfaceLayouts = this.currentConfig.surfaceLayouts || {}
       this.currentConfig.surfaceLayouts["dock-panel"] = this.currentConfig.items
-        .filter(item => itemHasSurface(item, "dock-panel"))
-        .map(item => ({ type: "button", id: item.id }));
+        .filter((item) => itemHasSurface(item, "dock-panel"))
+        .map((item) => ({
+          type: "button",
+          id: item.id,
+        }))
     }
-    const list = this.currentConfig.surfaceLayouts["dock-panel"];
-    if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) return;
-    const [moved] = list.splice(fromIndex, 1);
-    list.splice(toIndex, 0, moved);
-    this.renderStandaloneDock();
-    await this.onSaveConfig?.(this.currentConfig);
+    const list = this.currentConfig.surfaceLayouts["dock-panel"]
+    if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) return
+    const [moved] = list.splice(fromIndex, 1)
+    list.splice(toIndex, 0, moved)
+    this.renderStandaloneDock()
+    await this.onSaveConfig?.(this.currentConfig)
   }
 
   private async handleTogglePluginEnabled(pluginName: string, enabled: boolean): Promise<boolean> {
     if (this.pluginStateManager) {
-      return await this.pluginStateManager.togglePluginEnabled(pluginName, enabled);
+      return await this.pluginStateManager.togglePluginEnabled(pluginName, enabled)
     }
-    return false;
+    return false
   }
 
   private t(key: string, defaultText: string): string {
-    const pluginWithT = this.plugin as Plugin & { t?: (k: string) => string };
+    const pluginWithT = this.plugin as Plugin & { t?: (k: string) => string }
     if (typeof pluginWithT.t === "function") {
-      return pluginWithT.t(key);
+      return pluginWithT.t(key)
     }
-    return defaultText;
+    return defaultText
   }
 
   private clearDynamicSurfaces(): void {
-    closeActiveAppearancePopover();
-    disconnectDockResizeObserver();
-    this.nativeSuppressor.clear();
-    this.toolbarPatchObserver?.disconnect();
-    this.toolbarPatchObserver = null;
-    this.restoreToolbarPatch();
-    this.disabledToolbarNames.clear();
-    this.customToolbarItems = [];
-    this.selectionToolbarLayout = [];
+    closeActiveAppearancePopover()
+    disconnectDockResizeObserver()
+    this.nativeSuppressor.clear()
+    this.toolbarPatchObserver?.disconnect()
+    this.toolbarPatchObserver = null
+    this.restoreToolbarPatch()
+    this.disabledToolbarNames.clear()
+    this.customToolbarItems = []
+    this.selectionToolbarLayout = []
 
     for (const element of this.topbarElements) {
-      element.remove();
+      element.remove()
     }
-    this.topbarElements = [];
+    this.topbarElements = []
 
     for (const element of this.statusElements) {
-      element.remove();
+      element.remove()
     }
-    this.statusElements = [];
+    this.statusElements = []
 
     for (const element of this.canvasElements) {
-      element.remove();
+      element.remove()
     }
-    this.canvasElements = [];
+    this.canvasElements = []
 
     for (const registration of this.dockRegistrations) {
       if (hasDockRemove(registration.model)) {
-        registration.model.remove(registration.type);
+        registration.model.remove(registration.type)
       }
     }
-    this.dockRegistrations = [];
+    this.dockRegistrations = []
   }
 
   destroy(): void {
-    this.unsubscribePluginState?.();
-    this.unsubscribePluginState = undefined;
+    this.unsubscribePluginState?.()
+    this.unsubscribePluginState = undefined
 
-    this.clearDynamicSurfaces();
+    this.clearDynamicSurfaces()
 
     if (this.standaloneDockRegistration && hasDockRemove(this.standaloneDockRegistration.model)) {
-      this.standaloneDockRegistration.model.remove(this.standaloneDockRegistration.type);
+      this.standaloneDockRegistration.model.remove(this.standaloneDockRegistration.type)
     }
-    this.standaloneDockRegistration = null;
-    this.standaloneDockHost = null;
-    this.currentConfig = null;
+    this.standaloneDockRegistration = null
+    this.standaloneDockHost = null
+    this.currentConfig = null
   }
 }

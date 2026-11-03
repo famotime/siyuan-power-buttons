@@ -1,35 +1,35 @@
-import type { SettingsAppProps } from "@/features/settings/types";
+import type { SettingsAppProps } from "@/features/settings/types"
 
-type DialogLike = {
-  element: HTMLElement;
-  destroy: () => void;
-};
+interface DialogLike {
+  element: HTMLElement
+  destroy: () => void
+}
 
-type DialogOptions = {
-  title: string;
-  width: string;
-  height: string;
-  content: string;
-  destroyCallback: () => void;
-};
+interface DialogOptions {
+  title: string
+  width: string
+  height: string
+  content: string
+  destroyCallback: () => void
+}
 
 type SettingsAppHandle = (() => void) & {
-  getSelectedButtonId?: () => string;
-};
+  getSelectedButtonId?: () => string
+}
 
 export class SettingsDialogController {
-  private dialog: DialogLike | null = null;
-  private unmountSettingsApp: SettingsAppHandle | null = null;
-  private currentProps: SettingsAppProps | null = null;
+  private dialog: DialogLike | null = null
+  private unmountSettingsApp: SettingsAppHandle | null = null
+  private currentProps: SettingsAppProps | null = null
 
   constructor(private readonly options: {
-    createDialog: (options: DialogOptions) => DialogLike;
-    mountSettingsApp: (target: HTMLElement, props: SettingsAppProps) => SettingsAppHandle;
+    createDialog: (options: DialogOptions) => DialogLike
+    mountSettingsApp: (target: HTMLElement, props: SettingsAppProps) => SettingsAppHandle
   }) {}
 
   open(props: SettingsAppProps): void {
-    this.destroy();
-    this.currentProps = props;
+    this.destroy()
+    this.currentProps = props
 
     this.dialog = this.options.createDialog({
       title: "随心按设置",
@@ -37,44 +37,44 @@ export class SettingsDialogController {
       height: "80vh",
       content: `<div class="siyuan-power-buttons-settings-host"></div>`,
       destroyCallback: () => {
-        this.flushSelectedButtonId();
-        this.unmountSettingsApp?.();
-        this.unmountSettingsApp = null;
-        this.dialog = null;
-        this.currentProps = null;
+        this.flushSelectedButtonId()
+        this.unmountSettingsApp?.()
+        this.unmountSettingsApp = null
+        this.dialog = null
+        this.currentProps = null
       },
-    });
+    })
 
-    const host = this.dialog.element.querySelector<HTMLElement>(".siyuan-power-buttons-settings-host");
+    const host = this.dialog.element.querySelector<HTMLElement>(".siyuan-power-buttons-settings-host")
     if (!host) {
-      return;
+      return
     }
 
-    this.unmountSettingsApp = this.options.mountSettingsApp(host, props);
+    this.unmountSettingsApp = this.options.mountSettingsApp(host, props)
   }
 
   refresh(props: SettingsAppProps): void {
     if (!this.dialog) {
-      return;
+      return
     }
-    this.open(props);
+    this.open(props)
   }
 
   destroy(): void {
-    this.flushSelectedButtonId();
-    this.unmountSettingsApp?.();
-    this.unmountSettingsApp = null;
-    this.dialog?.destroy();
-    this.dialog = null;
-    this.currentProps = null;
+    this.flushSelectedButtonId()
+    this.unmountSettingsApp?.()
+    this.unmountSettingsApp = null
+    this.dialog?.destroy()
+    this.dialog = null
+    this.currentProps = null
   }
 
   private flushSelectedButtonId(): void {
-    const itemId = this.unmountSettingsApp?.getSelectedButtonId?.();
+    const itemId = this.unmountSettingsApp?.getSelectedButtonId?.()
     if (!itemId || !this.currentProps?.onSelectedIdChange) {
-      return;
+      return
     }
 
-    void Promise.resolve(this.currentProps.onSelectedIdChange(itemId)).catch(() => undefined);
+    void Promise.resolve(this.currentProps.onSelectedIdChange(itemId)).catch(() => undefined)
   }
 }

@@ -1,10 +1,14 @@
 /* @vitest-environment jsdom */
 
-import { describe, expect, it } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
 import {
   renderBuiltinIconMarkup,
   renderIconMarkup,
-} from "@/shared/icon-renderer";
+} from "@/shared/icon-renderer"
 
 describe("builtin icon renderer", () => {
   it("uses host sprite symbols when the icon id exists", () => {
@@ -12,83 +16,83 @@ describe("builtin icon renderer", () => {
       <svg aria-hidden="true">
         <symbol id="iconSearch" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></symbol>
       </svg>
-    `;
+    `
 
-    const markup = renderBuiltinIconMarkup("iconSearch", document);
+    const markup = renderBuiltinIconMarkup("iconSearch", document)
 
-    expect(markup).toContain("xlink:href=\"#iconSearch\"");
-  });
+    expect(markup).toContain("xlink:href=\"#iconSearch\"")
+  })
 
   it("falls back to bundled svg markup when the host sprite does not include the icon id", () => {
     document.body.innerHTML = `
       <svg aria-hidden="true">
         <symbol id="iconSearch" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></symbol>
       </svg>
-    `;
+    `
 
-    const markup = renderBuiltinIconMarkup("iconHome", document);
+    const markup = renderBuiltinIconMarkup("iconHome", document)
 
-    expect(markup).not.toContain("xlink:href=\"#iconHome\"");
-    expect(markup).toContain("<path");
-    expect(markup).toContain("viewBox=\"0 0 24 24\"");
-  });
+    expect(markup).not.toContain("xlink:href=\"#iconHome\"")
+    expect(markup).toContain("<path")
+    expect(markup).toContain("viewBox=\"0 0 24 24\"")
+  })
 
   it("renders IconPark markup from the generated local catalog", () => {
     const markup = renderIconMarkup({
       iconType: "iconpark",
       iconValue: "iconpark:Search",
-    }, document);
+    }, document)
 
-    expect(markup).toContain("<svg");
-    expect(markup).toContain("viewBox=");
-    expect(markup).toContain("currentColor");
-  });
+    expect(markup).toContain("<svg")
+    expect(markup).toContain("viewBox=")
+    expect(markup).toContain("currentColor")
+  })
 
   it("falls back to the default IconPark icon when an IconPark id is unknown", () => {
     const markup = renderIconMarkup({
       iconType: "iconpark",
       iconValue: "iconpark:DoesNotExist",
-    }, document);
+    }, document)
 
-    expect(markup).toContain("<svg");
-    expect(markup).toContain("currentColor");
-  });
+    expect(markup).toContain("<svg")
+    expect(markup).toContain("currentColor")
+  })
 
   it("hardens stroke-only IconPark paths against host fill overrides", () => {
     const markup = renderIconMarkup({
       iconType: "iconpark",
       iconValue: "iconpark:AcceptEmail",
-    }, document);
+    }, document)
 
-    expect(markup).toContain("style=\"fill:none\"");
-  });
+    expect(markup).toContain("style=\"fill:none\"")
+  })
 
   it("preserves intentional fills while hardening stroked IconPark paths", () => {
     const markup = renderIconMarkup({
       iconType: "iconpark",
       iconValue: "iconpark:AddPicture",
-    }, document);
+    }, document)
 
-    expect(markup).toContain("fill=\"currentColor\"");
-    expect(markup).toContain("style=\"fill:none\"");
-  });
+    expect(markup).toContain("fill=\"currentColor\"")
+    expect(markup).toContain("style=\"fill:none\"")
+  })
 
   it("hardens custom svg icons with stroke-only shapes", () => {
     const markup = renderIconMarkup({
       iconType: "svg",
       iconValue: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="2"/><path d="M10 16l6-6" stroke="currentColor"/></svg>`,
-    }, document);
+    }, document)
 
-    expect(markup).toContain('style="fill:none"');
-    expect(markup).toContain('fill="none"');
-  });
+    expect(markup).toContain('style="fill:none"')
+    expect(markup).toContain('fill="none"')
+  })
 
   it("hardens shapes inside root svg with fill=none", () => {
     const markup = renderIconMarkup({
       iconType: "svg",
       iconValue: `<svg viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="4"/></svg>`,
-    }, document);
+    }, document)
 
-    expect(markup).toContain('style="fill:none"');
-  });
-});
+    expect(markup).toContain('style="fill:none"')
+  })
+})

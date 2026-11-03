@@ -1,34 +1,34 @@
 import type {
   ExperimentalShortcutConfig,
   PowerButtonItem,
-} from "@/shared/types";
-import { normalizeShortcutToSiyuanHotkey } from "@/shared/shortcut-utils";
+} from "@/shared/types"
+import { normalizeShortcutToSiyuanHotkey } from "@/shared/shortcut-utils"
 
-type KeymapItem = {
-  custom?: string;
-  default?: string;
-};
+interface KeymapItem {
+  custom?: string
+  default?: string
+}
 
-type KeymapGroup = Record<string, KeymapItem | undefined>;
+type KeymapGroup = Record<string, KeymapItem | undefined>
 
-type SiyuanKeymap = {
-  general?: KeymapGroup;
-  plugin?: KeymapGroup;
+interface SiyuanKeymap {
+  general?: KeymapGroup
+  plugin?: KeymapGroup
   editor?: {
-    general?: KeymapGroup;
-    insert?: KeymapGroup;
-    heading?: KeymapGroup;
-    list?: KeymapGroup;
-    table?: KeymapGroup;
-  };
-};
+    general?: KeymapGroup
+    insert?: KeymapGroup
+    heading?: KeymapGroup
+    list?: KeymapGroup
+    table?: KeymapGroup
+  }
+}
 
-type ShortcutMatch = {
-  commandId: string;
-  hotkey: string;
-  kind: "builtin-global-command" | "plugin-command" | "editor-command";
-  isEditorCommand: boolean;
-};
+interface ShortcutMatch {
+  commandId: string
+  hotkey: string
+  kind: "builtin-global-command" | "plugin-command" | "editor-command"
+  isEditorCommand: boolean
+}
 
 function defaultExperimentalShortcut(actionId: string, input?: ExperimentalShortcutConfig): ExperimentalShortcutConfig {
   return {
@@ -36,40 +36,43 @@ function defaultExperimentalShortcut(actionId: string, input?: ExperimentalShort
     sendEscapeBefore: input?.sendEscapeBefore ?? false,
     dispatchTarget: input?.dispatchTarget || "auto",
     allowDirectWindowDispatch: input?.allowDirectWindowDispatch ?? false,
-  };
+  }
 }
 
-function findCommandInGroup(group: KeymapGroup | undefined, hotkey: string): { commandId: string; hotkey: string } | null {
+function findCommandInGroup(group: KeymapGroup | undefined, hotkey: string): { commandId: string, hotkey: string } | null {
   if (!group) {
-    return null;
+    return null
   }
 
   for (const [commandId, keymapItem] of Object.entries(group)) {
     if (!keymapItem) {
-      continue;
+      continue
     }
-    const candidate = keymapItem.custom || keymapItem.default;
+    const candidate = keymapItem.custom || keymapItem.default
     if (candidate === hotkey) {
-      return { commandId, hotkey: candidate };
+      return {
+        commandId,
+        hotkey: candidate,
+      }
     }
   }
 
-  return null;
+  return null
 }
 
 function resolveShortcutCommand(keymap: SiyuanKeymap | undefined, hotkey: string): ShortcutMatch | null {
   if (!keymap) {
-    return null;
+    return null
   }
 
-  const builtin = findCommandInGroup(keymap.general, hotkey);
+  const builtin = findCommandInGroup(keymap.general, hotkey)
   if (builtin) {
     return {
       commandId: builtin.commandId,
       hotkey: builtin.hotkey,
       kind: "builtin-global-command",
       isEditorCommand: false,
-    };
+    }
   }
 
   for (const group of [
@@ -79,32 +82,32 @@ function resolveShortcutCommand(keymap: SiyuanKeymap | undefined, hotkey: string
     keymap.editor?.list,
     keymap.editor?.table,
   ]) {
-    const editor = findCommandInGroup(group, hotkey);
+    const editor = findCommandInGroup(group, hotkey)
     if (editor) {
       return {
         commandId: editor.commandId,
         hotkey: editor.hotkey,
         kind: "editor-command",
         isEditorCommand: true,
-      };
+      }
     }
   }
 
-  const plugin = findCommandInGroup(keymap.plugin, hotkey);
+  const plugin = findCommandInGroup(keymap.plugin, hotkey)
   if (plugin) {
     return {
       commandId: plugin.commandId,
       hotkey: plugin.hotkey,
       kind: "plugin-command",
       isEditorCommand: false,
-    };
+    }
   }
 
-  return null;
+  return null
 }
 
 function parseHotkeyToKeyboardEvent(hotkey: string): KeyboardEventInit | null {
-  const isMac = typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC");
+  const isMac = typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC")
   const event: KeyboardEventInit = {
     key: "",
     code: "",
@@ -116,11 +119,11 @@ function parseHotkeyToKeyboardEvent(hotkey: string): KeyboardEventInit | null {
     cancelable: true,
     composed: true,
     view: typeof window !== "undefined" ? window : undefined,
-  };
+  }
 
-  const mainKey = hotkey.replace(/[⌘⌃⇧⌥]/g, "").trim();
+  const mainKey = hotkey.replace(/[⌘⌃⇧⌥]/g, "").trim()
   if (!mainKey) {
-    return null;
+    return null
   }
 
   const keyCodeMap: Record<string, number> = {
@@ -136,35 +139,35 @@ function parseHotkeyToKeyboardEvent(hotkey: string): KeyboardEventInit | null {
     ArrowDown: 40,
     ArrowLeft: 37,
     ArrowRight: 39,
-  };
+  }
 
   if (/^F\d{1,2}$/.test(mainKey)) {
-    const number = Number(mainKey.slice(1));
-    const keyCode = 111 + number;
+    const number = Number(mainKey.slice(1))
+    const keyCode = 111 + number
     return {
       ...event,
       key: mainKey,
       code: mainKey,
       keyCode,
       which: keyCode,
-    };
+    }
   }
 
   if (mainKey.length === 1) {
-    const isDigit = /^\d$/.test(mainKey);
+    const isDigit = /^\d$/.test(mainKey)
     const key = isDigit
       ? mainKey
-      : mainKey.toUpperCase();
+      : mainKey.toUpperCase()
     const keyCode = isDigit
       ? key.charCodeAt(0)
-      : key.toUpperCase().charCodeAt(0);
+      : key.toUpperCase().charCodeAt(0)
     return {
       ...event,
       key,
       code: isDigit ? `Digit${key}` : `Key${key}`,
       keyCode,
       which: keyCode,
-    };
+    }
   }
 
   if (keyCodeMap[mainKey]) {
@@ -174,102 +177,102 @@ function parseHotkeyToKeyboardEvent(hotkey: string): KeyboardEventInit | null {
       code: mainKey,
       keyCode: keyCodeMap[mainKey],
       which: keyCodeMap[mainKey],
-    };
+    }
   }
 
-  return null;
+  return null
 }
 
 function getActiveEditableElement(root: ParentNode, ownerDocument: Document): HTMLElement | null {
-  const activeElement = ownerDocument.activeElement as HTMLElement | null;
+  const activeElement = ownerDocument.activeElement as HTMLElement | null
   if (activeElement?.matches?.("[contenteditable='true']")) {
-    return activeElement;
+    return activeElement
   }
 
-  const activeProtyle = activeElement?.closest?.(".protyle");
-  const activeEditable = activeProtyle?.querySelector?.("[contenteditable='true']") as HTMLElement | null;
+  const activeProtyle = activeElement?.closest?.(".protyle")
+  const activeEditable = activeProtyle?.querySelector?.("[contenteditable='true']") as HTMLElement | null
   if (activeEditable) {
-    return activeEditable;
+    return activeEditable
   }
 
   return root.querySelector(".protyle:not(.fn__none):not(.fn__hidden) [contenteditable='true']") as HTMLElement | null
-    || root.querySelector("[contenteditable='true']") as HTMLElement | null;
+    || root.querySelector("[contenteditable='true']") as HTMLElement | null
 }
 
 function dispatchKeyboardEvent(target: EventTarget, hotkey: string, view: Window & typeof globalThis): boolean {
-  const eventInit = parseHotkeyToKeyboardEvent(hotkey);
+  const eventInit = parseHotkeyToKeyboardEvent(hotkey)
   if (!eventInit) {
-    return false;
+    return false
   }
-  target.dispatchEvent(new view.KeyboardEvent("keydown", eventInit));
-  return true;
+  target.dispatchEvent(new view.KeyboardEvent("keydown", eventInit))
+  return true
 }
 
 export async function executeExperimentalShortcut(
   item: Pick<PowerButtonItem, "actionId" | "experimentalShortcut">,
   options: {
-    getKeymap?: () => SiyuanKeymap | undefined;
-    executeBuiltinCommand?: (commandId: string) => boolean | Promise<boolean>;
-    executePluginCommand?: (commandId: string) => boolean | Promise<boolean>;
-    document?: Document;
-    root?: ParentNode;
-    windowTarget?: Window;
-    bodyTarget?: HTMLElement;
+    getKeymap?: () => SiyuanKeymap | undefined
+    executeBuiltinCommand?: (commandId: string) => boolean | Promise<boolean>
+    executePluginCommand?: (commandId: string) => boolean | Promise<boolean>
+    document?: Document
+    root?: ParentNode
+    windowTarget?: Window
+    bodyTarget?: HTMLElement
   } = {},
 ): Promise<boolean> {
-  const shortcutConfig = defaultExperimentalShortcut(item.actionId, item.experimentalShortcut);
-  const normalizedHotkey = normalizeShortcutToSiyuanHotkey(shortcutConfig.shortcut);
+  const shortcutConfig = defaultExperimentalShortcut(item.actionId, item.experimentalShortcut)
+  const normalizedHotkey = normalizeShortcutToSiyuanHotkey(shortcutConfig.shortcut)
   if (!normalizedHotkey) {
-    return false;
+    return false
   }
 
-  const keymap = options.getKeymap?.();
-  const shortcutMatch = resolveShortcutCommand(keymap, normalizedHotkey);
+  const keymap = options.getKeymap?.()
+  const shortcutMatch = resolveShortcutCommand(keymap, normalizedHotkey)
   if (shortcutMatch?.kind === "builtin-global-command" && options.executeBuiltinCommand && !shortcutMatch.isEditorCommand) {
     if (await options.executeBuiltinCommand(shortcutMatch.commandId)) {
-      return true;
+      return true
     }
   }
   if (shortcutMatch?.kind === "plugin-command" && options.executePluginCommand) {
     if (await options.executePluginCommand(shortcutMatch.commandId)) {
-      return true;
+      return true
     }
   }
 
-  const effectiveHotkey = shortcutMatch?.hotkey || normalizedHotkey;
-  const ownerDocument = options.document || document;
-  const root = options.root || ownerDocument;
-  const bodyTarget = options.bodyTarget || ownerDocument.body;
+  const effectiveHotkey = shortcutMatch?.hotkey || normalizedHotkey
+  const ownerDocument = options.document || document
+  const root = options.root || ownerDocument
+  const bodyTarget = options.bodyTarget || ownerDocument.body
   // DOM 构造器（KeyboardEvent 等）挂在全局对象上而非 Window 接口，按运行时实际能力收窄
-  const windowTarget = (options.windowTarget || window) as Window & typeof globalThis;
-  const editable = getActiveEditableElement(root, ownerDocument);
-  const autoPrefersEditor = Boolean(shortcutMatch?.isEditorCommand && editable);
+  const windowTarget = (options.windowTarget || window) as Window & typeof globalThis
+  const editable = getActiveEditableElement(root, ownerDocument)
+  const autoPrefersEditor = Boolean(shortcutMatch?.isEditorCommand && editable)
   const shouldTargetEditor = shortcutConfig.dispatchTarget === "active-editor"
-    || (shortcutConfig.dispatchTarget === "auto" && autoPrefersEditor);
+    || (shortcutConfig.dispatchTarget === "auto" && autoPrefersEditor)
 
   if (shouldTargetEditor && editable) {
-    editable.focus?.();
+    editable.focus?.()
     if (shortcutConfig.sendEscapeBefore) {
-      dispatchKeyboardEvent(windowTarget, "Escape", windowTarget);
+      dispatchKeyboardEvent(windowTarget, "Escape", windowTarget)
     }
-    return dispatchKeyboardEvent(editable, effectiveHotkey, windowTarget);
+    return dispatchKeyboardEvent(editable, effectiveHotkey, windowTarget)
   }
 
   if (shortcutConfig.dispatchTarget === "window" || shortcutConfig.dispatchTarget === "auto") {
     if (shortcutConfig.sendEscapeBefore) {
-      dispatchKeyboardEvent(windowTarget, "Escape", windowTarget);
+      dispatchKeyboardEvent(windowTarget, "Escape", windowTarget)
     }
-    return dispatchKeyboardEvent(windowTarget, effectiveHotkey, windowTarget);
+    return dispatchKeyboardEvent(windowTarget, effectiveHotkey, windowTarget)
   }
 
   if (shortcutConfig.dispatchTarget === "body") {
     if (shortcutConfig.sendEscapeBefore) {
-      dispatchKeyboardEvent(windowTarget, "Escape", windowTarget);
+      dispatchKeyboardEvent(windowTarget, "Escape", windowTarget)
     }
-    return dispatchKeyboardEvent(bodyTarget, effectiveHotkey, windowTarget);
+    return dispatchKeyboardEvent(bodyTarget, effectiveHotkey, windowTarget)
   }
 
-  return false;
+  return false
 }
 
-export { normalizeShortcutToSiyuanHotkey };
+export { normalizeShortcutToSiyuanHotkey }

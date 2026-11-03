@@ -5,8 +5,20 @@
       <p>导入或导出所有已配置按钮</p>
     </div>
     <div class="config-transfer__actions">
-      <button class="b3-button b3-button--outline" type="button" @click="exportConfigFile">导出配置文件</button>
-      <button class="b3-button b3-button--outline" type="button" @click="openImportFilePicker">导入配置文件</button>
+      <button
+        class="b3-button b3-button--outline"
+        type="button"
+        @click="exportConfigFile"
+      >
+        导出配置文件
+      </button>
+      <button
+        class="b3-button b3-button--outline"
+        type="button"
+        @click="openImportFilePicker"
+      >
+        导入配置文件
+      </button>
     </div>
     <input
       :ref="setImportFileInput"
@@ -20,9 +32,9 @@
 
 <script setup lang="ts">
 defineProps<{
-  setImportFileInput: (element: HTMLInputElement | null) => void;
-  exportConfigFile: () => void;
-  openImportFilePicker: () => void;
-  handleImportFile: (event: Event) => void | Promise<void>;
-}>();
+  setImportFileInput: (element: HTMLInputElement | null) => void
+  exportConfigFile: () => void
+  openImportFilePicker: () => void
+  handleImportFile: (event: Event) => void | Promise<void>
+}>()
 </script>

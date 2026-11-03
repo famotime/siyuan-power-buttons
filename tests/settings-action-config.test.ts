@@ -1,10 +1,15 @@
-import { describe, expect, it } from "vitest";
+import type { SettingsExternalCommandProvider } from "@/features/settings/types"
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
 import {
   BUILTIN_COMMANDS,
-  PLUGIN_COMMANDS,
   formatExternalCommandActionId,
-} from "@/core/commands";
-import { createButtonItem } from "@/core/config/defaults";
+  PLUGIN_COMMANDS,
+} from "@/core/commands"
+import { createButtonItem } from "@/core/config/defaults"
 import {
   applyActionTypeDefaults,
   applyIconTypeDefaults,
@@ -12,8 +17,7 @@ import {
   ensureExperimentalShortcutConfig,
   ensureSelectedActionConfiguration,
   summarizeClickSequence,
-} from "@/features/settings/action-config";
-import type { SettingsExternalCommandProvider } from "@/features/settings/types";
+} from "@/features/settings/action-config"
 
 describe("settings action config helpers", () => {
   it("creates an empty experimental shortcut config without forcing a fallback shortcut", () => {
@@ -21,18 +25,18 @@ describe("settings action config helpers", () => {
       actionType: "experimental-shortcut",
       actionId: "",
       experimentalShortcut: undefined,
-    });
+    })
 
-    const shortcut = ensureExperimentalShortcutConfig(item);
+    const shortcut = ensureExperimentalShortcutConfig(item)
 
     expect(shortcut).toEqual({
       shortcut: "",
       sendEscapeBefore: false,
       dispatchTarget: "auto",
       allowDirectWindowDispatch: false,
-    });
-    expect(item.actionId).toBe("");
-  });
+    })
+    expect(item.actionId).toBe("")
+  })
 
   it("rebuilds a missing click sequence from the current action id", () => {
     const item = createButtonItem({
@@ -42,10 +46,10 @@ describe("settings action config helpers", () => {
         steps: [],
         stopOnFailure: false,
       },
-    });
-    item.experimentalClickSequence!.steps = [];
+    })
+    item.experimentalClickSequence!.steps = []
 
-    const sequence = ensureExperimentalClickSequenceConfig(item);
+    const sequence = ensureExperimentalClickSequenceConfig(item)
 
     expect(sequence).toEqual({
       steps: [
@@ -60,59 +64,59 @@ describe("settings action config helpers", () => {
         },
       ],
       stopOnFailure: false,
-    });
-    expect(summarizeClickSequence(sequence)).toBe("barSettings");
-  });
+    })
+    expect(summarizeClickSequence(sequence)).toBe("barSettings")
+  })
 
   it("hydrates the selected item based on its action type", () => {
     const shortcutItem = createButtonItem({
       actionType: "experimental-shortcut",
       actionId: "",
       experimentalShortcut: undefined,
-    });
+    })
     const clickSequenceItem = createButtonItem({
       actionType: "experimental-click-sequence",
       actionId: "",
       experimentalClickSequence: undefined,
-    });
+    })
 
-    ensureSelectedActionConfiguration(shortcutItem);
-    ensureSelectedActionConfiguration(clickSequenceItem);
+    ensureSelectedActionConfiguration(shortcutItem)
+    ensureSelectedActionConfiguration(clickSequenceItem)
 
-    expect(shortcutItem.experimentalShortcut?.shortcut).toBe("");
-    expect(clickSequenceItem.experimentalClickSequence?.steps[0]?.selector).toBe("text:设置");
-  });
+    expect(shortcutItem.experimentalShortcut?.shortcut).toBe("")
+    expect(clickSequenceItem.experimentalClickSequence?.steps[0]?.selector).toBe("text:设置")
+  })
 
   it("applies action type defaults from the available command catalogs", () => {
     const builtinItem = createButtonItem({
       actionType: "builtin-global-command",
       actionId: "",
-    });
+    })
     const pluginItem = createButtonItem({
       actionType: "plugin-command",
       actionId: "",
-    });
+    })
     const shortcutItem = createButtonItem({
       actionType: "experimental-shortcut",
       actionId: "",
       experimentalShortcut: undefined,
-    });
+    })
 
-    applyActionTypeDefaults(builtinItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS);
-    applyActionTypeDefaults(pluginItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS);
-    applyActionTypeDefaults(shortcutItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS);
+    applyActionTypeDefaults(builtinItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS)
+    applyActionTypeDefaults(pluginItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS)
+    applyActionTypeDefaults(shortcutItem, BUILTIN_COMMANDS, PLUGIN_COMMANDS)
 
-    expect(builtinItem.actionId).toBe("recentDocs");
-    expect(pluginItem.actionId).toBe("siyuan-power-buttons:open-settings");
-    expect(shortcutItem.actionId).toBe("");
-    expect(shortcutItem.experimentalShortcut?.shortcut).toBe("");
-  });
+    expect(builtinItem.actionId).toBe("recentDocs")
+    expect(pluginItem.actionId).toBe("siyuan-power-buttons:open-settings")
+    expect(shortcutItem.actionId).toBe("")
+    expect(shortcutItem.experimentalShortcut?.shortcut).toBe("")
+  })
 
   it("applies plugin command defaults from the first discovered provider command", () => {
     const externalItem = createButtonItem({
       actionType: "plugin-command",
       actionId: "",
-    });
+    })
     const externalProviders: SettingsExternalCommandProvider[] = [
       {
         providerId: "siyuan-doc-assist",
@@ -124,35 +128,35 @@ describe("settings action config helpers", () => {
           },
         ],
       },
-    ];
+    ]
 
-    applyActionTypeDefaults(externalItem, BUILTIN_COMMANDS, [], externalProviders);
+    applyActionTypeDefaults(externalItem, BUILTIN_COMMANDS, [], externalProviders)
 
     expect(externalItem.actionId).toBe(
       formatExternalCommandActionId("siyuan-doc-assist", "insert-doc-summary"),
-    );
-  });
+    )
+  })
 
   it("applies icon defaults for each icon type", () => {
     const iconParkItem = createButtonItem({
       iconType: "iconpark",
       iconValue: "",
-    });
+    })
     const emojiItem = createButtonItem({
       iconType: "emoji",
       iconValue: "",
-    });
+    })
     const svgItem = createButtonItem({
       iconType: "svg",
       iconValue: "",
-    });
+    })
 
-    applyIconTypeDefaults(iconParkItem);
-    applyIconTypeDefaults(emojiItem);
-    applyIconTypeDefaults(svgItem);
+    applyIconTypeDefaults(iconParkItem)
+    applyIconTypeDefaults(emojiItem)
+    applyIconTypeDefaults(svgItem)
 
-    expect(iconParkItem.iconValue).toBe("iconpark:Search");
-    expect(emojiItem.iconValue).toBe("⚡");
-    expect(svgItem.iconValue).toContain("<svg");
-  });
-});
+    expect(iconParkItem.iconValue).toBe("iconpark:Search")
+    expect(emojiItem.iconValue).toBe("⚡")
+    expect(svgItem.iconValue).toContain("<svg")
+  })
+})

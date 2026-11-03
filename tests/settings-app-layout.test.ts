@@ -1,28 +1,46 @@
 // @vitest-environment jsdom
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { nextTick } from "vue";
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import {
   afterEach,
   describe,
   expect,
   it,
   vi,
-} from "vitest";
+} from "vitest"
+import { nextTick } from "vue"
+import { BUILTIN_COMMANDS } from "@/core/commands"
 import {
   createDefaultConfig,
-} from "@/core/config";
-import { BUILTIN_COMMANDS } from "@/core/commands";
-import { createButtonItem } from "@/core/config/defaults";
-import { mountSettingsApp } from "@/main";
+} from "@/core/config"
+import { createButtonItem } from "@/core/config/defaults"
+import { mountSettingsApp } from "@/main"
 
 // Mock icon catalog to avoid rendering 2600+ icons in tests
 vi.mock("@/shared/icon-catalog", () => ({
   ICONPARK_ICON_OPTIONS: [
-    { value: "iconpark:Search", name: "Search", label: "搜索", category: "工具", keywords: ["search"] },
-    { value: "iconpark:Setting", name: "Setting", label: "设置", category: "工具", keywords: ["setting"] },
-    { value: "iconpark:Home", name: "Home", label: "首页", category: "通用", keywords: ["home"] },
+    {
+      value: "iconpark:Search",
+      name: "Search",
+      label: "搜索",
+      category: "工具",
+      keywords: ["search"],
+    },
+    {
+      value: "iconpark:Setting",
+      name: "Setting",
+      label: "设置",
+      category: "工具",
+      keywords: ["setting"],
+    },
+    {
+      value: "iconpark:Home",
+      name: "Home",
+      label: "首页",
+      category: "通用",
+      keywords: ["home"],
+    },
   ],
   ICONPARK_ICON_MARKUP_MAP: {
     "iconpark:Search": "<svg>search</svg>",
@@ -34,36 +52,54 @@ vi.mock("@/shared/icon-catalog", () => ({
   getDefaultIconParkIcon: () => "iconpark:Setting",
   getIconParkCategories: () => ["工具", "通用"],
   filterIconParkIcons: vi.fn().mockReturnValue([
-    { value: "iconpark:Search", name: "Search", label: "搜索", category: "工具", keywords: ["search"] },
-    { value: "iconpark:Setting", name: "Setting", label: "设置", category: "工具", keywords: ["setting"] },
-    { value: "iconpark:Home", name: "Home", label: "首页", category: "通用", keywords: ["home"] },
+    {
+      value: "iconpark:Search",
+      name: "Search",
+      label: "搜索",
+      category: "工具",
+      keywords: ["search"],
+    },
+    {
+      value: "iconpark:Setting",
+      name: "Setting",
+      label: "设置",
+      category: "工具",
+      keywords: ["setting"],
+    },
+    {
+      value: "iconpark:Home",
+      name: "Home",
+      label: "首页",
+      category: "通用",
+      keywords: ["home"],
+    },
   ]),
   normalizeIconValue: vi.fn().mockReturnValue("iconpark:Setting"),
   getIconParkMarkup: vi.fn().mockReturnValue("<svg>setting</svg>"),
   LEGACY_BUILTIN_TO_ICONPARK: {},
-}));
+}))
 
 /** 等待所有微任务和宏任务完成 */
 async function flushAll(): Promise<void> {
-  await nextTick();
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await nextTick();
-  await new Promise(resolve => setTimeout(resolve, 0));
+  await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
 describe("settings app layout", () => {
   function normalizeLineEndings(value: string): string {
-    return value.replace(/\r\n/g, "\n");
+    return value.replace(/\r\n/g, "\n")
   }
 
   afterEach(() => {
-    document.body.innerHTML = "";
-    vi.restoreAllMocks();
-  });
+    document.body.innerHTML = ""
+    vi.restoreAllMocks()
+  })
 
   it("does not render a separate current preview card in the editor panel", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -72,60 +108,60 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    expect(target.textContent).not.toContain("当前预览");
-    expect(target.querySelector(".preview-card")).toBeNull();
+    expect(target.textContent).not.toContain("当前预览")
+    expect(target.querySelector(".preview-card")).toBeNull()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("moves the preview gradient styling to the active button list item", () => {
-    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"))
 
-    const activeRuleStart = stylesheet.indexOf(".button-list__item.is-active");
-    const activeRuleEnd = stylesheet.indexOf("}", activeRuleStart);
-    const activeRule = stylesheet.slice(activeRuleStart, activeRuleEnd);
+    const activeRuleStart = stylesheet.indexOf(".button-list__item.is-active")
+    const activeRuleEnd = stylesheet.indexOf("}", activeRuleStart)
+    const activeRule = stylesheet.slice(activeRuleStart, activeRuleEnd)
 
-    expect(activeRule).toContain("linear-gradient(135deg");
-    expect(stylesheet).not.toContain(".preview-card {");
-  });
+    expect(activeRule).toContain("linear-gradient(135deg")
+    expect(stylesheet).not.toContain(".preview-card {")
+  })
 
   it("keeps button list items within the sidebar card width", () => {
-    const stylesheet = normalizeLineEndings(normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8")));
+    const stylesheet = normalizeLineEndings(normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8")))
 
-    const itemRuleStart = stylesheet.indexOf(".button-list__item {");
-    const itemRuleEnd = stylesheet.indexOf("}", itemRuleStart);
-    const itemRule = stylesheet.slice(itemRuleStart, itemRuleEnd);
+    const itemRuleStart = stylesheet.indexOf(".button-list__item {")
+    const itemRuleEnd = stylesheet.indexOf("}", itemRuleStart)
+    const itemRule = stylesheet.slice(itemRuleStart, itemRuleEnd)
 
-    expect(itemRule).toContain("width: 100%");
-    expect(itemRule).toContain("box-sizing: border-box");
-  });
+    expect(itemRule).toContain("width: 100%")
+    expect(itemRule).toContain("box-sizing: border-box")
+  })
 
   it("allows each settings panel to shrink within the two-column grid", () => {
-    const stylesheet = normalizeLineEndings(normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8")));
+    const stylesheet = normalizeLineEndings(normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8")))
 
-    const panelRuleStart = stylesheet.indexOf(".settings-panel {");
-    const panelRuleEnd = stylesheet.indexOf("}", panelRuleStart);
-    const panelRule = stylesheet.slice(panelRuleStart, panelRuleEnd);
+    const panelRuleStart = stylesheet.indexOf(".settings-panel {")
+    const panelRuleEnd = stylesheet.indexOf("}", panelRuleStart)
+    const panelRule = stylesheet.slice(panelRuleStart, panelRuleEnd)
 
-    expect(panelRule).toContain("min-width: 0");
-  });
+    expect(panelRule).toContain("min-width: 0")
+  })
 
   it("normalizes preview chip svg icons to a fixed size", () => {
-    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"))
 
-    expect(stylesheet).toContain(".workspace-chip__icon .siyuan-power-buttons__icon");
-    expect(stylesheet).toContain(".workspace-chip__icon svg");
-    expect(stylesheet).toContain("width: 18px");
-    expect(stylesheet).toContain("height: 18px");
-  });
+    expect(stylesheet).toContain(".workspace-chip__icon .siyuan-power-buttons__icon")
+    expect(stylesheet).toContain(".workspace-chip__icon svg")
+    expect(stylesheet).toContain("width: 18px")
+    expect(stylesheet).toContain("height: 18px")
+  })
 
   it("keeps new and duplicate actions together in the button list panel and removes the experimental toggles card", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -134,28 +170,28 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const sidebarTitle = target.querySelector(".settings-panel--sidebar .panel-title");
-    const headerActions = target.querySelector(".settings-header__actions");
+    const sidebarTitle = target.querySelector(".settings-panel--sidebar .panel-title")
+    const headerActions = target.querySelector(".settings-header__actions")
     const listTitles = Array.from(target.querySelectorAll(".button-list__content strong"))
-      .map(node => node.textContent?.trim());
+      .map((node) => node.textContent?.trim())
 
-    expect(sidebarTitle?.textContent).toContain("复制");
-    expect(sidebarTitle?.textContent).toContain("新建");
-    expect(headerActions?.textContent).toContain("恢复默认");
-    expect(headerActions?.textContent).not.toContain("新建");
-    expect(target.textContent).not.toContain("实验功能");
-    expect(listTitles.slice(0, 2)).toEqual(["今日日记", "全部面板浮动切换"]);
+    expect(sidebarTitle?.textContent).toContain("复制")
+    expect(sidebarTitle?.textContent).toContain("新建")
+    expect(headerActions?.textContent).toContain("恢复默认")
+    expect(headerActions?.textContent).not.toContain("新建")
+    expect(target.textContent).not.toContain("实验功能")
+    expect(listTitles.slice(0, 2)).toEqual(["今日日记", "全部面板浮动切换"])
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("selects the clicked button list item without throwing", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -164,30 +200,30 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
-    expect(listButtons).toHaveLength(createDefaultConfig().items.length);
+    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"))
+    expect(listButtons).toHaveLength(createDefaultConfig().items.length)
 
-    listButtons[1]?.click();
-    await flushAll();
+    listButtons[1]?.click()
+    await flushAll()
 
-    const activeItem = target.querySelector(".button-list__item.is-active strong");
-    const editorTitle = target.querySelector(".settings-panel--editor .panel-title p");
+    const activeItem = target.querySelector(".button-list__item.is-active strong")
+    const editorTitle = target.querySelector(".settings-panel--editor .panel-title p")
 
-    expect(activeItem?.textContent?.trim()).toBe("全部面板浮动切换");
-    expect(editorTitle?.textContent).toContain("全部面板浮动切换");
+    expect(activeItem?.textContent?.trim()).toBe("全部面板浮动切换")
+    expect(editorTitle?.textContent).toContain("全部面板浮动切换")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("flushes the latest selected button id again when the settings app unmounts", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onSelectedIdChange = vi.fn().mockResolvedValue(undefined);
+    const onSelectedIdChange = vi.fn().mockResolvedValue(undefined)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -197,43 +233,43 @@ describe("settings app layout", () => {
       onNotify: vi.fn(),
       onSelectedIdChange,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"));
-    listButtons[1]?.click();
-    await flushAll();
+    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>(".button-list__main"))
+    listButtons[1]?.click()
+    await flushAll()
 
-    expect(onSelectedIdChange).toHaveBeenNthCalledWith(1, expect.any(String));
-    expect(onSelectedIdChange).toHaveBeenNthCalledWith(2, expect.any(String));
+    expect(onSelectedIdChange).toHaveBeenNthCalledWith(1, expect.any(String))
+    expect(onSelectedIdChange).toHaveBeenNthCalledWith(2, expect.any(String))
 
-    const secondSelectedId = onSelectedIdChange.mock.calls[1]?.[0];
-    unmount();
-    await flushAll();
+    const secondSelectedId = onSelectedIdChange.mock.calls[1]?.[0]
+    unmount()
+    await flushAll()
 
-    expect(onSelectedIdChange).toHaveBeenCalledTimes(3);
-    expect(onSelectedIdChange).toHaveBeenNthCalledWith(3, secondSelectedId);
-  });
+    expect(onSelectedIdChange).toHaveBeenCalledTimes(3)
+    expect(onSelectedIdChange).toHaveBeenNthCalledWith(3, secondSelectedId)
+  })
 
   it("limits the IconPark candidate grid to seven visible rows and enables vertical scrolling", () => {
-    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"))
 
-    const gridRuleStart = stylesheet.indexOf(".icon-grid {");
-    const gridRuleEnd = stylesheet.indexOf("}", gridRuleStart);
-    const gridRule = stylesheet.slice(gridRuleStart, gridRuleEnd);
+    const gridRuleStart = stylesheet.indexOf(".icon-grid {")
+    const gridRuleEnd = stylesheet.indexOf("}", gridRuleStart)
+    const gridRule = stylesheet.slice(gridRuleStart, gridRuleEnd)
 
-    expect(gridRule).toContain("grid-auto-rows");
-    expect(gridRule).toContain("max-height");
-    expect(gridRule).toContain("overflow-y: auto");
-    expect(gridRule).toContain("align-content: start");
-    expect(gridRule).toContain("7");
-  });
+    expect(gridRule).toContain("grid-auto-rows")
+    expect(gridRule).toContain("max-height")
+    expect(gridRule).toContain("overflow-y: auto")
+    expect(gridRule).toContain("align-content: start")
+    expect(gridRule).toContain("7")
+  })
 
   it("renders the icon source switcher as standard tabs and offers IconPark plus emoji picks", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+    const target = document.createElement("div")
+    document.body.appendChild(target)
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"))
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -242,57 +278,57 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const iconTablist = target.querySelector('[role="tablist"][aria-label="图标类型"]');
-    const iconTabs = Array.from(iconTablist?.querySelectorAll<HTMLButtonElement>("button") ?? []);
-    const iconParkTab = iconTabs.find(button => button.textContent?.trim() === "IconPark");
-    const emojiTab = iconTabs.find(button => button.textContent?.trim() === "Emoji");
+    const iconTablist = target.querySelector('[role="tablist"][aria-label="图标类型"]')
+    const iconTabs = Array.from(iconTablist?.querySelectorAll<HTMLButtonElement>("button") ?? [])
+    const iconParkTab = iconTabs.find((button) => button.textContent?.trim() === "IconPark")
+    const emojiTab = iconTabs.find((button) => button.textContent?.trim() === "Emoji")
 
-    expect(target.textContent).not.toContain("图标来源");
-    expect(iconTablist).not.toBeNull();
-    expect(iconTabs).toHaveLength(3);
-    expect(iconParkTab?.getAttribute("role")).toBe("tab");
-    expect(emojiTab?.getAttribute("role")).toBe("tab");
-    expect(iconParkTab?.getAttribute("aria-selected")).toBe("true");
-    expect(emojiTab?.getAttribute("aria-selected")).toBe("false");
-    expect(target.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(iconParkTab?.id);
+    expect(target.textContent).not.toContain("图标来源")
+    expect(iconTablist).not.toBeNull()
+    expect(iconTabs).toHaveLength(3)
+    expect(iconParkTab?.getAttribute("role")).toBe("tab")
+    expect(emojiTab?.getAttribute("role")).toBe("tab")
+    expect(iconParkTab?.getAttribute("aria-selected")).toBe("true")
+    expect(emojiTab?.getAttribute("aria-selected")).toBe("false")
+    expect(target.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(iconParkTab?.id)
 
-    expect(target.textContent).toContain("搜索 IconPark 图标");
-    expect(target.textContent).toContain("图标分类");
-    expect(target.querySelector(".icon-search-row")).not.toBeNull();
-    expect(stylesheet).toContain(".icon-search-row {\n  display: grid;");
+    expect(target.textContent).toContain("搜索 IconPark 图标")
+    expect(target.textContent).toContain("图标分类")
+    expect(target.querySelector(".icon-search-row")).not.toBeNull()
+    expect(stylesheet).toContain(".icon-search-row {\n  display: grid;")
 
-    const firstIconParkItem = target.querySelector(".icon-grid__item") as HTMLButtonElement | null;
-    expect(firstIconParkItem).not.toBeNull();
-    expect(firstIconParkItem?.querySelector(".icon-grid__label")).toBeNull();
-    expect(firstIconParkItem?.querySelector("small")).toBeNull();
-    expect(firstIconParkItem?.getAttribute("title")).toContain("·");
+    const firstIconParkItem = target.querySelector(".icon-grid__item") as HTMLButtonElement | null
+    expect(firstIconParkItem).not.toBeNull()
+    expect(firstIconParkItem?.querySelector(".icon-grid__label")).toBeNull()
+    expect(firstIconParkItem?.querySelector("small")).toBeNull()
+    expect(firstIconParkItem?.getAttribute("title")).toContain("·")
 
-    emojiTab?.click();
-    await flushAll();
+    emojiTab?.click()
+    await flushAll()
 
-    expect(emojiTab?.getAttribute("aria-selected")).toBe("true");
-    expect(target.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(emojiTab?.id);
+    expect(emojiTab?.getAttribute("aria-selected")).toBe("true")
+    expect(target.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(emojiTab?.id)
 
     const emojiOptions = Array.from(target.querySelectorAll(".emoji-grid__item"))
-      .map(button => button.textContent?.trim());
+      .map((button) => button.textContent?.trim())
 
-    expect(emojiOptions.length).toBeGreaterThan(6);
-    expect(emojiOptions).toContain("⚡");
-    expect(emojiOptions).toContain("🔍");
-    expect(emojiOptions).toContain("⚙️");
+    expect(emojiOptions.length).toBeGreaterThan(6)
+    expect(emojiOptions).toContain("⚡")
+    expect(emojiOptions).toContain("🔍")
+    expect(emojiOptions).toContain("⚙️")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("keeps the experimental shortcut input empty by default and uses placeholder guidance", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onChange = vi.fn().mockResolvedValue(undefined)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -301,36 +337,36 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "experimental-shortcut"));
-    expect(actionTypeSelect).not.toBeNull();
+      .find((select) => Array.from(select.options).some((option) => option.value === "experimental-shortcut"))
+    expect(actionTypeSelect).not.toBeNull()
 
-    actionTypeSelect!.value = "experimental-shortcut";
-    actionTypeSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    actionTypeSelect!.value = "experimental-shortcut"
+    actionTypeSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
-      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
+      .find((input) => input.placeholder.includes("Ctrl+B / Alt+5"))
 
-    expect(shortcutInput).not.toBeUndefined();
-    expect(shortcutInput?.value).toBe("");
-    expect(shortcutInput?.placeholder).toBe("例如：Ctrl+B / Alt+5");
-    expect(shortcutInput?.readOnly).toBe(true);
-    expect(onChange).toHaveBeenCalled();
+    expect(shortcutInput).not.toBeUndefined()
+    expect(shortcutInput?.value).toBe("")
+    expect(shortcutInput?.placeholder).toBe("例如：Ctrl+B / Alt+5")
+    expect(shortcutInput?.readOnly).toBe(true)
+    expect(onChange).toHaveBeenCalled()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("persists builtin command changes from the settings editor immediately", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onChange = vi.fn().mockResolvedValue(undefined)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -340,34 +376,34 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const builtinCommandSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "dailyNote"));
+      .find((select) => Array.from(select.options).some((option) => option.value === "dailyNote"))
 
-    expect(builtinCommandSelect).not.toBeNull();
-    expect(builtinCommandSelect?.value).toBe("dailyNote");
+    expect(builtinCommandSelect).not.toBeNull()
+    expect(builtinCommandSelect?.value).toBe("dailyNote")
 
-    builtinCommandSelect!.value = "recentDocs";
-    builtinCommandSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    builtinCommandSelect!.value = "recentDocs"
+    builtinCommandSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items[0]?.actionId).toBe("recentDocs");
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig?.items[0]?.actionId).toBe("recentDocs")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("shows an SVG icon preview below the SVG editor textarea", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
-    initialConfig.items[0].iconType = "svg";
-    initialConfig.items[0].iconValue = "<svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' /></svg>";
+    const initialConfig = createDefaultConfig()
+    initialConfig.items[0].iconType = "svg"
+    initialConfig.items[0].iconValue = "<svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' /></svg>"
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -376,27 +412,27 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const textarea = target.querySelector(".icon-editor textarea.b3-text-field");
-    const preview = target.querySelector(".icon-preview");
+    const textarea = target.querySelector(".icon-editor textarea.b3-text-field")
+    const preview = target.querySelector(".icon-preview")
 
-    expect(textarea).not.toBeNull();
-    expect(preview).not.toBeNull();
-    expect(preview?.querySelector("svg")).not.toBeNull();
+    expect(textarea).not.toBeNull()
+    expect(preview).not.toBeNull()
+    expect(preview?.querySelector("svg")).not.toBeNull()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("shows a fallback preview hint when the SVG input is invalid", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
-    initialConfig.items[0].iconType = "svg";
-    initialConfig.items[0].iconValue = "<svg><g></svg";
+    const initialConfig = createDefaultConfig()
+    initialConfig.items[0].iconType = "svg"
+    initialConfig.items[0].iconValue = "<svg><g></svg"
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -405,26 +441,26 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const preview = target.querySelector(".icon-preview");
-    const hint = target.querySelector(".icon-preview__hint");
+    const preview = target.querySelector(".icon-preview")
+    const hint = target.querySelector(".icon-preview__hint")
 
-    expect(preview).not.toBeNull();
-    expect(hint?.textContent).toContain("SVG 内容无效");
-    expect(preview?.querySelector("svg")).not.toBeNull();
+    expect(preview).not.toBeNull()
+    expect(hint?.textContent).toContain("SVG 内容无效")
+    expect(preview?.querySelector("svg")).not.toBeNull()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("initializes experimental action configs immediately when switching action type", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const onNotify = vi.fn();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const onNotify = vi.fn()
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -433,42 +469,42 @@ describe("settings app layout", () => {
       onChange,
       onNotify,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "experimental-shortcut"));
-    expect(actionTypeSelect).not.toBeNull();
+      .find((select) => Array.from(select.options).some((option) => option.value === "experimental-shortcut"))
+    expect(actionTypeSelect).not.toBeNull()
 
-    actionTypeSelect!.value = "experimental-shortcut";
-    actionTypeSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    actionTypeSelect!.value = "experimental-shortcut"
+    actionTypeSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
-      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
-    expect(shortcutInput).not.toBeUndefined();
-    expect(onNotify).not.toHaveBeenCalledWith(expect.stringMatching(/TypeError/), "error");
+      .find((input) => input.placeholder.includes("Ctrl+B / Alt+5"))
+    expect(shortcutInput).not.toBeUndefined()
+    expect(onNotify).not.toHaveBeenCalledWith(expect.stringMatching(/TypeError/), "error")
 
-    actionTypeSelect!.value = "experimental-click-sequence";
-    actionTypeSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    actionTypeSelect!.value = "experimental-click-sequence"
+    actionTypeSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(target.textContent).toContain("点击步骤");
-    expect(target.textContent).toContain("步骤 1");
+    expect(target.textContent).toContain("点击步骤")
+    expect(target.textContent).toContain("步骤 1")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("edits click-sequence form-value fields in the settings panel", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+    const target = document.createElement("div")
+    document.body.appendChild(target)
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"))
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "lang-step",
@@ -489,7 +525,7 @@ describe("settings app layout", () => {
           ],
         },
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -498,71 +534,71 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const step = target.querySelector<HTMLElement>(".click-sequence-step");
+    const step = target.querySelector<HTMLElement>(".click-sequence-step")
     const advancedToggle = Array.from(step?.querySelectorAll<HTMLButtonElement>("button") || [])
-      .find(button => button.textContent?.includes("高级设置"));
+      .find((button) => button.textContent?.includes("高级设置"))
 
-    expect(step).not.toBeNull();
-    expect(advancedToggle).not.toBeUndefined();
-    expect(step?.textContent).not.toContain("等待超时(ms)");
-    expect(stylesheet).toContain(".form-grid label.click-sequence-step__field");
-    expect(stylesheet).toContain(".click-sequence-step__field--selector {\n  grid-column: 1 / -1;");
-    expect(stylesheet).not.toContain(".click-sequence-step__field--value {\n  grid-column: 1 / -1;");
+    expect(step).not.toBeNull()
+    expect(advancedToggle).not.toBeUndefined()
+    expect(step?.textContent).not.toContain("等待超时(ms)")
+    expect(stylesheet).toContain(".form-grid label.click-sequence-step__field")
+    expect(stylesheet).toContain(".click-sequence-step__field--selector {\n  grid-column: 1 / -1;")
+    expect(stylesheet).not.toContain(".click-sequence-step__field--value {\n  grid-column: 1 / -1;")
 
-    advancedToggle!.click();
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    advancedToggle!.click()
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
     const valueInput = Array.from(target.querySelectorAll<HTMLInputElement>(".click-sequence-step input.b3-text-field"))
-      .find(input => input.placeholder.includes("例如：en_US"));
+      .find((input) => input.placeholder.includes("例如：en_US"))
     const modeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".click-sequence-step select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "text"));
-    const selectorRow = target.querySelector<HTMLElement>(".click-sequence-step__field--selector");
-    const valueRow = target.querySelector<HTMLElement>(".click-sequence-step__field--value");
-    const modeRow = target.querySelector<HTMLElement>(".click-sequence-step__field--mode");
+      .find((select) => Array.from(select.options).some((option) => option.value === "text"))
+    const selectorRow = target.querySelector<HTMLElement>(".click-sequence-step__field--selector")
+    const valueRow = target.querySelector<HTMLElement>(".click-sequence-step__field--value")
+    const modeRow = target.querySelector<HTMLElement>(".click-sequence-step__field--mode")
 
-    expect(step?.textContent).toContain("等待超时(ms)");
-    expect(valueInput).not.toBeUndefined();
-    expect(modeSelect).not.toBeUndefined();
-    expect(selectorRow?.classList.contains("click-sequence-step__field")).toBe(true);
-    expect(valueRow?.classList.contains("click-sequence-step__field")).toBe(true);
-    expect(modeRow?.classList.contains("click-sequence-step__field")).toBe(true);
+    expect(step?.textContent).toContain("等待超时(ms)")
+    expect(valueInput).not.toBeUndefined()
+    expect(modeSelect).not.toBeUndefined()
+    expect(selectorRow?.classList.contains("click-sequence-step__field")).toBe(true)
+    expect(valueRow?.classList.contains("click-sequence-step__field")).toBe(true)
+    expect(modeRow?.classList.contains("click-sequence-step__field")).toBe(true)
 
-    valueInput!.value = "English (en_US)";
-    valueInput!.dispatchEvent(new Event("input"));
-    valueInput!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    valueInput!.value = "English (en_US)"
+    valueInput!.dispatchEvent(new Event("input"))
+    valueInput!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    modeSelect!.value = "text";
-    modeSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    modeSelect!.value = "text"
+    modeSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig.items[0].experimentalClickSequence.steps[0].value).toBe("English (en_US)");
-    expect(latestConfig.items[0].experimentalClickSequence.steps[0].valueMode).toBe("text");
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig.items[0].experimentalClickSequence.steps[0].value).toBe("English (en_US)")
+    expect(latestConfig.items[0].experimentalClickSequence.steps[0].valueMode).toBe("text")
 
-    advancedToggle!.click();
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    advancedToggle!.click()
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(step?.textContent).not.toContain("等待超时(ms)");
+    expect(step?.textContent).not.toContain("等待超时(ms)")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("renders click-sequence steps as draggable cards and reorders them", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+    const target = document.createElement("div")
+    document.body.appendChild(target)
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"))
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "drag-steps",
@@ -591,7 +627,7 @@ describe("settings app layout", () => {
           ],
         },
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -600,37 +636,37 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const steps = Array.from(target.querySelectorAll<HTMLElement>(".click-sequence-step"));
-    const dragHandle = steps[1]?.querySelector<HTMLElement>(".click-sequence-step__drag");
+    const steps = Array.from(target.querySelectorAll<HTMLElement>(".click-sequence-step"))
+    const dragHandle = steps[1]?.querySelector<HTMLElement>(".click-sequence-step__drag")
 
-    expect(steps).toHaveLength(2);
-    expect(dragHandle).not.toBeNull();
-    expect(stylesheet).toContain(".click-sequence-step {\n  display: flex;");
-    expect(stylesheet).toContain("border: 1px solid");
-    expect(stylesheet).toContain("background:\n    linear-gradient(180deg");
+    expect(steps).toHaveLength(2)
+    expect(dragHandle).not.toBeNull()
+    expect(stylesheet).toContain(".click-sequence-step {\n  display: flex;")
+    expect(stylesheet).toContain("border: 1px solid")
+    expect(stylesheet).toContain("background:\n    linear-gradient(180deg")
 
-    steps[1].dispatchEvent(new Event("dragstart", { bubbles: true }));
-    steps[0].dispatchEvent(new Event("drop", { bubbles: true }));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    steps[1].dispatchEvent(new Event("dragstart", { bubbles: true }))
+    steps[0].dispatchEvent(new Event("drop", { bubbles: true }))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig.items[0].experimentalClickSequence.steps[0].selector).toBe("second-step");
-    expect(latestConfig.items[0].experimentalClickSequence.steps[1].selector).toBe("first-step");
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig.items[0].experimentalClickSequence.steps[0].selector).toBe("second-step")
+    expect(latestConfig.items[0].experimentalClickSequence.steps[1].selector).toBe("first-step")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("captures shortcut combinations directly from keyboard input", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "capture-shortcut",
@@ -645,7 +681,7 @@ describe("settings app layout", () => {
           allowDirectWindowDispatch: false,
         },
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -654,14 +690,14 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
-      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
+      .find((input) => input.placeholder.includes("Ctrl+B / Alt+5"))
 
-    expect(shortcutInput).not.toBeUndefined();
+    expect(shortcutInput).not.toBeUndefined()
 
     shortcutInput?.dispatchEvent(new KeyboardEvent("keydown", {
       key: "b",
@@ -669,25 +705,25 @@ describe("settings app layout", () => {
       shiftKey: true,
       bubbles: true,
       cancelable: true,
-    }));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    }))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(shortcutInput?.value).toBe("Ctrl+Shift+B");
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items[0].experimentalShortcut?.shortcut).toBe("Ctrl+Shift+B");
-    expect(latestConfig?.items[0].actionId).toBe("Ctrl+Shift+B");
+    expect(shortcutInput?.value).toBe("Ctrl+Shift+B")
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig?.items[0].experimentalShortcut?.shortcut).toBe("Ctrl+Shift+B")
+    expect(latestConfig?.items[0].actionId).toBe("Ctrl+Shift+B")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("blocks duplicate shortcut combinations and shows a conflict message", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const onNotify = vi.fn();
-    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const onNotify = vi.fn()
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "editing-shortcut",
@@ -715,7 +751,7 @@ describe("settings app layout", () => {
           allowDirectWindowDispatch: false,
         },
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -724,36 +760,36 @@ describe("settings app layout", () => {
       onChange,
       onNotify,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const shortcutInput = Array.from(target.querySelectorAll<HTMLInputElement>(".settings-panel--editor input.b3-text-field"))
-      .find(input => input.placeholder.includes("Ctrl+B / Alt+5"));
+      .find((input) => input.placeholder.includes("Ctrl+B / Alt+5"))
 
     shortcutInput?.dispatchEvent(new KeyboardEvent("keydown", {
       key: "b",
       ctrlKey: true,
       bubbles: true,
       cancelable: true,
-    }));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    }))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(shortcutInput?.value).toBe("");
-    expect(onChange).not.toHaveBeenCalled();
-    expect(target.textContent).toContain("快捷键 Ctrl+B 已被按钮「已占用按钮」使用");
-    expect(onNotify).toHaveBeenCalledWith("快捷键 Ctrl+B 已被按钮「已占用按钮」使用。", "error");
+    expect(shortcutInput?.value).toBe("")
+    expect(onChange).not.toHaveBeenCalled()
+    expect(target.textContent).toContain("快捷键 Ctrl+B 已被按钮「已占用按钮」使用")
+    expect(onNotify).toHaveBeenCalledWith("快捷键 Ctrl+B 已被按钮「已占用按钮」使用。", "error")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("persists experimental shortcut dispatch target changes immediately", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "dispatch-target",
@@ -768,7 +804,7 @@ describe("settings app layout", () => {
           allowDirectWindowDispatch: false,
         },
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -777,29 +813,29 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const dispatchTargetSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "active-editor") && select.value === "auto");
+      .find((select) => Array.from(select.options).some((option) => option.value === "active-editor") && select.value === "auto")
 
-    expect(dispatchTargetSelect).not.toBeNull();
+    expect(dispatchTargetSelect).not.toBeNull()
 
-    dispatchTargetSelect!.value = "window";
-    dispatchTargetSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    dispatchTargetSelect!.value = "window"
+    dispatchTargetSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items[0]?.experimentalShortcut?.dispatchTarget).toBe("window");
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig?.items[0]?.experimentalShortcut?.dispatchTarget).toBe("window")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("removes the duplicate custom action menu item from the action type selector", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -814,24 +850,24 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
+      .find((select) => Array.from(select.options).some((option) => option.value === "plugin-command"))
 
-    expect(actionTypeSelect).not.toBeNull();
-    expect(Array.from(actionTypeSelect!.options).map(option => option.value)).not.toContain("custom-action");
-    expect(Array.from(actionTypeSelect!.options).map(option => option.textContent?.trim())).not.toContain("插件动作");
-    expect(target.textContent).toContain("插件命令");
+    expect(actionTypeSelect).not.toBeNull()
+    expect(Array.from(actionTypeSelect!.options).map((option) => option.value)).not.toContain("custom-action")
+    expect(Array.from(actionTypeSelect!.options).map((option) => option.textContent?.trim())).not.toContain("插件动作")
+    expect(target.textContent).toContain("插件命令")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("removes the open url action type from the settings selector", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -840,24 +876,24 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
+      .find((select) => Array.from(select.options).some((option) => option.value === "plugin-command"))
 
-    expect(actionTypeSelect).not.toBeNull();
-    expect(Array.from(actionTypeSelect!.options).map(option => option.value)).not.toContain("open-url");
-    expect(Array.from(actionTypeSelect!.options).map(option => option.textContent?.trim())).not.toContain("打开链接");
-    expect(target.textContent).not.toContain("目标链接");
+    expect(actionTypeSelect).not.toBeNull()
+    expect(Array.from(actionTypeSelect!.options).map((option) => option.value)).not.toContain("open-url")
+    expect(Array.from(actionTypeSelect!.options).map((option) => option.textContent?.trim())).not.toContain("打开链接")
+    expect(target.textContent).not.toContain("目标链接")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("removes the editor visibility switch and keeps list visibility toggles", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -866,24 +902,24 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const editorPanel = target.querySelector(".settings-panel--editor");
-    const sidebarToggles = target.querySelectorAll(".settings-panel--sidebar .switch-button--compact");
+    const editorPanel = target.querySelector(".settings-panel--editor")
+    const sidebarToggles = target.querySelectorAll(".settings-panel--sidebar .switch-button--compact")
 
-    expect(editorPanel?.textContent).not.toContain("显示状态");
-    expect(sidebarToggles).toHaveLength(createDefaultConfig().items.length);
+    expect(editorPanel?.textContent).not.toContain("显示状态")
+    expect(sidebarToggles).toHaveLength(createDefaultConfig().items.length)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("renders plugin name and command selectors for unified plugin commands", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onChange = vi.fn().mockResolvedValue(undefined)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -906,37 +942,37 @@ describe("settings app layout", () => {
       onNotify: vi.fn(),
       onRefreshExternalCommands: vi.fn().mockResolvedValue([]),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
+      .find((select) => Array.from(select.options).some((option) => option.value === "plugin-command"))
 
-    expect(actionTypeSelect).not.toBeNull();
+    expect(actionTypeSelect).not.toBeNull()
 
-    actionTypeSelect!.value = "plugin-command";
-    actionTypeSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    actionTypeSelect!.value = "plugin-command"
+    actionTypeSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
     const labels = Array.from(target.querySelectorAll(".settings-panel--editor label"))
-      .map(node => node.textContent?.trim());
+      .map((node) => node.textContent?.trim())
 
-    expect(labels.some(text => text?.includes("插件名称"))).toBe(true);
-    expect(labels.some(text => text?.includes("插件命令"))).toBe(true);
-    expect(target.textContent).toContain("插入文档摘要");
-    expect(target.textContent).toContain("在当前文档插入摘要");
-    expect(onChange).toHaveBeenCalled();
+    expect(labels.some((text) => text?.includes("插件名称"))).toBe(true)
+    expect(labels.some((text) => text?.includes("插件命令"))).toBe(true)
+    expect(target.textContent).toContain("插入文档摘要")
+    expect(target.textContent).toContain("在当前文档插入摘要")
+    expect(onChange).toHaveBeenCalled()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("auto-refreshes external command providers when switching to unified plugin commands with an empty external list", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onChange = vi.fn().mockResolvedValue(undefined)
     const onRefreshExternalCommands = vi.fn().mockResolvedValue([
       {
         providerId: "siyuan-doc-assist",
@@ -949,7 +985,7 @@ describe("settings app layout", () => {
           },
         ],
       },
-    ]);
+    ])
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -960,34 +996,34 @@ describe("settings app layout", () => {
       onNotify: vi.fn(),
       onRefreshExternalCommands,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const actionTypeSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "plugin-command"));
+      .find((select) => Array.from(select.options).some((option) => option.value === "plugin-command"))
 
-    expect(actionTypeSelect).not.toBeNull();
+    expect(actionTypeSelect).not.toBeNull()
 
-    actionTypeSelect!.value = "plugin-command";
-    actionTypeSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    actionTypeSelect!.value = "plugin-command"
+    actionTypeSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1);
-    expect(target.textContent).toContain("文档助手 / Doc Assist");
-    expect(target.textContent).toContain("插入文档摘要");
-    expect(target.textContent).toContain("在当前文档插入摘要");
-    expect(onChange).toHaveBeenCalled();
+    expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1)
+    expect(target.textContent).toContain("文档助手 / Doc Assist")
+    expect(target.textContent).toContain("插入文档摘要")
+    expect(target.textContent).toContain("在当前文档插入摘要")
+    expect(onChange).toHaveBeenCalled()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("refreshes plugin command options from the provider callback", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "external-command",
@@ -995,7 +1031,7 @@ describe("settings app layout", () => {
         actionType: "plugin-command",
         actionId: "siyuan-doc-assist:insert-doc-summary",
       }),
-    ];
+    ]
 
     const onRefreshExternalCommands = vi.fn().mockResolvedValue([
       {
@@ -1009,7 +1045,7 @@ describe("settings app layout", () => {
           },
         ],
       },
-    ]);
+    ])
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1032,34 +1068,34 @@ describe("settings app layout", () => {
       onNotify: vi.fn(),
       onRefreshExternalCommands,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const refreshButton = Array.from(target.querySelectorAll<HTMLButtonElement>(".settings-panel--editor button"))
-      .find(button => button.textContent?.trim() === "刷新插件命令");
+      .find((button) => button.textContent?.trim() === "刷新插件命令")
 
-    expect(target.textContent).toContain("旧摘要命令");
-    expect(refreshButton).not.toBeUndefined();
+    expect(target.textContent).toContain("旧摘要命令")
+    expect(refreshButton).not.toBeUndefined()
 
-    refreshButton?.click();
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    refreshButton?.click()
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1);
-    expect(target.textContent).toContain("插入最新文档摘要");
-    expect(target.textContent).toContain("刷新后的命令描述");
-    expect(target.textContent).not.toContain("旧摘要命令");
+    expect(onRefreshExternalCommands).toHaveBeenCalledTimes(1)
+    expect(target.textContent).toContain("插入最新文档摘要")
+    expect(target.textContent).toContain("刷新后的命令描述")
+    expect(target.textContent).not.toContain("旧摘要命令")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("keeps the reserved plugin placeholder when selecting a provider without public commands", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "external-empty-provider",
@@ -1067,7 +1103,7 @@ describe("settings app layout", () => {
         actionType: "plugin-command",
         actionId: "siyuan-doc-assist:insert-doc-summary",
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1093,29 +1129,29 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const providerSelect = Array.from(target.querySelectorAll<HTMLSelectElement>(".settings-panel--editor select.b3-select"))
-      .find(select => Array.from(select.options).some(option => option.value === "empty-provider"));
+      .find((select) => Array.from(select.options).some((option) => option.value === "empty-provider"))
 
-    expect(providerSelect).not.toBeNull();
+    expect(providerSelect).not.toBeNull()
 
-    providerSelect!.value = "empty-provider";
-    providerSelect!.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    providerSelect!.value = "empty-provider"
+    providerSelect!.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items[0].actionId).toBe("empty-provider:__unset__");
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig?.items[0].actionId).toBe("empty-provider:__unset__")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("renders config import and export in the right preview panel and button settings below button list in the left panel", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -1124,47 +1160,47 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const sidebar = target.querySelector(".settings-panel--sidebar");
-    const sidebarSections = Array.from(sidebar?.children ?? []);
-    const previewPanel = target.querySelector(".settings-panel--preview");
-    const previewSections = Array.from(previewPanel?.children ?? []);
-    const previewTransfer = target.querySelector(".settings-panel--preview .config-transfer");
-    const editorTransfer = target.querySelector(".settings-panel--editor .config-transfer");
+    const sidebar = target.querySelector(".settings-panel--sidebar")
+    const sidebarSections = Array.from(sidebar?.children ?? [])
+    const previewPanel = target.querySelector(".settings-panel--preview")
+    const previewSections = Array.from(previewPanel?.children ?? [])
+    const previewTransfer = target.querySelector(".settings-panel--preview .config-transfer")
+    const editorTransfer = target.querySelector(".settings-panel--editor .config-transfer")
 
-    expect(sidebarSections).toHaveLength(2);
-    expect(sidebarSections[0]?.textContent).toContain("按钮列表");
-    expect(sidebarSections[0]?.textContent).not.toContain("导出配置文件");
-    expect(sidebarSections[1]?.textContent).toContain("按钮设置");
-    expect(previewSections).toHaveLength(2);
-    expect(previewSections[0]?.textContent).toContain("位置预览");
-    expect(previewSections[1]?.textContent).toContain("配置文件");
-    expect(previewTransfer?.textContent).toContain("导出配置文件");
-    expect(previewTransfer?.textContent).toContain("导入配置文件");
-    expect(previewTransfer?.textContent).toContain("所有已配置按钮");
-    expect(editorTransfer).toBeNull();
-    expect(target.textContent).not.toContain("复制 JSON");
-    expect(target.textContent).not.toContain("导出到文本框");
-    expect(target.textContent).not.toContain("从文本框导入");
-    expect(target.querySelector(".json-tools")).toBeNull();
+    expect(sidebarSections).toHaveLength(2)
+    expect(sidebarSections[0]?.textContent).toContain("按钮列表")
+    expect(sidebarSections[0]?.textContent).not.toContain("导出配置文件")
+    expect(sidebarSections[1]?.textContent).toContain("按钮设置")
+    expect(previewSections).toHaveLength(2)
+    expect(previewSections[0]?.textContent).toContain("位置预览")
+    expect(previewSections[1]?.textContent).toContain("配置文件")
+    expect(previewTransfer?.textContent).toContain("导出配置文件")
+    expect(previewTransfer?.textContent).toContain("导入配置文件")
+    expect(previewTransfer?.textContent).toContain("所有已配置按钮")
+    expect(editorTransfer).toBeNull()
+    expect(target.textContent).not.toContain("复制 JSON")
+    expect(target.textContent).not.toContain("导出到文本框")
+    expect(target.textContent).not.toContain("从文本框导入")
+    expect(target.querySelector(".json-tools")).toBeNull()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("imports missing buttons from files without replacing the current configuration", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const onNotify = vi.fn();
-    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test");
-    const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const onNotify = vi.fn()
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {})
+    const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test")
+    const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {})
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "existing-daily-note",
@@ -1180,7 +1216,7 @@ describe("settings app layout", () => {
         actionId: "Ctrl+P",
         order: 1,
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1189,22 +1225,22 @@ describe("settings app layout", () => {
       onChange,
       onNotify,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const exportButton = Array.from(target.querySelectorAll("button"))
-      .find(button => button.textContent?.trim() === "导出配置文件");
-    exportButton?.click();
+      .find((button) => button.textContent?.trim() === "导出配置文件")
+    exportButton?.click()
 
-    expect(createObjectURL).toHaveBeenCalledTimes(1);
-    expect(anchorClick).toHaveBeenCalledTimes(1);
-    expect(revokeObjectURL).toHaveBeenCalledWith("blob:test");
-    const exportedBlob = createObjectURL.mock.calls[0]?.[0] as Blob;
-    expect(exportedBlob.type).toContain("application/json");
-    expect(exportedBlob.size).toBeGreaterThan(0);
+    expect(createObjectURL).toHaveBeenCalledTimes(1)
+    expect(anchorClick).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:test")
+    const exportedBlob = createObjectURL.mock.calls[0]?.[0] as Blob
+    expect(exportedBlob.type).toContain("application/json")
+    expect(exportedBlob.size).toBeGreaterThan(0)
 
-    const importedConfig = createDefaultConfig();
+    const importedConfig = createDefaultConfig()
     importedConfig.items = [
       createButtonItem({
         id: "duplicate-daily-note",
@@ -1221,37 +1257,37 @@ describe("settings app layout", () => {
         actionId: "Alt+H",
         order: 1,
       }),
-    ];
+    ]
 
-    const fileInput = target.querySelector<HTMLInputElement>('input[type="file"]');
-    expect(fileInput).not.toBeNull();
+    const fileInput = target.querySelector<HTMLInputElement>('input[type="file"]')
+    expect(fileInput).not.toBeNull()
     Object.defineProperty(fileInput, "files", {
       configurable: true,
       value: [new File([JSON.stringify(importedConfig)], "power-buttons.json", { type: "application/json" })],
-    });
+    })
 
-    fileInput?.dispatchEvent(new Event("change"));
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    fileInput?.dispatchEvent(new Event("change"))
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
     await vi.waitFor(() => {
-      expect(onChange).toHaveBeenCalled();
-      expect(onNotify).toHaveBeenCalledWith("已导入 1 个新按钮，跳过 1 个已存在按钮。");
-    });
-    expect(Array.from(target.querySelectorAll(".button-list__content strong")).map(node => node.textContent?.trim())).toEqual([
+      expect(onChange).toHaveBeenCalled()
+      expect(onNotify).toHaveBeenCalledWith("已导入 1 个新按钮，跳过 1 个已存在按钮。")
+    })
+    expect(Array.from(target.querySelectorAll(".button-list__content strong")).map((node) => node.textContent?.trim())).toEqual([
       "已有今日日记",
       "已有全局搜索",
       "导入后的按钮",
-    ]);
+    ])
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("opens the hidden file input when the import button is clicked", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const inputClick = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+    const inputClick = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {})
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -1260,27 +1296,27 @@ describe("settings app layout", () => {
       onChange: vi.fn().mockResolvedValue(undefined),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     const importButton = Array.from(target.querySelectorAll<HTMLButtonElement>("button"))
-      .find(button => button.textContent?.trim() === "导入配置文件");
+      .find((button) => button.textContent?.trim() === "导入配置文件")
 
-    expect(importButton).not.toBeUndefined();
+    expect(importButton).not.toBeUndefined()
 
-    importButton?.click();
+    importButton?.click()
 
-    expect(inputClick).toHaveBeenCalledTimes(1);
+    expect(inputClick).toHaveBeenCalledTimes(1)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("refreshes the current layout again when the preview refresh button is clicked", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onReadCurrentLayout = vi.fn().mockResolvedValue([]);
+    const onReadCurrentLayout = vi.fn().mockResolvedValue([])
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -1289,28 +1325,28 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout,
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
     const refreshButton = Array.from(target.querySelectorAll<HTMLButtonElement>("button"))
-      .find(button => button.textContent?.trim() === "读取当前布局");
+      .find((button) => button.textContent?.trim() === "读取当前布局")
 
-    expect(onReadCurrentLayout).toHaveBeenCalledTimes(1);
+    expect(onReadCurrentLayout).toHaveBeenCalledTimes(1)
 
-    refreshButton?.click();
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    refreshButton?.click()
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(onReadCurrentLayout).toHaveBeenCalledTimes(2);
+    expect(onReadCurrentLayout).toHaveBeenCalledTimes(2)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("renders native canvas pin controls at the top-left of the editor preview and keeps dock sections separated", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -1330,28 +1366,28 @@ describe("settings app layout", () => {
           iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const canvasItems = target.querySelector(".workspace-preview__canvas-items");
-    const canvasText = canvasItems?.textContent || "";
-    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"));
+    const canvasItems = target.querySelector(".workspace-preview__canvas-items")
+    const canvasText = canvasItems?.textContent || ""
+    const stylesheet = normalizeLineEndings(readFileSync(resolve(process.cwd(), "src/index.scss"), "utf8"))
 
-    expect(canvasText).toContain("钉住编辑区");
-    expect(stylesheet).toContain(".workspace-preview__segment--end");
-    expect(stylesheet).toContain("border-top: 1px dashed");
-    expect(stylesheet).toContain("justify-content: flex-end");
+    expect(canvasText).toContain("钉住编辑区")
+    expect(stylesheet).toContain(".workspace-preview__segment--end")
+    expect(stylesheet).toContain("border-top: 1px dashed")
+    expect(stylesheet).toContain("justify-content: flex-end")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("native preview chips reflect suppression state from disabledNativeButtons config", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.disabledNativeButtons = [
       {
         id: "native-canvas-pin-preview",
@@ -1360,7 +1396,7 @@ describe("settings app layout", () => {
         selectors: ["#native-canvas-pin"],
         iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
       },
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1381,26 +1417,26 @@ describe("settings app layout", () => {
           nativeSelectors: ["#native-canvas-pin"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed.is-native") as HTMLButtonElement;
-    expect(suppressedChip).not.toBeNull();
-    expect(suppressedChip.textContent).toContain("钉住编辑区");
+    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed.is-native") as HTMLButtonElement
+    expect(suppressedChip).not.toBeNull()
+    expect(suppressedChip.textContent).toContain("钉住编辑区")
 
-    expect(target.querySelector(".workspace-preview__disabled")).toBeNull();
+    expect(target.querySelector(".workspace-preview__disabled")).toBeNull()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("allows a user button to move into the editor canvas preview", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const initialConfig = createDefaultConfig();
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "topbar-preview-item",
@@ -1408,7 +1444,7 @@ describe("settings app layout", () => {
         surface: "topbar",
         order: 0,
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1417,32 +1453,32 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
-    const canvasDropzone = target.querySelector(".workspace-preview__canvas-items") as HTMLElement;
+    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement
+    const canvasDropzone = target.querySelector(".workspace-preview__canvas-items") as HTMLElement
 
-    topbarButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
-    canvasDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+    topbarButton.dispatchEvent(new Event("dragstart", { bubbles: true }))
+    canvasDropzone.dispatchEvent(new Event("drop", { bubbles: true }))
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(onChange).toHaveBeenCalled();
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items.find((item: { title: string }) => item.title === "最近文档")?.surface).toBe("canvas");
+    expect(onChange).toHaveBeenCalled()
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig?.items.find((item: { title: string }) => item.title === "最近文档")?.surface).toBe("canvas")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("disabled native buttons remain in their surface with suppressed styling", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.disabledNativeButtons = [
       {
         id: "native-canvas-pin-preview",
@@ -1451,7 +1487,7 @@ describe("settings app layout", () => {
         selectors: ["#native-canvas-pin", "[data-type='readonly']"],
         iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
       },
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1472,24 +1508,24 @@ describe("settings app layout", () => {
           nativeSelectors: ["#native-canvas-pin", "[data-type='readonly']"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
-    expect(suppressedChip).not.toBeNull();
-    expect(suppressedChip.textContent).toContain("钉住编辑区");
-    expect(suppressedChip.classList.contains("is-native")).toBe(true);
+    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement
+    expect(suppressedChip).not.toBeNull()
+    expect(suppressedChip.textContent).toContain("钉住编辑区")
+    expect(suppressedChip.classList.contains("is-native")).toBe(true)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("disabled status bar buttons remain in their surface with suppressed styling", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.disabledNativeButtons = [
       {
         id: "native-status-help-preview",
@@ -1498,7 +1534,7 @@ describe("settings app layout", () => {
         selectors: ["#statusHelp"],
         iconMarkup: "<svg viewBox='0 0 24 24'><path d='M0 0h24v24H0z' /></svg>",
       },
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1519,24 +1555,24 @@ describe("settings app layout", () => {
           nativeSelectors: ["#statusHelp"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const suppressedButton = target.querySelector(".workspace-preview__statusbar .workspace-chip.is-suppressed") as HTMLButtonElement;
-    expect(suppressedButton).not.toBeNull();
-    expect(suppressedButton.textContent).toContain("帮助");
+    const suppressedButton = target.querySelector(".workspace-preview__statusbar .workspace-chip.is-suppressed") as HTMLButtonElement
+    expect(suppressedButton).not.toBeNull()
+    expect(suppressedButton.textContent).toContain("帮助")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("clicking a suppressed native button restores it inline", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
-    initialConfig.disabledNativeButtons = [];
+    const initialConfig = createDefaultConfig()
+    initialConfig.disabledNativeButtons = []
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1557,21 +1593,21 @@ describe("settings app layout", () => {
           nativeSelectors: ["#native-canvas-pin", "[data-type='readonly']"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
-    expect(nativeButton.classList.contains("is-suppressed")).toBe(false);
+    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement
+    expect(nativeButton.classList.contains("is-suppressed")).toBe(false)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("writes drag data for preview chips so browser drag-and-drop can start reliably", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const initialConfig = createDefaultConfig();
+    const target = document.createElement("div")
+    document.body.appendChild(target)
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "topbar-preview-item",
@@ -1579,7 +1615,7 @@ describe("settings app layout", () => {
         surface: "topbar",
         order: 0,
       }),
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1588,14 +1624,14 @@ describe("settings app layout", () => {
       onChange: vi.fn(),
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
-    const setData = vi.fn();
-    const dragStartEvent = new Event("dragstart", { bubbles: true });
+    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement
+    const setData = vi.fn()
+    const dragStartEvent = new Event("dragstart", { bubbles: true })
 
     Object.defineProperty(dragStartEvent, "dataTransfer", {
       configurable: true,
@@ -1603,18 +1639,18 @@ describe("settings app layout", () => {
         effectAllowed: "all",
         setData,
       },
-    });
+    })
 
-    topbarButton.dispatchEvent(dragStartEvent);
+    topbarButton.dispatchEvent(dragStartEvent)
 
-    expect(setData).toHaveBeenCalledWith("text/plain", expect.any(String));
+    expect(setData).toHaveBeenCalledWith("text/plain", expect.any(String))
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("uses a single preview chip as the drag image for native buttons", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
     const unmount = mountSettingsApp(target, {
       initialConfig: createDefaultConfig(),
@@ -1635,15 +1671,15 @@ describe("settings app layout", () => {
           nativeSelectors: ["#native-canvas-pin"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement;
-    const setData = vi.fn();
-    const setDragImage = vi.fn();
-    const dragStartEvent = new Event("dragstart", { bubbles: true });
+    const nativeButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-native") as HTMLButtonElement
+    const setData = vi.fn()
+    const setDragImage = vi.fn()
+    const dragStartEvent = new Event("dragstart", { bubbles: true })
 
     Object.defineProperty(dragStartEvent, "dataTransfer", {
       configurable: true,
@@ -1652,26 +1688,26 @@ describe("settings app layout", () => {
         setData,
         setDragImage,
       },
-    });
+    })
 
-    nativeButton.dispatchEvent(dragStartEvent);
+    nativeButton.dispatchEvent(dragStartEvent)
 
-    expect(setData).toHaveBeenCalledWith("text/plain", "native-canvas-pin-preview");
-    expect(setDragImage).toHaveBeenCalledTimes(1);
-    const [dragImage] = setDragImage.mock.calls[0] as [HTMLElement, number, number];
-    expect(dragImage).toBeInstanceOf(HTMLElement);
-    expect(dragImage.classList.contains("workspace-chip")).toBe(true);
-    expect(dragImage.textContent?.replace(/\s+/g, " ").trim()).toBe("钉住编辑区");
-    expect(dragImage.querySelectorAll(".workspace-chip").length).toBe(0);
+    expect(setData).toHaveBeenCalledWith("text/plain", "native-canvas-pin-preview")
+    expect(setDragImage).toHaveBeenCalledTimes(1)
+    const [dragImage] = setDragImage.mock.calls[0] as [HTMLElement, number, number]
+    expect(dragImage).toBeInstanceOf(HTMLElement)
+    expect(dragImage.classList.contains("workspace-chip")).toBe(true)
+    expect(dragImage.textContent?.replace(/\s+/g, " ").trim()).toBe("钉住编辑区")
+    expect(dragImage.querySelectorAll(".workspace-chip").length).toBe(0)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("suppressed native buttons render inline with the is-suppressed class", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.disabledNativeButtons = [
       {
         id: "native-canvas-pin-preview",
@@ -1680,7 +1716,7 @@ describe("settings app layout", () => {
         selectors: ["#native-canvas-pin"],
         iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
       },
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1701,24 +1737,24 @@ describe("settings app layout", () => {
           nativeSelectors: ["#native-canvas-pin"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const suppressedButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
-    expect(suppressedButton).not.toBeNull();
-    expect(suppressedButton.classList.contains("is-native")).toBe(true);
-    expect(suppressedButton.textContent).toContain("钉住编辑区");
+    const suppressedButton = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement
+    expect(suppressedButton).not.toBeNull()
+    expect(suppressedButton.classList.contains("is-native")).toBe(true)
+    expect(suppressedButton.textContent).toContain("钉住编辑区")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("suppressed native buttons keep their label in the original position", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.disabledNativeButtons = [
       {
         id: "native-mail-preview",
@@ -1727,7 +1763,7 @@ describe("settings app layout", () => {
         selectors: ["#barMail"],
         iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
       },
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1748,23 +1784,23 @@ describe("settings app layout", () => {
           nativeSelectors: ["#barMail"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const suppressedButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-suppressed") as HTMLButtonElement;
-    expect(suppressedButton).not.toBeNull();
-    expect(suppressedButton.textContent).toContain("邮件");
+    const suppressedButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-suppressed") as HTMLButtonElement
+    expect(suppressedButton).not.toBeNull()
+    expect(suppressedButton.textContent).toContain("邮件")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("suppressed native buttons show is-suppressed class in their original surface", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.disabledNativeButtons = [
       {
         id: "native-canvas-pin-preview",
@@ -1773,7 +1809,7 @@ describe("settings app layout", () => {
         selectors: ["#native-canvas-pin"],
         iconMarkup: "<svg viewBox='0 0 24 24'><path d='M1 1h22v22H1z'></path></svg>",
       },
-    ];
+    ]
 
     const unmount = mountSettingsApp(target, {
       initialConfig,
@@ -1794,24 +1830,24 @@ describe("settings app layout", () => {
           nativeSelectors: ["#native-canvas-pin"],
         },
       ]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement;
-    expect(suppressedChip).not.toBeNull();
-    expect(suppressedChip.classList.contains("is-native")).toBe(true);
-    expect(target.querySelector(".workspace-preview__disabled")).toBeNull();
+    const suppressedChip = target.querySelector(".workspace-preview__canvas-items .workspace-chip.is-suppressed") as HTMLButtonElement
+    expect(suppressedChip).not.toBeNull()
+    expect(suppressedChip.classList.contains("is-native")).toBe(true)
+    expect(target.querySelector(".workspace-preview__disabled")).toBeNull()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("allows a user button to move into the independent side panel preview area", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "topbar-preview-item",
@@ -1819,9 +1855,9 @@ describe("settings app layout", () => {
         surface: "topbar",
         order: 0,
       }),
-    ];
+    ]
 
-    const onChange = vi.fn();
+    const onChange = vi.fn()
     const unmount = mountSettingsApp(target, {
       initialConfig,
       builtinCommands: [],
@@ -1829,42 +1865,42 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement;
-    const dockPanelDropzone = target.querySelector(".workspace-preview__dock-panel-items") as HTMLElement;
+    const topbarButton = target.querySelector(".workspace-preview__topbar .workspace-chip.is-draggable") as HTMLButtonElement
+    const dockPanelDropzone = target.querySelector(".workspace-preview__dock-panel-items") as HTMLElement
 
-    const dockPanel = target.querySelector(".workspace-preview__dock-panel");
-    expect(dockPanel).not.toBeNull();
-    expect(target.querySelector(".workspace-preview__dock-panel-header")?.textContent).toContain("独立侧面板");
+    const dockPanel = target.querySelector(".workspace-preview__dock-panel")
+    expect(dockPanel).not.toBeNull()
+    expect(target.querySelector(".workspace-preview__dock-panel-header")?.textContent).toContain("独立侧面板")
 
-    const bodyChildren = Array.from(target.querySelectorAll(".workspace-preview__body > *"));
-    const dockPanelIndex = bodyChildren.indexOf(dockPanel as Element);
-    const canvasIndex = bodyChildren.findIndex(el => el.classList.contains("workspace-preview__canvas"));
-    expect(dockPanelIndex).toBe(canvasIndex + 1);
-    expect(dockPanelIndex).toBe(bodyChildren.length - 2);
+    const bodyChildren = Array.from(target.querySelectorAll(".workspace-preview__body > *"))
+    const dockPanelIndex = bodyChildren.indexOf(dockPanel as Element)
+    const canvasIndex = bodyChildren.findIndex((el) => el.classList.contains("workspace-preview__canvas"))
+    expect(dockPanelIndex).toBe(canvasIndex + 1)
+    expect(dockPanelIndex).toBe(bodyChildren.length - 2)
 
-    topbarButton.dispatchEvent(new Event("dragstart", { bubbles: true }));
-    dockPanelDropzone.dispatchEvent(new Event("drop", { bubbles: true }));
+    topbarButton.dispatchEvent(new Event("dragstart", { bubbles: true }))
+    dockPanelDropzone.dispatchEvent(new Event("drop", { bubbles: true }))
 
-    await new Promise(resolve => window.setTimeout(resolve, 20));
-    await flushAll();
+    await new Promise((resolve) => window.setTimeout(resolve, 20))
+    await flushAll()
 
-    expect(onChange).toHaveBeenCalled();
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items.find((item: { title: string }) => item.title === "最近文档")?.surface).toBe("dock-panel");
+    expect(onChange).toHaveBeenCalled()
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig?.items.find((item: { title: string }) => item.title === "最近文档")?.surface).toBe("dock-panel")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("provides independent side panel option in surface select dropdown", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "test-btn",
@@ -1872,9 +1908,9 @@ describe("settings app layout", () => {
         surface: "topbar",
         order: 0,
       }),
-    ];
+    ]
 
-    const onChange = vi.fn();
+    const onChange = vi.fn()
     const unmount = mountSettingsApp(target, {
       initialConfig,
       builtinCommands: [],
@@ -1882,31 +1918,40 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    const surfaceSelect = target.querySelector(".settings-panel--editor select.b3-select") as HTMLSelectElement;
-    const options = Array.from(surfaceSelect.options).map(opt => ({ value: opt.value, label: opt.textContent?.trim() }));
-    expect(options).toContainEqual({ value: "dock-panel", label: "独立侧面板" });
-    expect(options).toContainEqual({ value: "statusbar-right", label: "状态栏" });
-    expect(options.some(opt => opt.label === "状态栏左侧")).toBe(false);
+    const surfaceSelect = target.querySelector(".settings-panel--editor select.b3-select") as HTMLSelectElement
+    const options = Array.from(surfaceSelect.options).map((opt) => ({
+      value: opt.value,
+      label: opt.textContent?.trim(),
+    }))
+    expect(options).toContainEqual({
+      value: "dock-panel",
+      label: "独立侧面板",
+    })
+    expect(options).toContainEqual({
+      value: "statusbar-right",
+      label: "状态栏",
+    })
+    expect(options.some((opt) => opt.label === "状态栏左侧")).toBe(false)
 
-    surfaceSelect.value = "dock-panel";
-    surfaceSelect.dispatchEvent(new Event("change", { bubbles: true }));
-    await flushAll();
+    surfaceSelect.value = "dock-panel"
+    surfaceSelect.dispatchEvent(new Event("change", { bubbles: true }))
+    await flushAll()
 
-    const latestConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(latestConfig?.items.find((item: { id: string }) => item.id === "test-btn")?.surface).toBe("dock-panel");
+    const latestConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(latestConfig?.items.find((item: { id: string }) => item.id === "test-btn")?.surface).toBe("dock-panel")
 
-    unmount();
-  });
+    unmount()
+  })
 
   it("supports multi-selecting surfaces via option chips and updates list label", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "test-multi-btn",
@@ -1915,9 +1960,9 @@ describe("settings app layout", () => {
         surfaces: ["topbar"],
         order: 0,
       }),
-    ];
+    ]
 
-    const onChange = vi.fn();
+    const onChange = vi.fn()
     const unmount = mountSettingsApp(target, {
       initialConfig,
       builtinCommands: [],
@@ -1925,51 +1970,51 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
     // 验证显示位置多选芯片存在
-    const chips = Array.from(target.querySelectorAll<HTMLButtonElement>(".surface-option-chip"));
-    expect(chips.length).toBe(5);
+    const chips = Array.from(target.querySelectorAll<HTMLButtonElement>(".surface-option-chip"))
+    expect(chips.length).toBe(5)
 
     // 找到顶栏和状态栏芯片
-    const topbarChip = chips.find(chip => chip.textContent?.includes("顶栏"));
-    const statusbarChip = chips.find(chip => chip.textContent?.includes("状态栏"));
+    const topbarChip = chips.find((chip) => chip.textContent?.includes("顶栏"))
+    const statusbarChip = chips.find((chip) => chip.textContent?.includes("状态栏"))
 
-    expect(topbarChip?.classList.contains("is-selected")).toBe(true);
-    expect(statusbarChip?.classList.contains("is-selected")).toBe(false);
+    expect(topbarChip?.classList.contains("is-selected")).toBe(true)
+    expect(statusbarChip?.classList.contains("is-selected")).toBe(false)
 
     // 点击状态栏芯片以多选
-    statusbarChip?.click();
-    await flushAll();
+    statusbarChip?.click()
+    await flushAll()
 
-    expect(onChange).toHaveBeenCalled();
-    const updated = onChange.mock.calls.at(-1)?.[0];
-    const item = updated.items.find((i: { id: string }) => i.id === "test-multi-btn");
-    expect(item.surfaces).toContain("topbar");
-    expect(item.surfaces).toContain("statusbar-right");
+    expect(onChange).toHaveBeenCalled()
+    const updated = onChange.mock.calls.at(-1)?.[0]
+    const item = updated.items.find((i: { id: string }) => i.id === "test-multi-btn")
+    expect(item.surfaces).toContain("topbar")
+    expect(item.surfaces).toContain("statusbar-right")
 
     // 验证左侧列表中显示了组合的位置名称
-    const subtitle = target.querySelector(".button-list__content small");
-    expect(subtitle?.textContent).toContain("顶栏 · 状态栏");
+    const subtitle = target.querySelector(".button-list__content small")
+    expect(subtitle?.textContent).toContain("顶栏 · 状态栏")
 
     // 验证右侧位置预览区域的所有勾选位置直观显示该按钮（且均带有 is-active 选中高亮）
-    const topbarPreviewChip = target.querySelector(".workspace-preview__topbar .workspace-chip.is-active");
-    expect(topbarPreviewChip).not.toBeNull();
-    expect(topbarPreviewChip?.textContent).toContain("测试多选按钮");
+    const topbarPreviewChip = target.querySelector(".workspace-preview__topbar .workspace-chip.is-active")
+    expect(topbarPreviewChip).not.toBeNull()
+    expect(topbarPreviewChip?.textContent).toContain("测试多选按钮")
 
-    const statusbarPreviewChip = target.querySelector(".workspace-preview__statusbar .workspace-chip.is-active");
-    expect(statusbarPreviewChip).not.toBeNull();
-    expect(statusbarPreviewChip?.textContent).toContain("测试多选按钮");
+    const statusbarPreviewChip = target.querySelector(".workspace-preview__statusbar .workspace-chip.is-active")
+    expect(statusbarPreviewChip).not.toBeNull()
+    expect(statusbarPreviewChip?.textContent).toContain("测试多选按钮")
 
-    unmount();
-  });
+    unmount()
+  })
   it("supports setting dock card color and reflects it in dock-panel preview", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
+    const target = document.createElement("div")
+    document.body.appendChild(target)
 
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: "test-color-btn",
@@ -1978,9 +2023,9 @@ describe("settings app layout", () => {
         surfaces: ["dock-panel"],
         color: undefined,
       }),
-    ];
+    ]
 
-    const onChange = vi.fn();
+    const onChange = vi.fn()
     const unmount = mountSettingsApp(target, {
       initialConfig,
       builtinCommands: [],
@@ -1988,28 +2033,28 @@ describe("settings app layout", () => {
       onChange,
       onNotify: vi.fn(),
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    });
+    })
 
-    await flushAll();
+    await flushAll()
 
-    expect(target.textContent).toContain("外观设置");
-    expect(target.textContent).toContain("侧栏卡片颜色");
+    expect(target.textContent).toContain("外观设置")
+    expect(target.textContent).toContain("侧栏卡片颜色")
 
-    const blueBtn = target.querySelector<HTMLButtonElement>('.color-palette__item[title="晴空蓝"]');
-    expect(blueBtn).not.toBeNull();
+    const blueBtn = target.querySelector<HTMLButtonElement>('.color-palette__item[title="晴空蓝"]')
+    expect(blueBtn).not.toBeNull()
 
-    blueBtn?.click();
-    await flushAll();
+    blueBtn?.click()
+    await flushAll()
 
-    expect(onChange).toHaveBeenCalled();
-    const updated = onChange.mock.calls.at(-1)?.[0];
-    const item = updated.items.find((i: { id: string }) => i.id === "test-color-btn");
-    expect(item.color).toBe("#3b82f6");
+    expect(onChange).toHaveBeenCalled()
+    const updated = onChange.mock.calls.at(-1)?.[0]
+    const item = updated.items.find((i: { id: string }) => i.id === "test-color-btn")
+    expect(item.color).toBe("#3b82f6")
 
-        const dockPreviewChip = target.querySelector<HTMLElement>(".workspace-preview__dock-panel .workspace-chip.is-active");
-    expect(dockPreviewChip).not.toBeNull();
-    expect(dockPreviewChip?.style.backgroundColor).toContain("rgba(59, 130, 246");
+    const dockPreviewChip = target.querySelector<HTMLElement>(".workspace-preview__dock-panel .workspace-chip.is-active")
+    expect(dockPreviewChip).not.toBeNull()
+    expect(dockPreviewChip?.style.backgroundColor).toContain("rgba(59, 130, 246")
 
-    unmount();
-  });
-});
+    unmount()
+  })
+})

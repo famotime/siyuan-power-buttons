@@ -1,10 +1,15 @@
+import type { PowerButtonItem } from "@/shared/types"
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import {
   BUILTIN_COMMANDS,
   CommandExecutor,
-} from "@/core/commands";
-import type { PowerButtonItem } from "@/shared/types";
+} from "@/core/commands"
 
 const t = (key: string, replacements?: Record<string, string>): string => {
   const map: Record<string, string> = {
@@ -15,9 +20,9 @@ const t = (key: string, replacements?: Record<string, string>): string => {
     pluginCommandFailed: `插件命令执行失败：${replacements?.commandId ?? ""}`,
     experimentalShortcutFailed: `实验快捷键当前无法执行：${replacements?.actionId ?? ""}`,
     experimentalClickSequenceFailed: `实验点击序列当前无法执行：${replacements?.actionId ?? ""}`,
-  };
-  return map[key] ?? key;
-};
+  }
+  return map[key] ?? key
+}
 
 describe("command executor", () => {
   const createItem = (overrides: Partial<PowerButtonItem>): PowerButtonItem => ({
@@ -32,10 +37,10 @@ describe("command executor", () => {
     actionId: "recentDocs",
     tooltip: "",
     ...overrides,
-  });
+  })
 
   it("exposes a stable built-in command catalog", () => {
-    expect(BUILTIN_COMMANDS.map(command => command.id)).toEqual([
+    expect(BUILTIN_COMMANDS.map((command) => command.id)).toEqual([
       "backlinks",
       "config",
       "recentDocs",
@@ -48,17 +53,17 @@ describe("command executor", () => {
       "switchRightDock",
       "switchBottomDock",
       "switchAllDock",
-    ]);
-    expect(BUILTIN_COMMANDS.every(command => command.title.length > 0)).toBe(true);
-    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchLeftDock")?.title).toBe("左面板浮动切换");
-    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchRightDock")?.title).toBe("右面板浮动切换");
-    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchBottomDock")?.title).toBe("底栏浮动切换");
-    expect(BUILTIN_COMMANDS.find(cmd => cmd.id === "switchAllDock")?.title).toBe("全部面板浮动切换");
-  });
+    ])
+    expect(BUILTIN_COMMANDS.every((command) => command.title.length > 0)).toBe(true)
+    expect(BUILTIN_COMMANDS.find((cmd) => cmd.id === "switchLeftDock")?.title).toBe("左面板浮动切换")
+    expect(BUILTIN_COMMANDS.find((cmd) => cmd.id === "switchRightDock")?.title).toBe("右面板浮动切换")
+    expect(BUILTIN_COMMANDS.find((cmd) => cmd.id === "switchBottomDock")?.title).toBe("底栏浮动切换")
+    expect(BUILTIN_COMMANDS.find((cmd) => cmd.id === "switchAllDock")?.title).toBe("全部面板浮动切换")
+  })
 
   it("dispatches built-in global commands through the plugin API", async () => {
-    const globalCommand = vi.fn();
-    const runBuiltinCommand = vi.fn(() => true);
+    const globalCommand = vi.fn()
+    const runBuiltinCommand = vi.fn(() => true)
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify: vi.fn(),
@@ -66,36 +71,36 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand,
-    });
+    })
 
-    await executor.execute(createItem({}));
+    await executor.execute(createItem({}))
 
-    expect(runBuiltinCommand).toHaveBeenCalledWith("recentDocs");
-    expect(globalCommand).not.toHaveBeenCalled();
-  });
+    expect(runBuiltinCommand).toHaveBeenCalledWith("recentDocs")
+    expect(globalCommand).not.toHaveBeenCalled()
+  })
 
   it("falls back to the undocumented plugin global command when the stable builtin runner cannot execute", async () => {
-    const runBuiltinCommand = vi.fn(() => true);
-    const globalCommand = vi.fn();
-    const notify = vi.fn();
+    const runBuiltinCommand = vi.fn(() => false)
+    const globalCommand = vi.fn()
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify,
       t,
       openUrl: vi.fn(),
       pluginCommands: new Map(),
-      runBuiltinCommand: vi.fn(() => false),
-    });
+      runBuiltinCommand,
+    })
 
-    await executor.execute(createItem({}));
+    await executor.execute(createItem({}))
 
-    expect(globalCommand).toHaveBeenCalledWith("recentDocs");
-    expect(notify).not.toHaveBeenCalled();
-  });
+    expect(globalCommand).toHaveBeenCalledWith("recentDocs")
+    expect(notify).not.toHaveBeenCalled()
+  })
 
   it("keeps config as a builtin command and delegates it to the injected stable runner", async () => {
-    const runBuiltinCommand = vi.fn(() => true);
-    const globalCommand = vi.fn();
+    const runBuiltinCommand = vi.fn(() => true)
+    const globalCommand = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify: vi.fn(),
@@ -103,19 +108,19 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand,
-    });
+    })
 
     await executor.execute(createItem({
       actionId: "config",
-    }));
+    }))
 
-    expect(runBuiltinCommand).toHaveBeenCalledWith("config");
-    expect(globalCommand).not.toHaveBeenCalled();
-  });
+    expect(runBuiltinCommand).toHaveBeenCalledWith("config")
+    expect(globalCommand).not.toHaveBeenCalled()
+  })
 
   it("does not silently fall back to the undocumented plugin global command for daily notes", async () => {
-    const globalCommand = vi.fn();
-    const notify = vi.fn();
+    const globalCommand = vi.fn()
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify,
@@ -123,19 +128,19 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
-    });
+    })
 
     await executor.execute(createItem({
       actionId: "dailyNote",
-    }));
+    }))
 
-    expect(globalCommand).not.toHaveBeenCalled();
-    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：dailyNote", "error");
-  });
+    expect(globalCommand).not.toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：dailyNote", "error")
+  })
 
   it("does not silently fall back to the undocumented plugin global command for restartPlugins", async () => {
-    const globalCommand = vi.fn();
-    const notify = vi.fn();
+    const globalCommand = vi.fn()
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify,
@@ -143,19 +148,19 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
-    });
+    })
 
     await executor.execute(createItem({
       actionId: "restartPlugins",
-    }));
+    }))
 
-    expect(globalCommand).not.toHaveBeenCalled();
-    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：restartPlugins", "error");
-  });
+    expect(globalCommand).not.toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：restartPlugins", "error")
+  })
 
   it("does not silently fall back to the undocumented plugin global command for switchAllDock", async () => {
-    const globalCommand = vi.fn();
-    const notify = vi.fn();
+    const globalCommand = vi.fn()
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand } as never,
       notify,
@@ -163,18 +168,18 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
-    });
+    })
 
     await executor.execute(createItem({
       actionId: "switchAllDock",
-    }));
+    }))
 
-    expect(globalCommand).not.toHaveBeenCalled();
-    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：switchAllDock", "error");
-  });
+    expect(globalCommand).not.toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：switchAllDock", "error")
+  })
 
   it("notifies instead of failing silently when a builtin command cannot be executed", async () => {
-    const notify = vi.fn();
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: {} as never,
       notify,
@@ -182,16 +187,16 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(() => false),
-    });
+    })
 
-    await executor.execute(createItem({}));
+    await executor.execute(createItem({}))
 
-    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：recentDocs", "error");
-  });
+    expect(notify).toHaveBeenCalledWith("内置命令当前无法执行：recentDocs", "error")
+  })
 
   it("dispatches plugin commands and urls through injected handlers", async () => {
-    const pluginAction = vi.fn();
-    const openUrl = vi.fn();
+    const pluginAction = vi.fn()
+    const openUrl = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
@@ -199,23 +204,26 @@ describe("command executor", () => {
       openUrl,
       pluginCommands: new Map([["open-help", pluginAction]]),
       runBuiltinCommand: vi.fn(),
-    });
+    })
 
     await executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "siyuan-power-buttons:open-help",
-    }));
+    }))
     await executor.execute(createItem({
       actionType: "open-url",
       actionId: "https://example.com",
-    }));
+    }))
 
-    expect(pluginAction).toHaveBeenCalledTimes(1);
-    expect(openUrl).toHaveBeenCalledWith("https://example.com");
-  });
+    expect(pluginAction).toHaveBeenCalledTimes(1)
+    expect(openUrl).toHaveBeenCalledWith("https://example.com")
+  })
 
   it("dispatches external plugin commands through the unified plugin-command action type", async () => {
-    const invokeCommand = vi.fn().mockResolvedValue({ ok: true, alreadyNotified: true });
+    const invokeCommand = vi.fn().mockResolvedValue({
+      ok: true,
+      alreadyNotified: true,
+    })
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
@@ -234,29 +242,29 @@ describe("command executor", () => {
           invokeCommand,
         })),
       },
-    });
+    })
 
     await executor.execute(createItem({
       id: "doc-summary",
       surface: "topbar",
       actionType: "plugin-command",
       actionId: "siyuan-doc-assist:insert-doc-summary",
-    }));
+    }))
 
     expect(invokeCommand).toHaveBeenCalledWith("insert-doc-summary", {
       trigger: "button-click",
       sourcePlugin: "siyuan-power-buttons",
       surface: "topbar",
       buttonId: "doc-summary",
-    });
-  });
+    })
+  })
 
   it("refreshes external providers once before reporting a missing provider", async () => {
-    const notify = vi.fn();
-    const refresh = vi.fn().mockResolvedValue(undefined);
+    const notify = vi.fn()
+    const refresh = vi.fn().mockResolvedValue(undefined)
     const getProvider = vi.fn()
       .mockReturnValueOnce(null)
-      .mockReturnValueOnce(null);
+      .mockReturnValueOnce(null)
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
@@ -268,19 +276,19 @@ describe("command executor", () => {
         refresh,
         getProvider,
       },
-    });
+    })
 
     await executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "siyuan-doc-assist:insert-doc-summary",
-    }));
+    }))
 
-    expect(refresh).toHaveBeenCalledTimes(1);
-    expect(notify).toHaveBeenCalledWith("未检测到插件：siyuan-doc-assist", "error");
-  });
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(notify).toHaveBeenCalledWith("未检测到插件：siyuan-doc-assist", "error")
+  })
 
   it("notifies friendly install message when doc-assist plugin is missing and i18n is available", async () => {
-    const notify = vi.fn();
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
@@ -292,21 +300,21 @@ describe("command executor", () => {
         refresh: vi.fn().mockResolvedValue(undefined),
         getProvider: vi.fn().mockReturnValue(null),
       },
-    });
+    })
 
     await executor.execute(createItem({
       id: "del-prev",
       surface: "dock-panel",
       actionType: "plugin-command",
       actionId: "siyuan-doc-assist:delete-from-start-to-current",
-    }));
+    }))
 
-    expect(notify).toHaveBeenCalledWith("未检测到「思源文档助手」插件，请前往集市安装并启用该插件", "error");
-  });
+    expect(notify).toHaveBeenCalledWith("未检测到「思源文档助手」插件，请前往集市安装并启用该插件", "error")
+  })
 
   it("notifies when plugin command provider refresh itself fails", async () => {
-    const notify = vi.fn();
-    const refresh = vi.fn().mockRejectedValue(new Error("registry offline"));
+    const notify = vi.fn()
+    const refresh = vi.fn().mockRejectedValue(new Error("registry offline"))
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
@@ -318,23 +326,23 @@ describe("command executor", () => {
         refresh,
         getProvider: vi.fn(() => null),
       },
-    });
+    })
 
     await expect(executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "siyuan-doc-assist:insert-doc-summary",
-    }))).resolves.toBeUndefined();
+    }))).resolves.toBeUndefined()
 
-    expect(notify).toHaveBeenCalledWith("读取插件命令失败：registry offline", "error");
-  });
+    expect(notify).toHaveBeenCalledWith("读取插件命令失败：registry offline", "error")
+  })
 
   it("dispatches plugin setting, topbar icon, and command entries correctly", async () => {
-    const openSetting = vi.fn();
-    const topBarClick = vi.fn();
-    const cmdCallback = vi.fn();
-    const mockEl = document.createElement("div");
-    mockEl.setAttribute("data-id", "tb-test");
-    mockEl.onclick = topBarClick;
+    const openSetting = vi.fn()
+    const topBarClick = vi.fn()
+    const cmdCallback = vi.fn()
+    const mockEl = document.createElement("div")
+    mockEl.setAttribute("data-id", "tb-test")
+    mockEl.onclick = topBarClick
 
     const mockPlugins = [
       {
@@ -349,7 +357,7 @@ describe("command executor", () => {
           },
         ],
       },
-    ];
+    ]
 
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
@@ -358,32 +366,32 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       getPlugins: () => mockPlugins,
-    });
+    })
 
     // 1. Execute setting
     await executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "plugin-setting:test-plugin",
-    }));
-    expect(openSetting).toHaveBeenCalledTimes(1);
+    }))
+    expect(openSetting).toHaveBeenCalledTimes(1)
 
     // 2. Execute topbar icon
     await executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "plugin-topbar:test-plugin__tb-test",
-    }));
-    expect(topBarClick).toHaveBeenCalledTimes(1);
+    }))
+    expect(topBarClick).toHaveBeenCalledTimes(1)
 
     // 3. Execute command
     await executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "plugin-cmd:test-plugin__myAction",
-    }));
-    expect(cmdCallback).toHaveBeenCalledTimes(1);
-  });
+    }))
+    expect(cmdCallback).toHaveBeenCalledTimes(1)
+  })
 
   it("notifies when plugin is not found for discovered entries", async () => {
-    const notify = vi.fn();
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
@@ -391,17 +399,17 @@ describe("command executor", () => {
       openUrl: vi.fn(),
       pluginCommands: new Map(),
       getPlugins: () => [],
-    });
+    })
 
     await executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "plugin-setting:non-existent",
-    }));
-    expect(notify).toHaveBeenCalledWith("pluginNotInstalledOrDisabled", "error");
-  });
+    }))
+    expect(notify).toHaveBeenCalledWith("pluginNotInstalledOrDisabled", "error")
+  })
 
   it("dispatches experimental shortcuts through the injected runner", async () => {
-    const runExperimentalShortcut = vi.fn(() => true);
+    const runExperimentalShortcut = vi.fn(() => true)
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
@@ -410,7 +418,7 @@ describe("command executor", () => {
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalShortcut,
-    });
+    })
 
     const item = createItem({
       actionType: "experimental-shortcut" as never,
@@ -421,15 +429,15 @@ describe("command executor", () => {
         dispatchTarget: "active-editor",
         allowDirectWindowDispatch: false,
       },
-    });
+    })
 
-    await executor.execute(item);
+    await executor.execute(item)
 
-    expect(runExperimentalShortcut).toHaveBeenCalledWith(item);
-  });
+    expect(runExperimentalShortcut).toHaveBeenCalledWith(item)
+  })
 
   it("notifies when an experimental shortcut cannot be executed", async () => {
-    const notify = vi.fn();
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
@@ -438,7 +446,7 @@ describe("command executor", () => {
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalShortcut: vi.fn(() => false),
-    });
+    })
 
     await executor.execute(createItem({
       actionType: "experimental-shortcut" as never,
@@ -449,13 +457,13 @@ describe("command executor", () => {
         dispatchTarget: "auto",
         allowDirectWindowDispatch: false,
       },
-    }));
+    }))
 
-    expect(notify).toHaveBeenCalledWith("实验快捷键当前无法执行：Ctrl+B", "error");
-  });
+    expect(notify).toHaveBeenCalledWith("实验快捷键当前无法执行：Ctrl+B", "error")
+  })
 
   it("dispatches experimental click sequences through the injected runner", async () => {
-    const runExperimentalClickSequence = vi.fn(() => true);
+    const runExperimentalClickSequence = vi.fn(() => true)
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify: vi.fn(),
@@ -464,7 +472,7 @@ describe("command executor", () => {
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalClickSequence,
-    });
+    })
 
     const item = createItem({
       actionType: "experimental-click-sequence" as never,
@@ -481,15 +489,15 @@ describe("command executor", () => {
           },
         ],
       },
-    });
+    })
 
-    await executor.execute(item);
+    await executor.execute(item)
 
-    expect(runExperimentalClickSequence).toHaveBeenCalledWith(item);
-  });
+    expect(runExperimentalClickSequence).toHaveBeenCalledWith(item)
+  })
 
   it("notifies when an experimental click sequence cannot be executed", async () => {
-    const notify = vi.fn();
+    const notify = vi.fn()
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
       notify,
@@ -498,7 +506,7 @@ describe("command executor", () => {
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       runExperimentalClickSequence: vi.fn(() => false),
-    });
+    })
 
     await executor.execute(createItem({
       actionType: "experimental-click-sequence" as never,
@@ -515,18 +523,18 @@ describe("command executor", () => {
           },
         ],
       },
-    }));
+    }))
 
-    expect(notify).toHaveBeenCalledWith("实验点击序列当前无法执行：barSettings", "error");
-  });
+    expect(notify).toHaveBeenCalledWith("实验点击序列当前无法执行：barSettings", "error")
+  })
 
   it("executes plugin-dock by clicking dock element or calling toggleModel", async () => {
-    const dockEl = document.createElement("span");
-    dockEl.className = "dock__item";
-    dockEl.setAttribute("data-type", "siyuan-plugin-calendar_dock");
-    const clickSpy = vi.fn();
-    dockEl.addEventListener("click", clickSpy);
-    document.body.appendChild(dockEl);
+    const dockEl = document.createElement("span")
+    dockEl.className = "dock__item"
+    dockEl.setAttribute("data-type", "siyuan-plugin-calendar_dock")
+    const clickSpy = vi.fn()
+    dockEl.addEventListener("click", clickSpy)
+    document.body.appendChild(dockEl)
 
     const mockPlugins = [
       {
@@ -537,7 +545,7 @@ describe("command executor", () => {
           },
         },
       },
-    ];
+    ]
 
     const executor = new CommandExecutor({
       plugin: { globalCommand: vi.fn() } as never,
@@ -547,14 +555,14 @@ describe("command executor", () => {
       pluginCommands: new Map(),
       runBuiltinCommand: vi.fn(),
       getPlugins: () => mockPlugins,
-    });
+    })
 
     await executor.execute(createItem({
       actionType: "plugin-command",
       actionId: "plugin-dock:siyuan-plugin-calendar__siyuan-plugin-calendar_dock",
-    }));
+    }))
 
-    expect(clickSpy).toHaveBeenCalled();
-    dockEl.remove();
-  });
-});
+    expect(clickSpy).toHaveBeenCalled()
+    dockEl.remove()
+  })
+})

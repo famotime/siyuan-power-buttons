@@ -16,6 +16,10 @@ export default antfu(
     ignores: [
       'dist',
       'node_modules',
+      // 设计文档与计划文档，其中的代码片段并非可运行代码
+      'docs/**',
+      // 自动生成文件（tools/generate-iconpark-catalog.ts 产物）
+      'src/generated/**',
     ],
   },
   {

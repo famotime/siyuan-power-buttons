@@ -1,22 +1,30 @@
 // @vitest-environment jsdom
 
-import { createApp, nextTick } from 'vue';
-import { describe, expect, it, vi } from 'vitest';
-import { createDefaultConfig } from '@/core/config/defaults';
-import ConfigTransferPanel from '@/features/settings/components/ConfigTransferPanel.vue';
-import SettingsButtonListPanel from '@/features/settings/components/SettingsButtonListPanel.vue';
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import {
+  createApp,
+  nextTick,
+} from 'vue'
+import { createDefaultConfig } from '@/core/config/defaults'
+import ConfigTransferPanel from '@/features/settings/components/ConfigTransferPanel.vue'
+import SettingsButtonListPanel from '@/features/settings/components/SettingsButtonListPanel.vue'
 
 describe('settings components', () => {
   it('renders the button list panel and forwards list actions through props', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
+    const target = document.createElement('div')
+    document.body.appendChild(target)
 
-    const config = createDefaultConfig();
-    const addItem = vi.fn();
-    const duplicateItem = vi.fn();
-    const selectItem = vi.fn();
-    const toggleVisible = vi.fn();
-    const removeItem = vi.fn();
+    const config = createDefaultConfig()
+    const addItem = vi.fn()
+    const duplicateItem = vi.fn()
+    const selectItem = vi.fn()
+    const toggleVisible = vi.fn()
+    const removeItem = vi.fn()
 
     const app = createApp(SettingsButtonListPanel, {
       config,
@@ -31,73 +39,73 @@ describe('settings components', () => {
       removeItem,
       onListDragStart: vi.fn(),
       onListDrop: vi.fn(),
-    });
+    })
 
-    app.mount(target);
-    await nextTick();
+    app.mount(target)
+    await nextTick()
 
-    expect(target.textContent).toContain(`${config.items.length} 个按钮`);
+    expect(target.textContent).toContain(`${config.items.length} 个按钮`)
 
-    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>('.button-list__main'));
-    listButtons[1]?.click();
-    target.querySelector<HTMLButtonElement>('.panel-title__actions .b3-button')?.click();
-    target.querySelector<HTMLButtonElement>('.panel-title__actions .b3-button--outline')?.click();
-    target.querySelector<HTMLButtonElement>('.switch-button--compact')?.click();
-    target.querySelector<HTMLButtonElement>('.button-list__delete')?.click();
+    const listButtons = Array.from(target.querySelectorAll<HTMLButtonElement>('.button-list__main'))
+    listButtons[1]?.click()
+    target.querySelector<HTMLButtonElement>('.panel-title__actions .b3-button')?.click()
+    target.querySelector<HTMLButtonElement>('.panel-title__actions .b3-button--outline')?.click()
+    target.querySelector<HTMLButtonElement>('.switch-button--compact')?.click()
+    target.querySelector<HTMLButtonElement>('.button-list__delete')?.click()
 
-    expect(selectItem).toHaveBeenCalledWith(config.items[1].id);
-    expect(addItem).toHaveBeenCalledTimes(1);
-    expect(duplicateItem).toHaveBeenCalledTimes(1);
-    expect(toggleVisible).toHaveBeenCalledWith(config.items[0].id);
-    expect(removeItem).toHaveBeenCalledWith(config.items[0].id);
-    expect(target.textContent).not.toContain('配置文件');
+    expect(selectItem).toHaveBeenCalledWith(config.items[1].id)
+    expect(addItem).toHaveBeenCalledTimes(1)
+    expect(duplicateItem).toHaveBeenCalledTimes(1)
+    expect(toggleVisible).toHaveBeenCalledWith(config.items[0].id)
+    expect(removeItem).toHaveBeenCalledWith(config.items[0].id)
+    expect(target.textContent).not.toContain('配置文件')
 
-    app.unmount();
-  });
+    app.unmount()
+  })
 
   it('renders the config transfer panel and forwards file actions through props', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
+    const target = document.createElement('div')
+    document.body.appendChild(target)
 
-    const exportConfigFile = vi.fn();
-    const openImportFilePicker = vi.fn();
-    const handleImportFile = vi.fn();
-    const setImportFileInput = vi.fn();
+    const exportConfigFile = vi.fn()
+    const openImportFilePicker = vi.fn()
+    const handleImportFile = vi.fn()
+    const setImportFileInput = vi.fn()
 
     const app = createApp(ConfigTransferPanel, {
       setImportFileInput,
       exportConfigFile,
       openImportFilePicker,
       handleImportFile,
-    });
+    })
 
-    app.mount(target);
-    await nextTick();
+    app.mount(target)
+    await nextTick()
 
-    expect(target.textContent).toContain('配置文件');
-    expect(target.textContent).toContain('导入或导出所有已配置按钮');
+    expect(target.textContent).toContain('配置文件')
+    expect(target.textContent).toContain('导入或导出所有已配置按钮')
 
-    const actionButtons = Array.from(target.querySelectorAll<HTMLButtonElement>('.config-transfer__actions .b3-button--outline'));
-    actionButtons[0]?.click();
-    actionButtons[1]?.click();
+    const actionButtons = Array.from(target.querySelectorAll<HTMLButtonElement>('.config-transfer__actions .b3-button--outline'))
+    actionButtons[0]?.click()
+    actionButtons[1]?.click()
 
-    const fileInput = target.querySelector<HTMLInputElement>('.config-transfer__input');
-    fileInput?.dispatchEvent(new Event('change'));
+    const fileInput = target.querySelector<HTMLInputElement>('.config-transfer__input')
+    fileInput?.dispatchEvent(new Event('change'))
 
-    expect(setImportFileInput).toHaveBeenCalledTimes(1);
-    expect(setImportFileInput.mock.calls[0]?.[0]).toBe(fileInput);
-    expect(exportConfigFile).toHaveBeenCalledTimes(1);
-    expect(openImportFilePicker).toHaveBeenCalledTimes(1);
-    expect(handleImportFile).toHaveBeenCalledTimes(1);
+    expect(setImportFileInput).toHaveBeenCalledTimes(1)
+    expect(setImportFileInput.mock.calls[0]?.[0]).toBe(fileInput)
+    expect(exportConfigFile).toHaveBeenCalledTimes(1)
+    expect(openImportFilePicker).toHaveBeenCalledTimes(1)
+    expect(handleImportFile).toHaveBeenCalledTimes(1)
 
-    app.unmount();
-  });
+    app.unmount()
+  })
 
   it('renders the delete action with a stroked trash icon instead of a filled block', async () => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
+    const target = document.createElement('div')
+    document.body.appendChild(target)
 
-    const config = createDefaultConfig();
+    const config = createDefaultConfig()
 
     const app = createApp(SettingsButtonListPanel, {
       config,
@@ -112,16 +120,16 @@ describe('settings components', () => {
       removeItem: vi.fn(),
       onListDragStart: vi.fn(),
       onListDrop: vi.fn(),
-    });
+    })
 
-    app.mount(target);
-    await nextTick();
+    app.mount(target)
+    await nextTick()
 
-    const deleteIconMarkup = target.querySelector<HTMLButtonElement>('.button-list__delete')?.innerHTML || '';
+    const deleteIconMarkup = target.querySelector<HTMLButtonElement>('.button-list__delete')?.innerHTML || ''
 
-    expect(deleteIconMarkup).toContain('stroke="currentColor"');
-    expect(deleteIconMarkup).toContain('fill:none');
+    expect(deleteIconMarkup).toContain('stroke="currentColor"')
+    expect(deleteIconMarkup).toContain('fill:none')
 
-    app.unmount();
-  });
-});
+    app.unmount()
+  })
+})

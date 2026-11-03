@@ -11,7 +11,7 @@ export const SURFACES = [
   "dock-right-bottom",
   "dock-bottom-left",
   "dock-bottom-right",
-] as const;
+] as const
 
 export const CONFIGURABLE_SURFACES = [
   "topbar",
@@ -19,7 +19,7 @@ export const CONFIGURABLE_SURFACES = [
   "canvas",
   "selection-toolbar",
   "dock-panel",
-] as const;
+] as const
 
 export const ACTION_TYPES = [
   "builtin-global-command",
@@ -27,133 +27,133 @@ export const ACTION_TYPES = [
   "open-url",
   "experimental-shortcut",
   "experimental-click-sequence",
-] as const;
+] as const
 
 export const ICON_TYPES = [
   "iconpark",
   "emoji",
   "svg",
-] as const;
+] as const
 
-export type SurfaceType = (typeof SURFACES)[number];
-export type ConfigurableSurfaceType = (typeof CONFIGURABLE_SURFACES)[number];
-export type ActionType = (typeof ACTION_TYPES)[number];
-export type IconType = (typeof ICON_TYPES)[number];
+export type SurfaceType = (typeof SURFACES)[number]
+export type ConfigurableSurfaceType = (typeof CONFIGURABLE_SURFACES)[number]
+export type ActionType = (typeof ACTION_TYPES)[number]
+export type IconType = (typeof ICON_TYPES)[number]
 
 export interface ExperimentalShortcutConfig {
-  shortcut: string;
-  sendEscapeBefore: boolean;
-  dispatchTarget: "auto" | "active-editor" | "window" | "body";
-  allowDirectWindowDispatch: boolean;
+  shortcut: string
+  sendEscapeBefore: boolean
+  dispatchTarget: "auto" | "active-editor" | "window" | "body"
+  allowDirectWindowDispatch: boolean
 }
 
 export interface ClickSequenceStep {
-  selector: string;
-  value?: string;
-  valueMode?: "value" | "text";
-  timeoutMs: number;
-  retryCount: number;
-  retryDelayMs: number;
-  delayAfterMs: number;
+  selector: string
+  value?: string
+  valueMode?: "value" | "text"
+  timeoutMs: number
+  retryCount: number
+  retryDelayMs: number
+  delayAfterMs: number
 }
 
 export interface ExperimentalClickSequenceConfig {
-  steps: ClickSequenceStep[];
-  stopOnFailure: boolean;
+  steps: ClickSequenceStep[]
+  stopOnFailure: boolean
 }
 
 export interface PowerButtonItem {
-  id: string;
-  title: string;
-  visible: boolean;
-  iconType: IconType;
-  iconValue: string;
-  color?: string;
-  surface: SurfaceType;
-  surfaces?: SurfaceType[];
-  order: number;
-  actionType: ActionType;
-  actionId: string;
-  tooltip?: string;
-  experimentalShortcut?: ExperimentalShortcutConfig;
-  experimentalClickSequence?: ExperimentalClickSequenceConfig;
+  id: string
+  title: string
+  visible: boolean
+  iconType: IconType
+  iconValue: string
+  color?: string
+  surface: SurfaceType
+  surfaces?: SurfaceType[]
+  order: number
+  actionType: ActionType
+  actionId: string
+  tooltip?: string
+  experimentalShortcut?: ExperimentalShortcutConfig
+  experimentalClickSequence?: ExperimentalClickSequenceConfig
 }
 
 export interface DisabledNativeButton {
-  id: string;
-  title: string;
-  surface: SurfaceType;
-  selectors: string[];
-  iconMarkup?: string;
+  id: string
+  title: string
+  surface: SurfaceType
+  selectors: string[]
+  iconMarkup?: string
 }
 
 export interface DisabledSelectionToolbarItem {
   /** 原生按钮标识符，如 "strong", "em" 等 */
-  name: string;
+  name: string
   /** 显示标题，用于设置界面 */
-  title: string;
+  title: string
 }
 
 export interface SelectionToolbarLayoutItem {
-  type: "native" | "custom";
-  id: string;
+  type: "native" | "custom"
+  id: string
 }
 
-export type SurfaceLayoutElementType = "button" | "divider";
+export type SurfaceLayoutElementType = "button" | "divider"
 
 export interface SurfaceLayoutItem {
-  type: SurfaceLayoutElementType;
-  id: string;
-  title?: string;
+  type: SurfaceLayoutElementType
+  id: string
+  title?: string
 }
 
 export interface PowerButtonsConfig {
-  version: 2;
-  desktopOnly: boolean;
-  items: PowerButtonItem[];
-  disabledNativeButtons: DisabledNativeButton[];
-  disabledSelectionToolbarItems: DisabledSelectionToolbarItem[];
-  selectionToolbarLayout: SelectionToolbarLayoutItem[];
-  surfaceLayouts?: Partial<Record<SurfaceType, SurfaceLayoutItem[]>>;
+  version: 2
+  desktopOnly: boolean
+  items: PowerButtonItem[]
+  disabledNativeButtons: DisabledNativeButton[]
+  disabledSelectionToolbarItems: DisabledSelectionToolbarItem[]
+  selectionToolbarLayout: SelectionToolbarLayoutItem[]
+  surfaceLayouts?: Partial<Record<SurfaceType, SurfaceLayoutItem[]>>
   experimental: {
-    nativeToolbarControl: boolean;
-    internalCommandAdapter: boolean;
-    shortcutAdapter: boolean;
-    clickSequenceAdapter: boolean;
-  };
+    nativeToolbarControl: boolean
+    internalCommandAdapter: boolean
+    shortcutAdapter: boolean
+    clickSequenceAdapter: boolean
+  }
 }
 
 export interface BuiltinCommandDefinition {
-  id: string;
-  title: string;
-  category: string;
-  surfaceSuggestion: SurfaceType[];
-  requiresContext: boolean;
-  stability: "stable";
+  id: string
+  title: string
+  category: string
+  surfaceSuggestion: SurfaceType[]
+  requiresContext: boolean
+  stability: "stable"
 }
 
 export interface PluginCommandDefinition {
-  id: string;
-  title: string;
-  description: string;
+  id: string
+  title: string
+  description: string
 }
 
-export type PreviewSource = "config" | "native" | "disabled-native";
-export type PreviewSurfaceType = SurfaceType;
+export type PreviewSource = "config" | "native" | "disabled-native"
+export type PreviewSurfaceType = SurfaceType
 
 export interface PreviewButtonItem {
-  id: string;
-  title: string;
-  visible: boolean;
-  surface: PreviewSurfaceType;
-  surfaces?: SurfaceType[];
-  order: number;
-  editable: boolean;
-  source: PreviewSource;
-  type?: SurfaceLayoutElementType;
-  iconMarkup?: string;
-  itemId?: string;
-  nativeSelectors?: string[];
-  draggable?: boolean;
-  suppressed?: boolean;
+  id: string
+  title: string
+  visible: boolean
+  surface: PreviewSurfaceType
+  surfaces?: SurfaceType[]
+  order: number
+  editable: boolean
+  source: PreviewSource
+  type?: SurfaceLayoutElementType
+  iconMarkup?: string
+  itemId?: string
+  nativeSelectors?: string[]
+  draggable?: boolean
+  suppressed?: boolean
 }

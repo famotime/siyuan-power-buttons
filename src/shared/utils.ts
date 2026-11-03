@@ -1,39 +1,40 @@
 import type {
   PowerButtonItem,
   PowerButtonsConfig,
-} from "@/shared/types";
+} from "@/shared/types"
+
 export {
   isDockSurface,
   isStatusBarSurface,
-} from "@/shared/surface-metadata";
+} from "@/shared/surface-metadata"
 
 export function createId(prefix = "pb"): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `${prefix}-${crypto.randomUUID()}`;
+    return `${prefix}-${crypto.randomUUID()}`
   }
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 export function cloneConfig(config: PowerButtonsConfig): PowerButtonsConfig {
-  return JSON.parse(JSON.stringify(config));
+  return JSON.parse(JSON.stringify(config))
 }
 
 export function normalizeItemOrder(items: PowerButtonItem[]): PowerButtonItem[] {
   return items.map((item, index) => ({
     ...item,
     order: index,
-  }));
+  }))
 }
 
-export function sortItems<T extends { order: number; title?: string }>(items: T[]): T[] {
+export function sortItems<T extends { order: number, title?: string }>(items: T[]): T[] {
   return [...items].sort((left, right) =>
     left.order - right.order
-    || (left.title ?? "").localeCompare(right.title ?? ""));
+    || (left.title ?? "").localeCompare(right.title ?? ""))
 }
 
 export function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
-  const next = [...items];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  return next;
+  const next = [...items]
+  const [moved] = next.splice(fromIndex, 1)
+  next.splice(toIndex, 0, moved)
+  return next
 }

@@ -19,13 +19,20 @@
             <span class="switch-button__dot" />
           </button>
         </label>
-        <button class="b3-button b3-button--outline" :disabled="isRefreshingLayout" @click="refreshCurrentLayout">
+        <button
+          class="b3-button b3-button--outline"
+          :disabled="isRefreshingLayout"
+          @click="refreshCurrentLayout"
+        >
           {{ isRefreshingLayout ? '读取中...' : '读取当前布局' }}
         </button>
       </div>
     </div>
 
-    <div class="workspace-preview" :class="{ 'show-labels': showPreviewLabels }">
+    <div
+      class="workspace-preview"
+      :class="{ 'show-labels': showPreviewLabels }"
+    >
       <slot />
     </div>
   </div>
@@ -33,9 +40,9 @@
 
 <script setup lang="ts">
 defineProps<{
-  showPreviewLabels: boolean;
-  isRefreshingLayout: boolean;
-  togglePreviewLabels: () => void;
-  refreshCurrentLayout: () => void | Promise<void>;
-}>();
+  showPreviewLabels: boolean
+  isRefreshingLayout: boolean
+  togglePreviewLabels: () => void
+  refreshCurrentLayout: () => void | Promise<void>
+}>()
 </script>

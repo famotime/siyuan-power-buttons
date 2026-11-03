@@ -1,64 +1,64 @@
-import { hardenStrokeOnlySvgFill } from "@/shared/icon-renderer";
+import { hardenStrokeOnlySvgFill } from "@/shared/icon-renderer"
 
-const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 
 function getUseHref(element: Element): string {
-  return (element.getAttribute("href") || element.getAttribute("xlink:href") || "").replace(/^#/, "").trim();
+  return (element.getAttribute("href") || element.getAttribute("xlink:href") || "").replace(/^#/, "").trim()
 }
 
 export function createNativeFallbackIconMarkup(title: string): string {
-  const iconText = title.trim().slice(0, 1) || "?";
-  return `<span class="siyuan-power-buttons__native-fallback-icon">${iconText}</span>`;
+  const iconText = title.trim().slice(0, 1) || "?"
+  return `<span class="siyuan-power-buttons__native-fallback-icon">${iconText}</span>`
 }
 
 function inlineSymbolUses(svg: SVGElement, ownerDocument: Document): string | undefined {
-  const clone = svg.cloneNode(true) as SVGElement;
-  const uses = Array.from(clone.querySelectorAll("use"));
+  const clone = svg.cloneNode(true) as SVGElement
+  const uses = Array.from(clone.querySelectorAll("use"))
 
   if (!uses.length) {
-    return hardenStrokeOnlySvgFill(clone.outerHTML);
+    return hardenStrokeOnlySvgFill(clone.outerHTML)
   }
 
   for (const use of uses) {
-    const symbolId = getUseHref(use);
+    const symbolId = getUseHref(use)
     if (!symbolId) {
-      return undefined;
+      return undefined
     }
 
-    const symbol = ownerDocument.getElementById(symbolId);
+    const symbol = ownerDocument.getElementById(symbolId)
     if (!symbol || symbol.tagName.toLowerCase() !== "symbol") {
-      return undefined;
+      return undefined
     }
 
-    const group = ownerDocument.createElementNS(SVG_NAMESPACE, "g");
+    const group = ownerDocument.createElementNS(SVG_NAMESPACE, "g")
     for (const attribute of Array.from(symbol.attributes)) {
       if (attribute.name === "id" || attribute.name === "viewBox") {
-        continue;
+        continue
       }
-      group.setAttribute(attribute.name, attribute.value);
+      group.setAttribute(attribute.name, attribute.value)
     }
     for (const attribute of Array.from(use.attributes)) {
       if (attribute.name === "href" || attribute.name === "xlink:href") {
-        continue;
+        continue
       }
-      group.setAttribute(attribute.name, attribute.value);
+      group.setAttribute(attribute.name, attribute.value)
     }
 
     for (const child of Array.from(symbol.childNodes)) {
-      group.appendChild(child.cloneNode(true));
+      group.appendChild(child.cloneNode(true))
     }
 
     if (!clone.getAttribute("viewBox")) {
-      const viewBox = symbol.getAttribute("viewBox");
+      const viewBox = symbol.getAttribute("viewBox")
       if (viewBox) {
-        clone.setAttribute("viewBox", viewBox);
+        clone.setAttribute("viewBox", viewBox)
       }
     }
 
-    use.replaceWith(group);
+    use.replaceWith(group)
   }
 
-  return hardenStrokeOnlySvgFill(clone.outerHTML);
+  return hardenStrokeOnlySvgFill(clone.outerHTML)
 }
 
 export function getNativeToolbarIcon(name: string, label: string, ownerDocument: Document = document): string {
@@ -66,35 +66,35 @@ export function getNativeToolbarIcon(name: string, label: string, ownerDocument:
     `.protyle-toolbar [data-type="${name}"]`,
     `.b3-menu [data-type="${name}"]`,
     `[data-type="${name}"]`,
-  ];
+  ]
   for (const selector of selectors) {
-    const el = ownerDocument.querySelector<HTMLElement>(selector);
-    if (!el) continue;
-    const svg = el.querySelector("svg");
+    const el = ownerDocument.querySelector<HTMLElement>(selector)
+    if (!el) continue
+    const svg = el.querySelector("svg")
     if (svg) {
-      const resolved = resolveNativeIconMarkup(svg.outerHTML, ownerDocument);
-      if (resolved) return resolved;
+      const resolved = resolveNativeIconMarkup(svg.outerHTML, ownerDocument)
+      if (resolved) return resolved
     }
   }
-  return createNativeFallbackIconMarkup(label);
+  return createNativeFallbackIconMarkup(label)
 }
 
 export function resolveNativeIconMarkup(markup: string | undefined, ownerDocument: Document = document): string | undefined {
-  const trimmed = markup?.trim();
+  const trimmed = markup?.trim()
   if (!trimmed) {
-    return undefined;
+    return undefined
   }
 
   if (!trimmed.startsWith("<svg")) {
-    return trimmed;
+    return trimmed
   }
 
-  const template = ownerDocument.createElement("template");
-  template.innerHTML = trimmed;
-  const svg = template.content.querySelector("svg");
+  const template = ownerDocument.createElement("template")
+  template.innerHTML = trimmed
+  const svg = template.content.querySelector("svg")
   if (!(svg instanceof SVGElement)) {
-    return undefined;
+    return undefined
   }
 
-  return inlineSymbolUses(svg, ownerDocument);
+  return inlineSymbolUses(svg, ownerDocument)
 }

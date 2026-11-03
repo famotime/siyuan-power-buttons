@@ -1,5 +1,5 @@
-import { BUILTIN_COMMANDS } from "@/core/commands/catalog";
-import { triggerElementBySmartSelectors } from "@/core/commands/dom-query";
+import { BUILTIN_COMMANDS } from "@/core/commands/catalog"
+import { triggerElementBySmartSelectors } from "@/core/commands/dom-query"
 
 const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
   backlinks: [
@@ -72,30 +72,30 @@ const BUILTIN_COMMAND_QUERIES: Record<string, string[]> = {
     "[data-id='switchAllDock']",
     "switchAllDock",
   ],
-};
+}
 
 function getBuiltinCommandQueries(commandId: string): string[] {
-  const queries = BUILTIN_COMMAND_QUERIES[commandId];
+  const queries = BUILTIN_COMMAND_QUERIES[commandId]
   if (!queries?.length) {
-    return [];
+    return []
   }
 
-  const title = BUILTIN_COMMANDS.find(command => command.id === commandId)?.title.trim();
+  const title = BUILTIN_COMMANDS.find((command) => command.id === commandId)?.title.trim()
   if (!title) {
-    return queries;
+    return queries
   }
 
   return [
     ...queries,
     title,
     `text:${title}`,
-  ];
+  ]
 }
 
 export function executeBuiltinCommandByDom(commandId: string, root: ParentNode = document): boolean {
-  const queries = getBuiltinCommandQueries(commandId);
+  const queries = getBuiltinCommandQueries(commandId)
   if (!queries?.length) {
-    return false;
+    return false
   }
-  return triggerElementBySmartSelectors(queries, root);
+  return triggerElementBySmartSelectors(queries, root)
 }

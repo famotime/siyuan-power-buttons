@@ -1,68 +1,68 @@
-import type { Plugin } from "siyuan";
-import { createDefaultConfig } from "@/core/config/defaults";
-import { sanitizeConfig } from "@/core/config/sanitize";
-import { CONFIG_STORAGE_NAME } from "@/shared/constants";
-import { cloneConfig } from "@/shared/utils";
-import type { PowerButtonsConfig } from "@/shared/types";
+import type { Plugin } from "siyuan"
+import type { PowerButtonsConfig } from "@/shared/types"
+import { createDefaultConfig } from "@/core/config/defaults"
+import { sanitizeConfig } from "@/core/config/sanitize"
+import { CONFIG_STORAGE_NAME } from "@/shared/constants"
+import { cloneConfig } from "@/shared/utils"
 
-type Listener = (config: PowerButtonsConfig) => void;
+type Listener = (config: PowerButtonsConfig) => void
 
 export class ConfigStore {
-  private config = createDefaultConfig();
-  private listeners = new Set<Listener>();
+  private config = createDefaultConfig()
+  private listeners = new Set<Listener>()
 
   constructor(private readonly plugin: Plugin) {}
 
   async load(): Promise<PowerButtonsConfig> {
-    const stored = await this.plugin.loadData(CONFIG_STORAGE_NAME);
-    this.config = sanitizeConfig(stored);
+    const stored = await this.plugin.loadData(CONFIG_STORAGE_NAME)
+    this.config = sanitizeConfig(stored)
     if (JSON.stringify(stored ?? null) !== JSON.stringify(this.config)) {
-      await this.persist();
+      await this.persist()
     }
-    return this.snapshot();
+    return this.snapshot()
   }
 
   getConfig(): PowerButtonsConfig {
-    return this.config;
+    return this.config
   }
 
   snapshot(): PowerButtonsConfig {
-    return cloneConfig(this.config);
+    return cloneConfig(this.config)
   }
 
   async replace(nextConfig: PowerButtonsConfig): Promise<PowerButtonsConfig> {
-    this.config = sanitizeConfig(nextConfig);
-    await this.persist();
-    this.notify();
-    return this.snapshot();
+    this.config = sanitizeConfig(nextConfig)
+    await this.persist()
+    this.notify()
+    return this.snapshot()
   }
 
   async save(nextConfig: PowerButtonsConfig): Promise<PowerButtonsConfig> {
-    return this.replace(nextConfig);
+    return this.replace(nextConfig)
   }
 
   async reset(): Promise<PowerButtonsConfig> {
-    this.config = createDefaultConfig();
-    await this.persist();
-    this.notify();
-    return this.snapshot();
+    this.config = createDefaultConfig()
+    await this.persist()
+    this.notify()
+    return this.snapshot()
   }
 
   subscribe(listener: Listener): () => void {
-    this.listeners.add(listener);
+    this.listeners.add(listener)
     return () => {
-      this.listeners.delete(listener);
-    };
+      this.listeners.delete(listener)
+    }
   }
 
   private async persist(): Promise<void> {
-    await this.plugin.saveData(CONFIG_STORAGE_NAME, this.config);
+    await this.plugin.saveData(CONFIG_STORAGE_NAME, this.config)
   }
 
   private notify(): void {
-    const snapshot = this.snapshot();
+    const snapshot = this.snapshot()
     for (const listener of this.listeners) {
-      listener(snapshot);
+      listener(snapshot)
     }
   }
 }

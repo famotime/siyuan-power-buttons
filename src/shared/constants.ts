@@ -1,19 +1,19 @@
-export const CONFIG_STORAGE_NAME = "settings.json";
-export const SETTINGS_UI_STORAGE_NAME = "settings-ui.json";
+export const CONFIG_STORAGE_NAME = "settings.json"
+export const SETTINGS_UI_STORAGE_NAME = "settings-ui.json"
 
-export const DEFAULT_ICONPARK_ICON = "iconpark:Search";
-export const INTERNAL_PLUGIN_PROVIDER_ID = "siyuan-power-buttons";
-export const INTERNAL_PLUGIN_PROVIDER_NAME = "随心按";
-export const DEFAULT_PLUGIN_COMMAND = "siyuan-power-buttons:open-settings";
-export const PLUGIN_ENTRY_DIVIDER_ID = "plugin-entry-divider";
-export const DOCK_PLUGIN_ENTRY_COLLAPSED_KEY = "siyuan-power-buttons:dock-plugin-entry-collapsed";
+export const DEFAULT_ICONPARK_ICON = "iconpark:Search"
+export const INTERNAL_PLUGIN_PROVIDER_ID = "siyuan-power-buttons"
+export const INTERNAL_PLUGIN_PROVIDER_NAME = "随心按"
+export const DEFAULT_PLUGIN_COMMAND = "siyuan-power-buttons:open-settings"
+export const PLUGIN_ENTRY_DIVIDER_ID = "plugin-entry-divider"
+export const DOCK_PLUGIN_ENTRY_COLLAPSED_KEY = "siyuan-power-buttons:dock-plugin-entry-collapsed"
 
 export const SURFACE_LABELS: Record<string, string> = {
-  topbar: "顶栏",
+  "topbar": "顶栏",
   "statusbar-left": "状态栏",
   "statusbar-right": "状态栏",
-  statusbar: "状态栏",
-  canvas: "编辑区",
+  "statusbar": "状态栏",
+  "canvas": "编辑区",
   "selection-toolbar": "浮动工具栏",
   "dock-panel": "独立侧面板",
   "dock-left-top": "左侧 Dock 上方",
@@ -22,7 +22,7 @@ export const SURFACE_LABELS: Record<string, string> = {
   "dock-right-bottom": "右侧 Dock 下方",
   "dock-bottom-left": "底部 Dock 左侧",
   "dock-bottom-right": "底部 Dock 右侧",
-};
+}
 
 export const ACTION_TYPE_LABELS: Record<string, string> = {
   "builtin-global-command": "内置命令",
@@ -30,4 +30,4 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   "open-url": "打开链接",
   "experimental-shortcut": "实验：快捷键适配",
   "experimental-click-sequence": "实验：点击序列",
-};
+}

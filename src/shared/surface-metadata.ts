@@ -1,6 +1,9 @@
-import type { TPluginDockPosition } from "siyuan";
-import { CONFIGURABLE_SURFACES } from "@/shared/types";
-import type { PreviewSurfaceType, SurfaceType } from "@/shared/types";
+import type { TPluginDockPosition } from "siyuan"
+import type {
+  PreviewSurfaceType,
+  SurfaceType,
+} from "@/shared/types"
+import { CONFIGURABLE_SURFACES } from "@/shared/types"
 
 export type PreviewLayoutKey =
   | "topbar"
@@ -14,10 +17,10 @@ export type PreviewLayoutKey =
   | "statusbarRight"
   | "canvas"
   | "selectionToolbar"
-  | "dockPanel";
+  | "dockPanel"
 
 const PREVIEW_LAYOUT_KEYS: Record<PreviewSurfaceType, PreviewLayoutKey> = {
-  topbar: "topbar",
+  "topbar": "topbar",
   "dock-left-top": "leftDockTop",
   "dock-left-bottom": "leftDockBottom",
   "dock-right-top": "rightDockTop",
@@ -26,10 +29,10 @@ const PREVIEW_LAYOUT_KEYS: Record<PreviewSurfaceType, PreviewLayoutKey> = {
   "dock-bottom-right": "bottomDockRight",
   "statusbar-left": "statusbarLeft",
   "statusbar-right": "statusbarRight",
-  canvas: "canvas",
+  "canvas": "canvas",
   "selection-toolbar": "selectionToolbar",
   "dock-panel": "dockPanel",
-};
+}
 
 export type SingleDockPositionSurface =
   | "dock-left-top"
@@ -37,7 +40,7 @@ export type SingleDockPositionSurface =
   | "dock-right-top"
   | "dock-right-bottom"
   | "dock-bottom-left"
-  | "dock-bottom-right";
+  | "dock-bottom-right"
 
 const DOCK_POSITIONS: Record<SingleDockPositionSurface, TPluginDockPosition> = {
   "dock-left-top": "LeftTop",
@@ -46,53 +49,53 @@ const DOCK_POSITIONS: Record<SingleDockPositionSurface, TPluginDockPosition> = {
   "dock-right-bottom": "RightBottom",
   "dock-bottom-left": "BottomLeft",
   "dock-bottom-right": "BottomRight",
-};
+}
 
 export function getPreviewLayoutKey(surface: PreviewSurfaceType): PreviewLayoutKey {
-  return PREVIEW_LAYOUT_KEYS[surface];
+  return PREVIEW_LAYOUT_KEYS[surface]
 }
 
 export function normalizeSurface(surface: string): SurfaceType {
   if (surface === "statusbar-left" || surface === "statusbar") {
-    return "statusbar-right";
+    return "statusbar-right"
   }
-  return surface as SurfaceType;
+  return surface as SurfaceType
 }
 
-export function getItemSurfaces(item: { surface?: string; surfaces?: string[] }): SurfaceType[] {
+export function getItemSurfaces(item: { surface?: string, surfaces?: string[] }): SurfaceType[] {
   if (Array.isArray(item.surfaces) && item.surfaces.length > 0) {
-    const list = item.surfaces.map(normalizeSurface);
-    return Array.from(new Set(list));
+    const list = item.surfaces.map(normalizeSurface)
+    return Array.from(new Set(list))
   }
-  const s = item.surface ? normalizeSurface(item.surface) : "statusbar-right";
-  return [s];
+  const s = item.surface ? normalizeSurface(item.surface) : "statusbar-right"
+  return [s]
 }
 
-export function itemHasSurface(item: { surface?: string; surfaces?: string[] }, surface: string): boolean {
-  const norm = normalizeSurface(surface);
-  return getItemSurfaces(item).includes(norm);
+export function itemHasSurface(item: { surface?: string, surfaces?: string[] }, surface: string): boolean {
+  const norm = normalizeSurface(surface)
+  return getItemSurfaces(item).includes(norm)
 }
 
 export function isDockSurface(surface: SurfaceType): surface is SingleDockPositionSurface {
-  return surface in DOCK_POSITIONS;
+  return surface in DOCK_POSITIONS
 }
 
 export function isDockPanelSurface(surface: SurfaceType): surface is "dock-panel" {
-  return surface === "dock-panel";
+  return surface === "dock-panel"
 }
 
 export function isStatusBarSurface(surface: SurfaceType): surface is Extract<SurfaceType, `statusbar-${string}`> {
   // "statusbar" 是旧版配置的遗留值，normalizeSurface 会将其归一化，但调用方可能传入未归一化的原始值
-  return surface.startsWith("statusbar-") || (surface as string) === "statusbar";
+  return surface.startsWith("statusbar-") || (surface as string) === "statusbar"
 }
 
 export function isConfigurableSurface(surface: SurfaceType): surface is typeof CONFIGURABLE_SURFACES[number] {
-  const norm = normalizeSurface(surface);
-  return CONFIGURABLE_SURFACES.includes(norm as typeof CONFIGURABLE_SURFACES[number]);
+  const norm = normalizeSurface(surface)
+  return CONFIGURABLE_SURFACES.includes(norm as typeof CONFIGURABLE_SURFACES[number])
 }
 
 export function getDockPosition(surface: SingleDockPositionSurface): TPluginDockPosition {
-  return DOCK_POSITIONS[surface];
+  return DOCK_POSITIONS[surface]
 }
 
 /**
@@ -101,23 +104,21 @@ export function getDockPosition(surface: SingleDockPositionSurface): TPluginDock
  * 此时插件端设置的 order 属性可能不再对主界面生效。
  */
 export function checkHasSiyuanDockLayout(itemId: string): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const uiLayout = (window as any).siyuan?.config?.uiLayout;
+  const uiLayout = (window as any).siyuan?.config?.uiLayout
   if (!uiLayout) {
-    return false;
+    return false
   }
-  const targetType = `siyuan-power-buttons-${itemId}`;
+  const targetType = `siyuan-power-buttons-${itemId}`
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const checkDock = (dock: any): boolean => {
     if (!dock || !Array.isArray(dock.data)) {
-      return false;
+      return false
     }
     // dock.data 是一个二维数组，结构为 Array<IUILayoutDockTab[]>
     return dock.data.some((group: any) =>
       Array.isArray(group) && group.some((tab: any) => tab && tab.type === targetType),
-    );
-  };
+    )
+  }
 
-  return checkDock(uiLayout.left) || checkDock(uiLayout.right) || checkDock(uiLayout.bottom);
+  return checkDock(uiLayout.left) || checkDock(uiLayout.right) || checkDock(uiLayout.bottom)
 }

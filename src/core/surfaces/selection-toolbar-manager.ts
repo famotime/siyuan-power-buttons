@@ -1,12 +1,12 @@
-import type { IMenuItem } from "siyuan";
+import type { IMenuItem } from "siyuan"
 import type {
   DisabledSelectionToolbarItem,
   PowerButtonItem,
   PowerButtonsConfig,
   SelectionToolbarLayoutItem,
-} from "@/shared/types";
-import { CommandExecutor } from "@/core/commands";
-import { getIconMarkup } from "@/core/surfaces/surface-elements";
+} from "@/shared/types"
+import { CommandExecutor } from "@/core/commands"
+import { getIconMarkup } from "@/core/surfaces/surface-elements"
 
 /** 原生浮动工具栏按钮标识符 → 中文标题映射 */
 export const NATIVE_TOOLBAR_BUTTON_LABELS: Record<string, string> = {
@@ -26,37 +26,45 @@ export const NATIVE_TOOLBAR_BUTTON_LABELS: Record<string, string> = {
   "tag": "标签",
   "inline-math": "行内公式",
   "inline-memo": "行内备注",
-};
+}
 
 /** 所有可配置的原生按钮标识符（不含分隔符） */
-export const CONFIGURABLE_NATIVE_NAMES = Object.keys(NATIVE_TOOLBAR_BUTTON_LABELS);
+export const CONFIGURABLE_NATIVE_NAMES = Object.keys(NATIVE_TOOLBAR_BUTTON_LABELS)
 
-const DIVIDER = "|";
+const DIVIDER = "|"
 
-type ToolbarItem = string | IMenuItem;
+type ToolbarItem = string | IMenuItem
 
 function isDivider(item: ToolbarItem): boolean {
-  return typeof item === "string" && item === DIVIDER;
+  return typeof item === "string" && item === DIVIDER
 }
 
 function getItemName(item: ToolbarItem): string {
-  return typeof item === "string" ? item : item.name;
+  return typeof item === "string" ? item : item.name
 }
 
 function createLayoutKey(item: SelectionToolbarLayoutItem): string {
-  return `${item.type}:${item.id}`;
+  return `${item.type}:${item.id}`
 }
 
 function getCustomItemKey(item: PowerButtonItem): string {
-  return createLayoutKey({ type: "custom", id: item.id });
+  return createLayoutKey({
+    type: "custom",
+    id: item.id,
+  })
 }
 
 function getNativeToolbarItemKey(item: ToolbarItem): string | null {
   if (isDivider(item)) {
-    return null;
+    return null
   }
-  const name = getItemName(item);
-  return name ? createLayoutKey({ type: "native", id: name }) : null;
+  const name = getItemName(item)
+  return name
+    ? createLayoutKey({
+        type: "native",
+        id: name,
+      })
+    : null
 }
 
 /**
@@ -65,24 +73,24 @@ function getNativeToolbarItemKey(item: ToolbarItem): string | null {
 export function cleanDividers(toolbar: ToolbarItem[]): ToolbarItem[] {
   let result = toolbar.filter((item, index, arr) => {
     if (!isDivider(item)) {
-      return true;
+      return true
     }
     // 移除连续分隔符
     if (index > 0 && isDivider(arr[index - 1])) {
-      return false;
+      return false
     }
-    return true;
-  });
+    return true
+  })
 
   // 移除首尾分隔符
   if (result.length > 0 && isDivider(result[0])) {
-    result = result.slice(1);
+    result = result.slice(1)
   }
   if (result.length > 0 && isDivider(result[result.length - 1])) {
-    result = result.slice(0, -1);
+    result = result.slice(0, -1)
   }
 
-  return result;
+  return result
 }
 
 /**
@@ -98,96 +106,96 @@ export function customizeSelectionToolbar(
   executor: CommandExecutor,
 ): ToolbarItem[] {
   const disabledNames = new Set<string>(
-    config.disabledSelectionToolbarItems.map(item => item.name),
-  );
+    config.disabledSelectionToolbarItems.map((item) => item.name),
+  )
 
   // 过滤被禁用的原生按钮
-  const filtered = originalToolbar.filter(item => {
-    const name = getItemName(item);
-    return !disabledNames.has(name);
-  });
+  const filtered = originalToolbar.filter((item) => {
+    const name = getItemName(item)
+    return !disabledNames.has(name)
+  })
 
   // 清理多余分隔符
-  let toolbar = cleanDividers(filtered);
+  const toolbar = cleanDividers(filtered)
 
   // 插入自定义按钮
   const customItems = config.items
-    .filter(item => item.surface === "selection-toolbar" && item.visible)
-    .sort((a, b) => a.order - b.order);
+    .filter((item) => item.surface === "selection-toolbar" && item.visible)
+    .sort((a, b) => a.order - b.order)
 
   if (config.selectionToolbarLayout.length > 0) {
-    const nativeByKey = new Map<string, ToolbarItem>();
-    const nativeOrder: string[] = [];
+    const nativeByKey = new Map<string, ToolbarItem>()
+    const nativeOrder: string[] = []
     for (const item of toolbar) {
-      const key = getNativeToolbarItemKey(item);
+      const key = getNativeToolbarItemKey(item)
       if (!key) {
-        continue;
+        continue
       }
-      nativeByKey.set(key, item);
-      nativeOrder.push(key);
+      nativeByKey.set(key, item)
+      nativeOrder.push(key)
     }
 
-    const customByKey = new Map(customItems.map(item => [getCustomItemKey(item), item]));
-    const ordered: ToolbarItem[] = [];
-    const usedKeys = new Set<string>();
+    const customByKey = new Map(customItems.map((item) => [getCustomItemKey(item), item]))
+    const ordered: ToolbarItem[] = []
+    const usedKeys = new Set<string>()
 
     for (const layoutItem of config.selectionToolbarLayout) {
-      const key = createLayoutKey(layoutItem);
+      const key = createLayoutKey(layoutItem)
       if (usedKeys.has(key)) {
-        continue;
+        continue
       }
 
-      const nativeItem = nativeByKey.get(key);
+      const nativeItem = nativeByKey.get(key)
       if (nativeItem) {
-        ordered.push(nativeItem);
-        usedKeys.add(key);
-        continue;
+        ordered.push(nativeItem)
+        usedKeys.add(key)
+        continue
       }
 
-      const customItem = customByKey.get(key);
+      const customItem = customByKey.get(key)
       if (customItem) {
-        ordered.push(createMenuItem(customItem, executor));
-        usedKeys.add(key);
+        ordered.push(createMenuItem(customItem, executor))
+        usedKeys.add(key)
       }
     }
 
     for (const key of nativeOrder) {
       if (!usedKeys.has(key)) {
-        ordered.push(nativeByKey.get(key)!);
-        usedKeys.add(key);
+        ordered.push(nativeByKey.get(key)!)
+        usedKeys.add(key)
       }
     }
 
     for (const item of customItems) {
-      const key = getCustomItemKey(item);
+      const key = getCustomItemKey(item)
       if (!usedKeys.has(key)) {
-        ordered.push(createMenuItem(item, executor));
-        usedKeys.add(key);
+        ordered.push(createMenuItem(item, executor))
+        usedKeys.add(key)
       }
     }
 
-    return cleanDividers(ordered);
+    return cleanDividers(ordered)
   }
 
   if (customItems.length > 0) {
     // 在自定义按钮前添加分隔符，与原生按钮区分开
     if (toolbar.length > 0) {
-      toolbar.push(DIVIDER);
+      toolbar.push(DIVIDER)
     }
 
     for (const item of customItems) {
-      toolbar.push(createMenuItem(item, executor));
+      toolbar.push(createMenuItem(item, executor))
     }
   }
 
-  return toolbar;
+  return toolbar
 }
 
 /**
  * 构建原生按钮的默认禁用列表（空列表，即全部启用）。
  */
 export function createDefaultDisabledSelectionToolbarItems(): DisabledSelectionToolbarItem[] {
-  return [];
+  return []
 }
 
 /**
@@ -197,7 +205,7 @@ export function isNativeButtonDisabled(
   name: string,
   disabledItems: DisabledSelectionToolbarItem[],
 ): boolean {
-  return disabledItems.some(item => item.name === name);
+  return disabledItems.some((item) => item.name === name)
 }
 
 function createMenuItem(item: PowerButtonItem, executor: CommandExecutor): IMenuItem {
@@ -206,7 +214,7 @@ function createMenuItem(item: PowerButtonItem, executor: CommandExecutor): IMenu
     icon: getIconMarkup(item),
     tip: item.tooltip || item.title,
     click: () => {
-      void executor.execute(item);
+      void executor.execute(item)
     },
-  };
+  }
 }

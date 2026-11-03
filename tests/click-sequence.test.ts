@@ -1,6 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
-import { JSDOM } from "jsdom";
-import { executeExperimentalClickSequence } from "@/core/commands";
+import { JSDOM } from "jsdom"
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
+import { executeExperimentalClickSequence } from "@/core/commands"
 
 describe("experimental click sequence", () => {
   it("executes a simple two-step click sequence in order", async () => {
@@ -9,17 +14,17 @@ describe("experimental click sequence", () => {
         <button id="barSettings">设置</button>
         <button>复制块引用</button>
       </div>
-    `);
-    const first = dom.window.document.getElementById("barSettings") as HTMLButtonElement;
-    const second = dom.window.document.querySelectorAll("button")[1] as HTMLButtonElement;
-    const events: string[] = [];
+    `)
+    const first = dom.window.document.getElementById("barSettings") as HTMLButtonElement
+    const second = dom.window.document.querySelectorAll("button")[1] as HTMLButtonElement
+    const events: string[] = []
 
     first.addEventListener("click", () => {
-      events.push("first");
-    });
+      events.push("first")
+    })
     second.addEventListener("click", () => {
-      events.push("second");
-    });
+      events.push("second")
+    })
 
     const result = await executeExperimentalClickSequence({
       actionId: "barSettings",
@@ -46,19 +51,19 @@ describe("experimental click sequence", () => {
       document: dom.window.document,
       root: dom.window.document,
       windowTarget: dom.window,
-    });
+    })
 
-    expect(result).toBe(true);
-    expect(events).toEqual(["first", "second"]);
-  });
+    expect(result).toBe(true)
+    expect(events).toEqual(["first", "second"])
+  })
 
   it("stops on the failing step when stopOnFailure is enabled", async () => {
     const dom = new JSDOM(`
       <div>
         <button id="barSettings">设置</button>
       </div>
-    `);
-    const onStepError = vi.fn();
+    `)
+    const onStepError = vi.fn()
 
     const result = await executeExperimentalClickSequence({
       actionId: "barSettings",
@@ -86,24 +91,24 @@ describe("experimental click sequence", () => {
       root: dom.window.document,
       windowTarget: dom.window,
       onStepError,
-    });
+    })
 
-    expect(result).toBe(false);
+    expect(result).toBe(false)
     expect(onStepError).toHaveBeenCalledWith({
       index: 1,
       selector: "text:不存在",
-    });
-  });
+    })
+  })
 
   it("matches simple identifiers against data-name during click sequences", async () => {
     const dom = new JSDOM(`
       <div>
         <button data-name="copyBlockRef">复制块引用</button>
       </div>
-    `);
-    const button = dom.window.document.querySelector("button") as HTMLButtonElement;
-    const clickHandler = vi.fn();
-    button.addEventListener("click", clickHandler);
+    `)
+    const button = dom.window.document.querySelector("button") as HTMLButtonElement
+    const clickHandler = vi.fn()
+    button.addEventListener("click", clickHandler)
 
     const result = await executeExperimentalClickSequence({
       actionId: "copyBlockRef",
@@ -123,11 +128,11 @@ describe("experimental click sequence", () => {
       document: dom.window.document,
       root: dom.window.document,
       windowTarget: dom.window,
-    });
+    })
 
-    expect(result).toBe(true);
-    expect(clickHandler).toHaveBeenCalledTimes(1);
-  });
+    expect(result).toBe(true)
+    expect(clickHandler).toHaveBeenCalledTimes(1)
+  })
 
   it("uses showPicker for select elements during click sequences when available", async () => {
     const dom = new JSDOM(`
@@ -137,12 +142,12 @@ describe("experimental click sequence", () => {
           <option value="zh_CN" selected>简体中文 (zh_CN)</option>
         </select>
       </div>
-    `);
+    `)
     const select = dom.window.document.getElementById("lang") as HTMLSelectElement & {
-      showPicker?: () => void;
-    };
-    const showPicker = vi.fn();
-    select.showPicker = showPicker;
+      showPicker?: () => void
+    }
+    const showPicker = vi.fn()
+    select.showPicker = showPicker
 
     const result = await executeExperimentalClickSequence({
       actionId: "lang",
@@ -162,11 +167,11 @@ describe("experimental click sequence", () => {
       document: dom.window.document,
       root: dom.window.document,
       windowTarget: dom.window,
-    });
+    })
 
-    expect(result).toBe(true);
-    expect(showPicker).toHaveBeenCalledTimes(1);
-  });
+    expect(result).toBe(true)
+    expect(showPicker).toHaveBeenCalledTimes(1)
+  })
 
   it("sets select values by option value and dispatches input plus change", async () => {
     const dom = new JSDOM(`
@@ -174,16 +179,16 @@ describe("experimental click sequence", () => {
         <option value="en_US">English (en_US)</option>
         <option value="zh_CN" selected>简体中文 (zh_CN)</option>
       </select>
-    `);
-    const select = dom.window.document.getElementById("lang") as HTMLSelectElement;
-    const events: string[] = [];
+    `)
+    const select = dom.window.document.getElementById("lang") as HTMLSelectElement
+    const events: string[] = []
 
     select.addEventListener("input", () => {
-      events.push("input");
-    });
+      events.push("input")
+    })
     select.addEventListener("change", () => {
-      events.push("change");
-    });
+      events.push("change")
+    })
 
     const result = await executeExperimentalClickSequence({
       actionId: "lang",
@@ -205,12 +210,12 @@ describe("experimental click sequence", () => {
       document: dom.window.document,
       root: dom.window.document,
       windowTarget: dom.window,
-    });
+    })
 
-    expect(result).toBe(true);
-    expect(select.value).toBe("en_US");
-    expect(events).toEqual(["input", "change"]);
-  });
+    expect(result).toBe(true)
+    expect(select.value).toBe("en_US")
+    expect(events).toEqual(["input", "change"])
+  })
 
   it("sets select values by option text", async () => {
     const dom = new JSDOM(`
@@ -218,7 +223,7 @@ describe("experimental click sequence", () => {
         <option value="en_US">English (en_US)</option>
         <option value="zh_CN" selected>简体中文 (zh_CN)</option>
       </select>
-    `);
+    `)
 
     const result = await executeExperimentalClickSequence({
       actionId: "lang",
@@ -240,17 +245,17 @@ describe("experimental click sequence", () => {
       document: dom.window.document,
       root: dom.window.document,
       windowTarget: dom.window,
-    });
+    })
 
-    expect(result).toBe(true);
-    expect((dom.window.document.getElementById("lang") as HTMLSelectElement).value).toBe("en_US");
-  });
+    expect(result).toBe(true)
+    expect((dom.window.document.getElementById("lang") as HTMLSelectElement).value).toBe("en_US")
+  })
 
   it("sets input and textarea values through the same step model", async () => {
     const dom = new JSDOM(`
       <input id="keyword" value="" />
       <textarea id="note"></textarea>
-    `);
+    `)
 
     const result = await executeExperimentalClickSequence({
       actionId: "keyword",
@@ -281,20 +286,20 @@ describe("experimental click sequence", () => {
       document: dom.window.document,
       root: dom.window.document,
       windowTarget: dom.window,
-    });
+    })
 
-    expect(result).toBe(true);
-    expect((dom.window.document.getElementById("keyword") as HTMLInputElement).value).toBe("english");
-    expect((dom.window.document.getElementById("note") as HTMLTextAreaElement).value).toBe("Line 1");
-  });
+    expect(result).toBe(true)
+    expect((dom.window.document.getElementById("keyword") as HTMLInputElement).value).toBe("english")
+    expect((dom.window.document.getElementById("note") as HTMLTextAreaElement).value).toBe("Line 1")
+  })
 
   it("fails when a value step cannot match a select option", async () => {
     const dom = new JSDOM(`
       <select id="lang">
         <option value="zh_CN" selected>简体中文 (zh_CN)</option>
       </select>
-    `);
-    const onStepError = vi.fn();
+    `)
+    const onStepError = vi.fn()
 
     const result = await executeExperimentalClickSequence({
       actionId: "lang",
@@ -317,12 +322,12 @@ describe("experimental click sequence", () => {
       root: dom.window.document,
       windowTarget: dom.window,
       onStepError,
-    });
+    })
 
-    expect(result).toBe(false);
+    expect(result).toBe(false)
     expect(onStepError).toHaveBeenCalledWith({
       index: 0,
       selector: "lang",
-    });
-  });
-});
+    })
+  })
+})

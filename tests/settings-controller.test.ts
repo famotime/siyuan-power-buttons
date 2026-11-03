@@ -1,11 +1,19 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it, vi } from 'vitest';
-import { fetchSyncPost } from 'siyuan';
-import { formatExternalCommandActionId } from '@/core/commands';
-import { createButtonItem, createDefaultConfig } from '@/core/config/defaults';
-import { useSettingsController } from '@/features/settings/use-settings-controller';
-import type { SettingsAppProps } from '@/features/settings/types';
+import type { SettingsAppProps } from '@/features/settings/types'
+import { fetchSyncPost } from 'siyuan'
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import { formatExternalCommandActionId } from '@/core/commands'
+import {
+  createButtonItem,
+  createDefaultConfig,
+} from '@/core/config/defaults'
+import { useSettingsController } from '@/features/settings/use-settings-controller'
 
 function createProps(overrides: Partial<SettingsAppProps> = {}): SettingsAppProps {
   return {
@@ -19,15 +27,15 @@ function createProps(overrides: Partial<SettingsAppProps> = {}): SettingsAppProp
     onSelectedIdChange: vi.fn().mockResolvedValue(undefined),
     onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     ...overrides,
-  };
+  }
 }
 
 function createDragStartEvent(target: HTMLElement): DragEvent {
-  const event = new Event('dragstart', { bubbles: true }) as DragEvent;
+  const event = new Event('dragstart', { bubbles: true }) as DragEvent
   Object.defineProperty(event, 'currentTarget', {
     configurable: true,
     value: target,
-  });
+  })
   Object.defineProperty(event, 'dataTransfer', {
     configurable: true,
     value: {
@@ -35,13 +43,13 @@ function createDragStartEvent(target: HTMLElement): DragEvent {
       setData: vi.fn(),
       setDragImage: vi.fn(),
     },
-  });
-  return event;
+  })
+  return event
 }
 
 describe('settings controller', () => {
   it('restores the previously selected button when the id still exists', () => {
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: 'first',
@@ -53,19 +61,19 @@ describe('settings controller', () => {
         title: '第二个',
         order: 1,
       }),
-    ];
+    ]
 
     const controller = useSettingsController(createProps({
       initialConfig,
       initialSelectedButtonId: 'second',
-    }));
+    }))
 
-    expect(controller.selectedId.value).toBe('second');
-    expect(controller.selectedItem.value?.title).toBe('第二个');
-  });
+    expect(controller.selectedId.value).toBe('second')
+    expect(controller.selectedItem.value?.title).toBe('第二个')
+  })
 
   it('falls back to the first button and persists that fallback when the stored id is stale', async () => {
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: 'first',
@@ -77,22 +85,22 @@ describe('settings controller', () => {
         title: '第二个',
         order: 1,
       }),
-    ];
+    ]
 
-    const onSelectedIdChange = vi.fn().mockResolvedValue(undefined);
+    const onSelectedIdChange = vi.fn().mockResolvedValue(undefined)
     const controller = useSettingsController(createProps({
       initialConfig,
       initialSelectedButtonId: 'missing',
       onSelectedIdChange,
-    }));
+    }))
 
-    expect(controller.selectedId.value).toBe('first');
-    await Promise.resolve();
-    expect(onSelectedIdChange).toHaveBeenCalledWith('first');
-  });
+    expect(controller.selectedId.value).toBe('first')
+    await Promise.resolve()
+    expect(onSelectedIdChange).toHaveBeenCalledWith('first')
+  })
 
   it('restores the default config after confirmation and persists it', async () => {
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: 'custom-only',
@@ -100,32 +108,32 @@ describe('settings controller', () => {
         surface: 'canvas',
         order: 0,
       }),
-    ];
+    ]
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const onReadCurrentLayout = vi.fn().mockResolvedValue([]);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const onReadCurrentLayout = vi.fn().mockResolvedValue([])
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const controller = useSettingsController(createProps({
       initialConfig,
       onChange,
       onReadCurrentLayout,
-    }));
+    }))
 
-    await controller.resetConfig();
+    await controller.resetConfig()
 
-    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(confirmSpy).toHaveBeenCalledWith('确定恢复默认按钮配置吗？');
-    expect(onReadCurrentLayout).toHaveBeenCalledTimes(1);
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(confirmSpy).toHaveBeenCalledWith('确定恢复默认按钮配置吗？')
+    expect(onReadCurrentLayout).toHaveBeenCalledTimes(1)
     expect(persistedConfig?.items.map((item: { title: string }) => item.title)).toEqual(
-      createDefaultConfig().items.map(item => item.title),
-    );
-    expect(controller.selectedId.value).toBe(persistedConfig?.items[0]?.id);
-  });
+      createDefaultConfig().items.map((item) => item.title),
+    )
+    expect(controller.selectedId.value).toBe(persistedConfig?.items[0]?.id)
+  })
 
   it('clicking a native preview button toggles suppression and persists the rule', async () => {
-    const initialConfig = createDefaultConfig();
-    initialConfig.disabledNativeButtons = [];
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    const initialConfig = createDefaultConfig()
+    initialConfig.disabledNativeButtons = []
+    const onChange = vi.fn().mockResolvedValue(undefined)
     const controller = useSettingsController(createProps({
       initialConfig,
       onChange,
@@ -142,18 +150,18 @@ describe('settings controller', () => {
           nativeSelectors: ['#native-canvas-pin', "[data-type='readonly']"],
         },
       ]),
-    }));
+    }))
 
-    await controller.initialize();
+    await controller.initialize()
 
-    const nativeItem = controller.previewLayout.value.canvas[0];
-    expect(nativeItem?.editable).toBe(false);
-    expect(nativeItem?.suppressed).toBe(false);
+    const nativeItem = controller.previewLayout.value.canvas[0]
+    expect(nativeItem?.editable).toBe(false)
+    expect(nativeItem?.suppressed).toBe(false)
 
     // 点击禁用
-    await controller.handlePreviewChipClick(nativeItem);
+    await controller.handlePreviewChipClick(nativeItem)
 
-    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0]
     expect(persistedConfig?.disabledNativeButtons).toEqual([
       {
         id: 'native-canvas-pin-preview',
@@ -162,23 +170,23 @@ describe('settings controller', () => {
         selectors: ['#native-canvas-pin', "[data-type='readonly']"],
         iconMarkup: '<svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" /></svg>',
       },
-    ]);
+    ])
 
     // 禁用后仍显示在预览中，但标记为 suppressed
     const suppressedItem = controller.previewLayout.value.canvas.find(
       (item: { id: string }) => item.id === 'native-canvas-pin-preview',
-    );
-    expect(suppressedItem?.suppressed).toBe(true);
+    )
+    expect(suppressedItem?.suppressed).toBe(true)
 
     // 再次点击恢复
-    await controller.handlePreviewChipClick(suppressedItem);
+    await controller.handlePreviewChipClick(suppressedItem)
 
-    const restoredConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(restoredConfig?.disabledNativeButtons).toEqual([]);
-  });
+    const restoredConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(restoredConfig?.disabledNativeButtons).toEqual([])
+  })
 
   it('moves an editable preview button to a different surface and persists the new location', async () => {
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: 'topbar-item',
@@ -186,27 +194,27 @@ describe('settings controller', () => {
         surface: 'topbar',
         order: 0,
       }),
-    ];
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    ]
+    const onChange = vi.fn().mockResolvedValue(undefined)
     const controller = useSettingsController(createProps({
       initialConfig,
       onChange,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    }));
+    }))
 
-    await controller.initialize();
+    await controller.initialize()
 
-    const editableItem = controller.previewLayout.value.topbar[0];
-    expect(editableItem?.editable).toBe(true);
+    const editableItem = controller.previewLayout.value.topbar[0]
+    expect(editableItem?.editable).toBe(true)
 
-    const dragTarget = document.createElement('button');
-    document.body.appendChild(dragTarget);
-    controller.onPreviewDragStart(createDragStartEvent(dragTarget), editableItem);
-    await controller.onPreviewSurfaceDrop('canvas');
+    const dragTarget = document.createElement('button')
+    document.body.appendChild(dragTarget)
+    controller.onPreviewDragStart(createDragStartEvent(dragTarget), editableItem)
+    await controller.onPreviewSurfaceDrop('canvas')
 
-    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
-    expect(persistedConfig?.items.find((item: { id: string }) => item.id === editableItem.itemId)?.surface).toBe('canvas');
-  });
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0]
+    expect(persistedConfig?.items.find((item: { id: string }) => item.id === editableItem.itemId)?.surface).toBe('canvas')
+  })
 
   it('moves a native dock tab to a target dock surface and calls setUILayout', async () => {
     (window as any).siyuan = {
@@ -214,25 +222,34 @@ describe('settings controller', () => {
         uiLayout: {
           left: {
             data: [
-              [{ type: 'file', title: '文件' }, { type: 'outline', title: '大纲' }],
-              [{ type: 'bookmark', title: '书签' }],
+              [{
+                type: 'file',
+                title: '文件',
+              }, {
+                type: 'outline',
+                title: '大纲',
+              }],
+              [{
+                type: 'bookmark',
+                title: '书签',
+              }],
             ],
           },
         },
       },
-    };
+    }
 
-    const initialConfig = createDefaultConfig();
-    const onChange = vi.fn().mockResolvedValue(undefined);
-    const onNotify = vi.fn();
+    const initialConfig = createDefaultConfig()
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    const onNotify = vi.fn()
     const controller = useSettingsController(createProps({
       initialConfig,
       onChange,
       onNotify,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    }));
+    }))
 
-    await controller.initialize();
+    await controller.initialize()
 
     const nativeDockItem = {
       id: 'native:dock-left-top:outline',
@@ -246,18 +263,18 @@ describe('settings controller', () => {
       nativeSelectors: ['[data-type="outline"]'],
     };
 
-    (fetchSyncPost as any).mockResolvedValue({ code: 0 });
-    const dragTarget = document.createElement('button');
-    document.body.appendChild(dragTarget);
-    controller.onPreviewDragStart(createDragStartEvent(dragTarget), nativeDockItem);
-    await controller.onPreviewSurfaceDrop('dock-left-bottom', 0);
+    (fetchSyncPost as any).mockResolvedValue({ code: 0 })
+    const dragTarget = document.createElement('button')
+    document.body.appendChild(dragTarget)
+    controller.onPreviewDragStart(createDragStartEvent(dragTarget), nativeDockItem)
+    await controller.onPreviewSurfaceDrop('dock-left-bottom', 0)
 
-    expect(fetchSyncPost).toHaveBeenCalledWith('/api/system/setUILayout', expect.anything());
-    expect((window as any).siyuan.config.uiLayout.left.data[1][0].type).toBe('outline');
-  });
+    expect(fetchSyncPost).toHaveBeenCalledWith('/api/system/setUILayout', expect.anything())
+    expect((window as any).siyuan.config.uiLayout.left.data[1][0].type).toBe('outline')
+  })
 
   it('inserts an externally dragged preview button at the targeted selection toolbar position', async () => {
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: 'topbar-item',
@@ -277,66 +294,78 @@ describe('settings controller', () => {
         surface: 'selection-toolbar',
         order: 2,
       }),
-    ];
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    ]
+    const onChange = vi.fn().mockResolvedValue(undefined)
     const controller = useSettingsController(createProps({
       initialConfig,
       onChange,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
-    }));
+    }))
 
-    await controller.initialize();
+    await controller.initialize()
 
-    const editableItem = controller.previewLayout.value.topbar[0];
-    const dragTarget = document.createElement('button');
-    document.body.appendChild(dragTarget);
-    controller.onPreviewDragStart(createDragStartEvent(dragTarget), editableItem);
-    await controller.onSelectionToolbarDrop(1);
+    const editableItem = controller.previewLayout.value.topbar[0]
+    const dragTarget = document.createElement('button')
+    document.body.appendChild(dragTarget)
+    controller.onPreviewDragStart(createDragStartEvent(dragTarget), editableItem)
+    await controller.onSelectionToolbarDrop(1)
 
-    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0]
     expect(
       persistedConfig?.items
         .filter((item: { surface: string }) => item.surface === 'selection-toolbar')
         .map((item: { title: string }) => item.title),
-    ).toEqual(['浮动按钮 A', '顶部按钮', '浮动按钮 B']);
-  });
+    ).toEqual(['浮动按钮 A', '顶部按钮', '浮动按钮 B'])
+  })
 
   it('reorders native selection toolbar buttons and persists the mixed layout', async () => {
     const initialConfig = createDefaultConfig() as ReturnType<typeof createDefaultConfig> & {
-      selectionToolbarLayout: Array<{ type: 'native' | 'custom'; id: string }>;
-    };
+      selectionToolbarLayout: Array<{ type: 'native' | 'custom', id: string }>
+    }
     initialConfig.selectionToolbarLayout = [
-      { type: 'native', id: 'strong' },
-      { type: 'native', id: 'em' },
-    ];
-    const onChange = vi.fn().mockResolvedValue(undefined);
+      {
+        type: 'native',
+        id: 'strong',
+      },
+      {
+        type: 'native',
+        id: 'em',
+      },
+    ]
+    const onChange = vi.fn().mockResolvedValue(undefined)
     const controller = useSettingsController(createProps({
       initialConfig,
       onChange,
       onReadCurrentLayout: vi.fn().mockResolvedValue([]),
     })) as ReturnType<typeof useSettingsController> & {
-      selectionToolbarPreviewItems: { value: Array<{ key: string; title: string }> };
-      onSelectionToolbarPreviewDragStart: (event: DragEvent, item: { key: string; title: string }) => void;
-      onSelectionToolbarPreviewDrop: (index: number) => Promise<void>;
-    };
+      selectionToolbarPreviewItems: { value: Array<{ key: string, title: string }> }
+      onSelectionToolbarPreviewDragStart: (event: DragEvent, item: { key: string, title: string }) => void
+      onSelectionToolbarPreviewDrop: (index: number) => Promise<void>
+    }
 
-    await controller.initialize();
+    await controller.initialize()
 
-    const emItem = controller.selectionToolbarPreviewItems.value.find(item => item.key === 'native:em');
-    const dragTarget = document.createElement('button');
-    document.body.appendChild(dragTarget);
-    controller.onSelectionToolbarPreviewDragStart(createDragStartEvent(dragTarget), emItem!);
-    await controller.onSelectionToolbarPreviewDrop(0);
+    const emItem = controller.selectionToolbarPreviewItems.value.find((item) => item.key === 'native:em')
+    const dragTarget = document.createElement('button')
+    document.body.appendChild(dragTarget)
+    controller.onSelectionToolbarPreviewDragStart(createDragStartEvent(dragTarget), emItem!)
+    await controller.onSelectionToolbarPreviewDrop(0)
 
-    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0]
     expect(persistedConfig?.selectionToolbarLayout.slice(0, 2)).toEqual([
-      { type: 'native', id: 'em' },
-      { type: 'native', id: 'strong' },
-    ]);
-  });
+      {
+        type: 'native',
+        id: 'em',
+      },
+      {
+        type: 'native',
+        id: 'strong',
+      },
+    ])
+  })
 
   it('refreshes external providers and rewrites an invalid plugin command selection', async () => {
-    const initialConfig = createDefaultConfig();
+    const initialConfig = createDefaultConfig()
     initialConfig.items = [
       createButtonItem({
         id: 'plugin-only',
@@ -345,9 +374,9 @@ describe('settings controller', () => {
         actionId: formatExternalCommandActionId('missing-provider', 'missing-command'),
         order: 0,
       }),
-    ];
+    ]
 
-    const onChange = vi.fn().mockResolvedValue(undefined);
+    const onChange = vi.fn().mockResolvedValue(undefined)
     const controller = useSettingsController(createProps({
       initialConfig,
       onChange,
@@ -364,141 +393,164 @@ describe('settings controller', () => {
           ],
         },
       ]),
-    }));
+    }))
 
-    await controller.refreshExternalProviders();
+    await controller.refreshExternalProviders()
 
-    const persistedConfig = onChange.mock.calls.at(-1)?.[0];
+    const persistedConfig = onChange.mock.calls.at(-1)?.[0]
     expect(persistedConfig?.items[0]?.actionId).toBe(
       formatExternalCommandActionId('siyuan-doc-assist', 'insert-doc-summary'),
-    );
-  });
+    )
+  })
 
   describe('new button title auto-synchronization', () => {
     const builtinCommands = [
-      { id: 'recentDocs', title: '最近文档', category: '全局' },
-      { id: 'dailyNote', title: '今日日记', category: '全局' },
-      { id: 'search', title: '全局搜索', category: '全局' },
-    ];
+      {
+        id: 'recentDocs',
+        title: '最近文档',
+        category: '全局',
+      },
+      {
+        id: 'dailyNote',
+        title: '今日日记',
+        category: '全局',
+      },
+      {
+        id: 'search',
+        title: '全局搜索',
+        category: '全局',
+      },
+    ]
     const pluginCommands = [
-      { id: 'open-in-browser', title: '在浏览器打开', description: 'desc' },
-      { id: 'open-settings', title: '随心按设置', description: 'desc' },
-    ];
+      {
+        id: 'open-in-browser',
+        title: '在浏览器打开',
+        description: 'desc',
+      },
+      {
+        id: 'open-settings',
+        title: '随心按设置',
+        description: 'desc',
+      },
+    ]
     const externalCommandProviders = [
       {
         providerId: 'siyuan-doc-assist',
         providerName: '文档助手',
         commands: [
-          { id: 'export-current', title: '仅导出当前文档' },
+          {
+            id: 'export-current',
+            title: '仅导出当前文档',
+          },
         ],
       },
-    ];
+    ]
 
     it('newly created button defaults to the action name and tracks builtin command changes', async () => {
-      const initialConfig = createDefaultConfig();
-      const onChange = vi.fn().mockResolvedValue(undefined);
+      const initialConfig = createDefaultConfig()
+      const onChange = vi.fn().mockResolvedValue(undefined)
       const controller = useSettingsController(createProps({
         initialConfig,
         builtinCommands,
         pluginCommands,
         externalCommandProviders,
         onChange,
-      }));
+      }))
 
       // 新建按钮
-      await controller.addItem();
-      expect(controller.selectedItem.value?.title).toBe('最近文档');
+      await controller.addItem()
+      expect(controller.selectedItem.value?.title).toBe('最近文档')
 
       // 切换内置命令
-      await controller.setSelectedBuiltinCommand('dailyNote');
-      expect(controller.selectedItem.value?.title).toBe('今日日记');
+      await controller.setSelectedBuiltinCommand('dailyNote')
+      expect(controller.selectedItem.value?.title).toBe('今日日记')
 
-      await controller.setSelectedBuiltinCommand('search');
-      expect(controller.selectedItem.value?.title).toBe('全局搜索');
-    });
+      await controller.setSelectedBuiltinCommand('search')
+      expect(controller.selectedItem.value?.title).toBe('全局搜索')
+    })
 
     it('syncs title when switching action type to plugin-command and changing plugin command', async () => {
-      const initialConfig = createDefaultConfig();
-      const onChange = vi.fn().mockResolvedValue(undefined);
+      const initialConfig = createDefaultConfig()
+      const onChange = vi.fn().mockResolvedValue(undefined)
       const controller = useSettingsController(createProps({
         initialConfig,
         builtinCommands,
         pluginCommands,
         externalCommandProviders,
         onChange,
-      }));
+      }))
 
-      await controller.addItem();
-      expect(controller.selectedItem.value?.title).toBe('最近文档');
+      await controller.addItem()
+      expect(controller.selectedItem.value?.title).toBe('最近文档')
 
       // 切换动作类型为插件命令
-      controller.selectedItem.value!.actionType = 'plugin-command';
-      await controller.applyActionDefaults();
-      expect(controller.selectedItem.value?.title).toBe('在浏览器打开');
+      controller.selectedItem.value!.actionType = 'plugin-command'
+      await controller.applyActionDefaults()
+      expect(controller.selectedItem.value?.title).toBe('在浏览器打开')
 
       // 切换插件 provider
-      await controller.setSelectedPluginProvider('siyuan-doc-assist');
-      expect(controller.selectedItem.value?.title).toBe('仅导出当前文档');
-    });
+      await controller.setSelectedPluginProvider('siyuan-doc-assist')
+      expect(controller.selectedItem.value?.title).toBe('仅导出当前文档')
+    })
 
     it('does not overwrite title when user has manually edited the title', async () => {
-      const initialConfig = createDefaultConfig();
-      const onChange = vi.fn().mockResolvedValue(undefined);
+      const initialConfig = createDefaultConfig()
+      const onChange = vi.fn().mockResolvedValue(undefined)
       const controller = useSettingsController(createProps({
         initialConfig,
         builtinCommands,
         pluginCommands,
         externalCommandProviders,
         onChange,
-      }));
+      }))
 
-      await controller.addItem();
-      expect(controller.selectedItem.value?.title).toBe('最近文档');
+      await controller.addItem()
+      expect(controller.selectedItem.value?.title).toBe('最近文档')
 
       // 用户手动输入自定义名称
-      controller.selectedItem.value!.title = '我的自定义快捷按钮';
-      controller.handleTitleInput();
-      await controller.handleTitleChange();
+      controller.selectedItem.value!.title = '我的自定义快捷按钮'
+      controller.handleTitleInput()
+      await controller.handleTitleChange()
 
       // 切换动作，标题不应被覆盖
-      await controller.setSelectedBuiltinCommand('dailyNote');
-      expect(controller.selectedItem.value?.title).toBe('我的自定义快捷按钮');
+      await controller.setSelectedBuiltinCommand('dailyNote')
+      expect(controller.selectedItem.value?.title).toBe('我的自定义快捷按钮')
 
-      controller.selectedItem.value!.actionType = 'plugin-command';
-      await controller.applyActionDefaults();
-      expect(controller.selectedItem.value?.title).toBe('我的自定义快捷按钮');
-    });
+      controller.selectedItem.value!.actionType = 'plugin-command'
+      await controller.applyActionDefaults()
+      expect(controller.selectedItem.value?.title).toBe('我的自定义快捷按钮')
+    })
 
     it('resumes title synchronization when user clears the manual title', async () => {
-      const initialConfig = createDefaultConfig();
-      const onChange = vi.fn().mockResolvedValue(undefined);
+      const initialConfig = createDefaultConfig()
+      const onChange = vi.fn().mockResolvedValue(undefined)
       const controller = useSettingsController(createProps({
         initialConfig,
         builtinCommands,
         pluginCommands,
         externalCommandProviders,
         onChange,
-      }));
+      }))
 
-      await controller.addItem();
+      await controller.addItem()
 
       // 用户手动编辑
-      controller.selectedItem.value!.title = '自定义名称';
-      controller.handleTitleInput();
-      await controller.handleTitleChange();
+      controller.selectedItem.value!.title = '自定义名称'
+      controller.handleTitleInput()
+      await controller.handleTitleChange()
 
       // 用户清空输入框
-      controller.selectedItem.value!.title = '';
-      controller.handleTitleInput();
-      await controller.handleTitleChange();
+      controller.selectedItem.value!.title = ''
+      controller.handleTitleInput()
+      await controller.handleTitleChange()
 
       // 自动恢复为当前动作名称
-      expect(controller.selectedItem.value?.title).toBe('最近文档');
+      expect(controller.selectedItem.value?.title).toBe('最近文档')
 
       // 切换动作继续跟随
-      await controller.setSelectedBuiltinCommand('dailyNote');
-      expect(controller.selectedItem.value?.title).toBe('今日日记');
-    });
-  });
-});
+      await controller.setSelectedBuiltinCommand('dailyNote')
+      expect(controller.selectedItem.value?.title).toBe('今日日记')
+    })
+  })
+})
 

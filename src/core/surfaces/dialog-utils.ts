@@ -1,16 +1,16 @@
-import { Dialog } from 'siyuan';
+import { Dialog } from 'siyuan'
 
 export interface PromptDialogOptions {
-  title: string;
-  placeholder?: string;
-  initialValue?: string;
-  confirmText?: string;
-  cancelText?: string;
+  title: string
+  placeholder?: string
+  initialValue?: string
+  confirmText?: string
+  cancelText?: string
 }
 
 export function promptDialog(options: PromptDialogOptions): Promise<string | null> {
   return new Promise((resolve) => {
-    let settled = false;
+    let settled = false
 
     const dialog = new Dialog({
       title: options.title,
@@ -27,58 +27,58 @@ export function promptDialog(options: PromptDialogOptions): Promise<string | nul
       width: '420px',
       destroyCallback: () => {
         if (!settled) {
-          settled = true;
-          resolve(null);
+          settled = true
+          resolve(null)
         }
       },
-    });
+    })
 
-    const input = dialog.element.querySelector<HTMLInputElement>('input');
-    const cancelBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--cancel');
-    const confirmBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--text');
+    const input = dialog.element.querySelector<HTMLInputElement>('input')
+    const cancelBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--cancel')
+    const confirmBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--text')
 
     const handleConfirm = () => {
-      if (settled) return;
-      settled = true;
-      const value = input ? input.value : '';
-      dialog.destroy();
-      resolve(value);
-    };
+      if (settled) return
+      settled = true
+      const value = input ? input.value : ''
+      dialog.destroy()
+      resolve(value)
+    }
 
     const handleCancel = () => {
-      if (settled) return;
-      settled = true;
-      dialog.destroy();
-      resolve(null);
-    };
+      if (settled) return
+      settled = true
+      dialog.destroy()
+      resolve(null)
+    }
 
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        e.preventDefault();
-        handleConfirm();
+        e.preventDefault()
+        handleConfirm()
       }
-    });
+    })
 
-    cancelBtn?.addEventListener('click', handleCancel);
-    confirmBtn?.addEventListener('click', handleConfirm);
+    cancelBtn?.addEventListener('click', handleCancel)
+    confirmBtn?.addEventListener('click', handleConfirm)
 
     setTimeout(() => {
-      input?.focus();
-      input?.select();
-    }, 50);
-  });
+      input?.focus()
+      input?.select()
+    }, 50)
+  })
 }
 
 export interface ConfirmDialogOptions {
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
+  title: string
+  message: string
+  confirmText?: string
+  cancelText?: string
 }
 
 export function confirmDialog(options: ConfirmDialogOptions): Promise<boolean> {
   return new Promise((resolve) => {
-    let settled = false;
+    let settled = false
 
     const dialog = new Dialog({
       title: options.title,
@@ -95,38 +95,38 @@ export function confirmDialog(options: ConfirmDialogOptions): Promise<boolean> {
       width: '420px',
       destroyCallback: () => {
         if (!settled) {
-          settled = true;
-          resolve(false);
+          settled = true
+          resolve(false)
         }
       },
-    });
+    })
 
-    const cancelBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--cancel');
-    const confirmBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--text');
+    const cancelBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--cancel')
+    const confirmBtn = dialog.element.querySelector<HTMLButtonElement>('.b3-button--text')
 
     const handleConfirm = () => {
-      if (settled) return;
-      settled = true;
-      dialog.destroy();
-      resolve(true);
-    };
+      if (settled) return
+      settled = true
+      dialog.destroy()
+      resolve(true)
+    }
 
     const handleCancel = () => {
-      if (settled) return;
-      settled = true;
-      dialog.destroy();
-      resolve(false);
-    };
+      if (settled) return
+      settled = true
+      dialog.destroy()
+      resolve(false)
+    }
 
-    cancelBtn?.addEventListener('click', handleCancel);
-    confirmBtn?.addEventListener('click', handleConfirm);
-  });
+    cancelBtn?.addEventListener('click', handleCancel)
+    confirmBtn?.addEventListener('click', handleConfirm)
+  })
 }
 
 function escapeAttr(val: string): string {
-  return val.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return val.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function escapeText(val: string): string {
-  return val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }

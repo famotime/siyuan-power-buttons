@@ -1,102 +1,108 @@
-import type { ExperimentalFeatureKey } from '@/core/compatibility/version-guard';
+import type { ExperimentalFeatureKey } from '@/core/compatibility/version-guard'
 import type {
   PowerButtonItem,
-} from '@/shared/types';
+} from '@/shared/types'
 
-export type IntegratablePlugin = {
-  name?: string;
-  getPowerButtonsIntegration?: () => unknown;
-};
+export interface IntegratablePlugin {
+  name?: string
+  getPowerButtonsIntegration?: () => unknown
+}
 
 export function collectInstalledPlugins(
   appPlugins: IntegratablePlugin[] | undefined,
   globalPlugins: IntegratablePlugin[] | undefined,
 ): IntegratablePlugin[] | undefined {
-  const localPlugins = Array.isArray(appPlugins) ? appPlugins : [];
-  const sharedPlugins = Array.isArray(globalPlugins) ? globalPlugins : [];
+  const localPlugins = Array.isArray(appPlugins) ? appPlugins : []
+  const sharedPlugins = Array.isArray(globalPlugins) ? globalPlugins : []
 
   if (!localPlugins.length && !sharedPlugins.length) {
-    return undefined;
+    return undefined
   }
 
-  const seen = new Set<IntegratablePlugin>();
+  const seen = new Set<IntegratablePlugin>()
   return [...localPlugins, ...sharedPlugins].filter((plugin) => {
     if (!plugin || seen.has(plugin)) {
-      return false;
+      return false
     }
-    seen.add(plugin);
-    return true;
-  });
+    seen.add(plugin)
+    return true
+  })
 }
 
 export function createExperimentalActionRunners(options: {
-  getExperimentalSupport: (feature: ExperimentalFeatureKey) => { supported: boolean; reason?: string };
-  showMessage: (message: string, duration?: number, type?: 'info' | 'error') => void;
-  t: (key: string, replacements?: Record<string, string>) => string;
-  getKeymap: () => unknown;
-  pluginGlobalCommand?: (command: string) => void;
-  pluginCommandHandlers: Map<string, () => void | Promise<void>>;
-  runBuiltinCommandByDom: (commandId: string) => boolean | Promise<boolean>;
+  getExperimentalSupport: (feature: ExperimentalFeatureKey) => { supported: boolean, reason?: string }
+  showMessage: (message: string, duration?: number, type?: 'info' | 'error') => void
+  t: (key: string, replacements?: Record<string, string>) => string
+  getKeymap: () => unknown
+  pluginGlobalCommand?: (command: string) => void
+  pluginCommandHandlers: Map<string, () => void | Promise<void>>
+  runBuiltinCommandByDom: (commandId: string) => boolean | Promise<boolean>
   executeExperimentalShortcut: (
     item: Pick<PowerButtonItem, 'actionType' | 'actionId' | 'experimentalShortcut'>,
     options: {
-      getKeymap: () => unknown;
-      executeBuiltinCommand: (commandId: string) => boolean | Promise<boolean>;
-      executePluginCommand: (commandId: string) => boolean | Promise<boolean>;
+      getKeymap: () => unknown
+      executeBuiltinCommand: (commandId: string) => boolean | Promise<boolean>
+      executePluginCommand: (commandId: string) => boolean | Promise<boolean>
     },
-  ) => boolean | Promise<boolean>;
+  ) => boolean | Promise<boolean>
   executeExperimentalClickSequence: (
     item: Pick<PowerButtonItem, 'actionType' | 'actionId' | 'experimentalClickSequence'>,
     options: {
-      document: Document;
-      root: ParentNode;
-      windowTarget: Window;
-      onStepError: (input: { index: number; selector: string }) => void;
+      document: Document
+      root: ParentNode
+      windowTarget: Window
+      onStepError: (input: { index: number, selector: string }) => void
     },
-  ) => boolean | Promise<boolean>;
-  document: Document;
-  windowTarget: Window;
+  ) => boolean | Promise<boolean>
+  document: Document
+  windowTarget: Window
 }) {
   return {
     runExperimentalShortcut: (
       item: Pick<PowerButtonItem, 'actionType' | 'actionId' | 'experimentalShortcut'>,
     ): boolean | Promise<boolean> => {
-      const support = options.getExperimentalSupport('shortcutAdapter');
+      const support = options.getExperimentalSupport('shortcutAdapter')
       if (!support.supported) {
-        options.showMessage(support.reason || options.t('experimentalShortcutUnavailable'), 5000, 'error');
-        return true;
+        options.showMessage(support.reason || options.t('experimentalShortcutUnavailable'), 5000, 'error')
+        return true
       }
 
       return options.executeExperimentalShortcut(item, {
         getKeymap: options.getKeymap,
         executeBuiltinCommand: async (commandId) => options.runBuiltinCommandByDom(commandId),
         executePluginCommand: async (commandId) => {
-          const handler = options.pluginCommandHandlers.get(commandId);
+          const handler = options.pluginCommandHandlers.get(commandId)
           if (!handler) {
-            return false;
+            return false
           }
-          await handler();
-          return true;
+          await handler()
+          return true
         },
-      });
+      })
     },
     runExperimentalClickSequence: (
       item: Pick<PowerButtonItem, 'actionType' | 'actionId' | 'experimentalClickSequence'>,
     ): boolean | Promise<boolean> => {
-      const support = options.getExperimentalSupport('clickSequenceAdapter');
+      const support = options.getExperimentalSupport('clickSequenceAdapter')
       if (!support.supported) {
-        options.showMessage(support.reason || options.t('experimentalClickSequenceUnavailable'), 5000, 'error');
-        return true;
+        options.showMessage(support.reason || options.t('experimentalClickSequenceUnavailable'), 5000, 'error')
+        return true
       }
 
       return options.executeExperimentalClickSequence(item, {
         document: options.document,
         root: options.document,
         windowTarget: options.windowTarget,
-        onStepError: ({ index, selector }) => {
-          options.showMessage(options.t('clickSequenceStepFailed', { step: String(index + 1), selector }), 5000, 'error');
+        onStepError: ({
+          index,
+          selector,
+        }) => {
+          options.showMessage(options.t('clickSequenceStepFailed', {
+            step: String(index + 1),
+            selector,
+          }), 5000, 'error')
         },
-      });
+      })
     },
-  };
+  }
 }

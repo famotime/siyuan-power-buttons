@@ -1,4 +1,4 @@
-import type { BuiltinCommandDefinition } from "@/shared/types";
+import type { BuiltinCommandDefinition } from "@/shared/types"
 
 export const BUILTIN_COMMANDS: BuiltinCommandDefinition[] = [
   {
@@ -97,4 +97,4 @@ export const BUILTIN_COMMANDS: BuiltinCommandDefinition[] = [
     requiresContext: false,
     stability: "stable",
   },
-];
+]

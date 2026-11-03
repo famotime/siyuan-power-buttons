@@ -1,6 +1,10 @@
 /* @vitest-environment jsdom */
-import { describe, expect, it } from "vitest";
-import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot";
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
+import { readNativeSurfaceSnapshot } from "@/shared/runtime-snapshot"
 
 function mockRect(element: Element, rect: Partial<DOMRect>): void {
   Object.defineProperty(element, "getBoundingClientRect", {
@@ -16,7 +20,7 @@ function mockRect(element: Element, rect: Partial<DOMRect>): void {
       height: rect.height ?? 0,
       toJSON: () => ({}),
     }),
-  });
+  })
 }
 
 describe("runtime surface snapshot", () => {
@@ -39,51 +43,95 @@ describe("runtime surface snapshot", () => {
       <div id="dockBottom">
         <button class="dock__item" data-type="graph" aria-label="关系图"></button>
       </div>
-    `;
+    `
 
-    const status = document.getElementById("status");
-    const dockLeft = document.getElementById("dockLeft");
-    const dockBottom = document.getElementById("dockBottom");
-    const [barDock, statusHelp] = Array.from(document.querySelectorAll("#status button"));
-    const [dockFile, dockBookmark, dockPin] = Array.from(document.querySelectorAll("#dockLeft .dock__item"));
-    const [dockGraph] = Array.from(document.querySelectorAll("#dockBottom .dock__item"));
+    const status = document.getElementById("status")
+    const dockLeft = document.getElementById("dockLeft")
+    const dockBottom = document.getElementById("dockBottom")
+    const [barDock, statusHelp] = Array.from(document.querySelectorAll("#status button"))
+    const [dockFile, dockBookmark, dockPin] = Array.from(document.querySelectorAll("#dockLeft .dock__item"))
+    const [dockGraph] = Array.from(document.querySelectorAll("#dockBottom .dock__item"))
 
-    mockRect(status!, { left: 0, right: 200, width: 200 });
-    mockRect(barDock, { left: 10, right: 30, width: 20 });
-    mockRect(statusHelp, { left: 160, right: 180, width: 20 });
-    mockRect(dockLeft!, { top: 0, bottom: 200, height: 200 });
-    mockRect(dockFile, { top: 10, bottom: 30, height: 20 });
-    mockRect(dockBookmark, { top: 160, bottom: 180, height: 20 });
-    mockRect(dockPin, { top: 188, bottom: 196, height: 8 });
-    mockRect(dockBottom!, { left: 0, right: 240, width: 240 });
-    mockRect(dockGraph, { left: 20, right: 40, width: 20 });
+    mockRect(status!, {
+      left: 0,
+      right: 200,
+      width: 200,
+    })
+    mockRect(barDock, {
+      left: 10,
+      right: 30,
+      width: 20,
+    })
+    mockRect(statusHelp, {
+      left: 160,
+      right: 180,
+      width: 20,
+    })
+    mockRect(dockLeft!, {
+      top: 0,
+      bottom: 200,
+      height: 200,
+    })
+    mockRect(dockFile, {
+      top: 10,
+      bottom: 30,
+      height: 20,
+    })
+    mockRect(dockBookmark, {
+      top: 160,
+      bottom: 180,
+      height: 20,
+    })
+    mockRect(dockPin, {
+      top: 188,
+      bottom: 196,
+      height: 8,
+    })
+    mockRect(dockBottom!, {
+      left: 0,
+      right: 240,
+      width: 240,
+    })
+    mockRect(dockGraph, {
+      left: 20,
+      right: 40,
+      width: 20,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
+    const snapshot = readNativeSurfaceSnapshot(document)
 
-    expect(snapshot.map(item => item.title)).toEqual(["工作空间", "停靠区", "帮助", "文件", "书签", "关系图"]);
-    expect(snapshot.find(item => item.title === "工作空间")?.surface).toBe("topbar");
-    expect(snapshot.find(item => item.title === "停靠区")?.surface).toBe("statusbar-left");
-    expect(snapshot.find(item => item.title === "帮助")?.surface).toBe("statusbar-right");
-    expect(snapshot.find(item => item.title === "文件")?.surface).toBe("dock-left-top");
-    expect(snapshot.find(item => item.title === "书签")?.surface).toBe("dock-left-bottom");
-    expect(snapshot.find(item => item.title === "关系图")?.surface).toBe("dock-bottom-left");
-    expect(snapshot.every(item => item.editable === false)).toBe(true);
-  });
+    expect(snapshot.map((item) => item.title)).toEqual(["工作空间", "停靠区", "帮助", "文件", "书签", "关系图"])
+    expect(snapshot.find((item) => item.title === "工作空间")?.surface).toBe("topbar")
+    expect(snapshot.find((item) => item.title === "停靠区")?.surface).toBe("statusbar-left")
+    expect(snapshot.find((item) => item.title === "帮助")?.surface).toBe("statusbar-right")
+    expect(snapshot.find((item) => item.title === "文件")?.surface).toBe("dock-left-top")
+    expect(snapshot.find((item) => item.title === "书签")?.surface).toBe("dock-left-bottom")
+    expect(snapshot.find((item) => item.title === "关系图")?.surface).toBe("dock-bottom-left")
+    expect(snapshot.every((item) => item.editable === false)).toBe(true)
+  })
 
   it("truncates multiline aria-labels to only the first line title", () => {
     document.body.innerHTML = `
       <div id="dockLeft">
         <button class="dock__item" data-type="plugin" aria-label="脉络镜&#10;单击 展开/最小化&#10;右键/拖拽 调整位置"></button>
       </div>
-    `;
-    const dockLeft = document.getElementById("dockLeft");
-    const [dockPlugin] = Array.from(document.querySelectorAll("#dockLeft .dock__item"));
-    mockRect(dockLeft!, { top: 0, bottom: 200, height: 200 });
-    mockRect(dockPlugin, { top: 10, bottom: 30, height: 20 });
+    `
+    const dockLeft = document.getElementById("dockLeft")
+    const [dockPlugin] = Array.from(document.querySelectorAll("#dockLeft .dock__item"))
+    mockRect(dockLeft!, {
+      top: 0,
+      bottom: 200,
+      height: 200,
+    })
+    mockRect(dockPlugin, {
+      top: 10,
+      bottom: 30,
+      height: 20,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
-    expect(snapshot[0].title).toBe("脉络镜");
-  });
+    const snapshot = readNativeSurfaceSnapshot(document)
+    expect(snapshot[0].title).toBe("脉络镜")
+  })
 
   it("keeps topbar buttons in row-major order when the toolbar wraps", () => {
     document.body.innerHTML = `
@@ -93,21 +141,56 @@ describe("runtime surface snapshot", () => {
         <button id="barGamma" class="toolbar__item" title="Gamma"></button>
         <button id="barDelta" class="toolbar__item" title="Delta"></button>
       </div>
-    `;
+    `
 
-    const toolbar = document.getElementById("toolbar");
-    const [alpha, beta, gamma, delta] = Array.from(document.querySelectorAll("#toolbar button"));
+    const toolbar = document.getElementById("toolbar")
+    const [alpha, beta, gamma, delta] = Array.from(document.querySelectorAll("#toolbar button"))
 
-    mockRect(toolbar!, { left: 0, top: 0, width: 120, height: 80, right: 120, bottom: 80 });
-    mockRect(alpha, { left: 8, top: 8, width: 20, height: 20, right: 28, bottom: 28 });
-    mockRect(beta, { left: 40, top: 8, width: 20, height: 20, right: 60, bottom: 28 });
-    mockRect(gamma, { left: 8, top: 40, width: 20, height: 20, right: 28, bottom: 60 });
-    mockRect(delta, { left: 40, top: 40, width: 20, height: 20, right: 60, bottom: 60 });
+    mockRect(toolbar!, {
+      left: 0,
+      top: 0,
+      width: 120,
+      height: 80,
+      right: 120,
+      bottom: 80,
+    })
+    mockRect(alpha, {
+      left: 8,
+      top: 8,
+      width: 20,
+      height: 20,
+      right: 28,
+      bottom: 28,
+    })
+    mockRect(beta, {
+      left: 40,
+      top: 8,
+      width: 20,
+      height: 20,
+      right: 60,
+      bottom: 28,
+    })
+    mockRect(gamma, {
+      left: 8,
+      top: 40,
+      width: 20,
+      height: 20,
+      right: 28,
+      bottom: 60,
+    })
+    mockRect(delta, {
+      left: 40,
+      top: 40,
+      width: 20,
+      height: 20,
+      right: 60,
+      bottom: 60,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
+    const snapshot = readNativeSurfaceSnapshot(document)
 
-    expect(snapshot.filter(item => item.surface === "topbar").map(item => item.title)).toEqual(["Alpha", "Beta", "Gamma", "Delta"]);
-  });
+    expect(snapshot.filter((item) => item.surface === "topbar").map((item) => item.title)).toEqual(["Alpha", "Beta", "Gamma", "Delta"])
+  })
 
   it("skips hidden topbar items and window controls", () => {
     document.body.innerHTML = `
@@ -122,30 +205,86 @@ describe("runtime surface snapshot", () => {
           <div id="closeWindow" class="toolbar__item toolbar__item--close" aria-label="关闭"></div>
         </div>
       </div>
-    `;
+    `
 
-    const toolbar = document.getElementById("toolbar");
-    const workspace = document.getElementById("barWorkspace") as HTMLElement;
-    const hiddenSearch = document.getElementById("barSearch") as HTMLElement;
-    const hiddenPlugins = document.getElementById("barPlugins") as HTMLElement;
-    const more = document.getElementById("barMore") as HTMLElement;
-    const minWindow = document.getElementById("minWindow") as HTMLElement;
-    const maxWindow = document.getElementById("maxWindow") as HTMLElement;
-    const closeWindow = document.getElementById("closeWindow") as HTMLElement;
+    const toolbar = document.getElementById("toolbar")
+    const workspace = document.getElementById("barWorkspace") as HTMLElement
+    const hiddenSearch = document.getElementById("barSearch") as HTMLElement
+    const hiddenPlugins = document.getElementById("barPlugins") as HTMLElement
+    const more = document.getElementById("barMore") as HTMLElement
+    const minWindow = document.getElementById("minWindow") as HTMLElement
+    const maxWindow = document.getElementById("maxWindow") as HTMLElement
+    const closeWindow = document.getElementById("closeWindow") as HTMLElement
 
-    mockRect(toolbar!, { left: 0, top: 0, width: 280, height: 32, right: 280, bottom: 32 });
-    mockRect(workspace, { left: 8, top: 6, width: 40, height: 20, right: 48, bottom: 26 });
-    mockRect(hiddenSearch, { left: 56, top: 6, width: 40, height: 20, right: 96, bottom: 26 });
-    mockRect(hiddenPlugins, { left: 104, top: 6, width: 40, height: 20, right: 144, bottom: 26 });
-    mockRect(more, { left: 152, top: 6, width: 40, height: 20, right: 192, bottom: 26 });
-    mockRect(minWindow, { left: 200, top: 6, width: 20, height: 20, right: 220, bottom: 26 });
-    mockRect(maxWindow, { left: 228, top: 6, width: 20, height: 20, right: 248, bottom: 26 });
-    mockRect(closeWindow, { left: 256, top: 6, width: 20, height: 20, right: 276, bottom: 26 });
+    mockRect(toolbar!, {
+      left: 0,
+      top: 0,
+      width: 280,
+      height: 32,
+      right: 280,
+      bottom: 32,
+    })
+    mockRect(workspace, {
+      left: 8,
+      top: 6,
+      width: 40,
+      height: 20,
+      right: 48,
+      bottom: 26,
+    })
+    mockRect(hiddenSearch, {
+      left: 56,
+      top: 6,
+      width: 40,
+      height: 20,
+      right: 96,
+      bottom: 26,
+    })
+    mockRect(hiddenPlugins, {
+      left: 104,
+      top: 6,
+      width: 40,
+      height: 20,
+      right: 144,
+      bottom: 26,
+    })
+    mockRect(more, {
+      left: 152,
+      top: 6,
+      width: 40,
+      height: 20,
+      right: 192,
+      bottom: 26,
+    })
+    mockRect(minWindow, {
+      left: 200,
+      top: 6,
+      width: 20,
+      height: 20,
+      right: 220,
+      bottom: 26,
+    })
+    mockRect(maxWindow, {
+      left: 228,
+      top: 6,
+      width: 20,
+      height: 20,
+      right: 248,
+      bottom: 26,
+    })
+    mockRect(closeWindow, {
+      left: 256,
+      top: 6,
+      width: 20,
+      height: 20,
+      right: 276,
+      bottom: 26,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
+    const snapshot = readNativeSurfaceSnapshot(document)
 
-    expect(snapshot.filter(item => item.surface === "topbar").map(item => item.title)).toEqual(["工作空间", "更多"]);
-  });
+    expect(snapshot.filter((item) => item.surface === "topbar").map((item) => item.title)).toEqual(["工作空间", "更多"])
+  })
 
   it("skips hidden status bar items", () => {
     document.body.innerHTML = `
@@ -154,20 +293,36 @@ describe("runtime surface snapshot", () => {
         <button title="帮助" hidden></button>
         <button title="设置" class="fn__none" data-hide="true"></button>
       </div>
-    `;
+    `
 
-    const status = document.getElementById("status");
-    const [syncButton, hiddenHelpButton, hiddenSettingsButton] = Array.from(document.querySelectorAll("#status button"));
+    const status = document.getElementById("status")
+    const [syncButton, hiddenHelpButton, hiddenSettingsButton] = Array.from(document.querySelectorAll("#status button"))
 
-    mockRect(status!, { left: 0, right: 240, width: 240 });
-    mockRect(syncButton, { left: 12, right: 32, width: 20 });
-    mockRect(hiddenHelpButton, { left: 160, right: 180, width: 20 });
-    mockRect(hiddenSettingsButton, { left: 196, right: 216, width: 20 });
+    mockRect(status!, {
+      left: 0,
+      right: 240,
+      width: 240,
+    })
+    mockRect(syncButton, {
+      left: 12,
+      right: 32,
+      width: 20,
+    })
+    mockRect(hiddenHelpButton, {
+      left: 160,
+      right: 180,
+      width: 20,
+    })
+    mockRect(hiddenSettingsButton, {
+      left: 196,
+      right: 216,
+      width: 20,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
+    const snapshot = readNativeSurfaceSnapshot(document)
 
-    expect(snapshot.filter(item => item.surface.startsWith("statusbar-")).map(item => item.title)).toEqual(["同步"]);
-  });
+    expect(snapshot.filter((item) => item.surface.startsWith("statusbar-")).map((item) => item.title)).toEqual(["同步"])
+  })
 
   it("reads native editor toolbar buttons into the canvas preview area", () => {
     document.body.innerHTML = `
@@ -193,24 +348,52 @@ describe("runtime surface snapshot", () => {
           </div>
         </div>
       </div>
-    `;
+    `
 
-    const readonlyBar = document.querySelector(".layout-tab-bar--readonly") as HTMLElement;
-    const pinButton = document.querySelector('.protyle-util [data-type="pin"]') as HTMLElement;
-    const copyButton = document.querySelector('.protyle-util [data-type="copy"]') as HTMLElement;
-    const moreButton = document.querySelector('.protyle-util [data-type="more"]') as HTMLElement;
+    const readonlyBar = document.querySelector(".layout-tab-bar--readonly") as HTMLElement
+    const pinButton = document.querySelector('.protyle-util [data-type="pin"]') as HTMLElement
+    const copyButton = document.querySelector('.protyle-util [data-type="copy"]') as HTMLElement
+    const moreButton = document.querySelector('.protyle-util [data-type="more"]') as HTMLElement
 
-    mockRect(readonlyBar, { left: 0, top: 0, width: 120, height: 28, right: 120, bottom: 28 });
-    mockRect(pinButton, { left: 24, top: 360, width: 20, height: 20, right: 44, bottom: 380 });
-    mockRect(copyButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
-    mockRect(moreButton, { left: 80, top: 360, width: 20, height: 20, right: 100, bottom: 380 });
+    mockRect(readonlyBar, {
+      left: 0,
+      top: 0,
+      width: 120,
+      height: 28,
+      right: 120,
+      bottom: 28,
+    })
+    mockRect(pinButton, {
+      left: 24,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 44,
+      bottom: 380,
+    })
+    mockRect(copyButton, {
+      left: 52,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 72,
+      bottom: 380,
+    })
+    mockRect(moreButton, {
+      left: 80,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 100,
+      bottom: 380,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
-    const canvasTitles = snapshot.filter(item => item.surface === "canvas").map(item => item.title);
+    const snapshot = readNativeSurfaceSnapshot(document)
+    const canvasTitles = snapshot.filter((item) => item.surface === "canvas").map((item) => item.title)
 
-    expect(canvasTitles).toEqual(["钉住编辑区", "复制", "更多"]);
-    expect(snapshot.map(item => item.title)).not.toContain("新建文档");
-  });
+    expect(canvasTitles).toEqual(["钉住编辑区", "复制", "更多"])
+    expect(snapshot.map((item) => item.title)).not.toContain("新建文档")
+  })
 
   it("reads native editor breadcrumb buttons into the canvas preview area", () => {
     document.body.innerHTML = `
@@ -230,23 +413,44 @@ describe("runtime surface snapshot", () => {
           </div>
         </div>
       </div>
-    `;
+    `
 
-    const exitFocusButton = document.querySelector('.protyle-breadcrumb__bar [data-type="exit-focus"]') as HTMLElement;
-    const readonlyButton = document.querySelector('.protyle-breadcrumb__bar [data-type="readonly"]') as HTMLElement;
-    const moreButton = document.querySelector('.protyle-breadcrumb__bar [data-type="more"]') as HTMLElement;
+    const exitFocusButton = document.querySelector('.protyle-breadcrumb__bar [data-type="exit-focus"]') as HTMLElement
+    const readonlyButton = document.querySelector('.protyle-breadcrumb__bar [data-type="readonly"]') as HTMLElement
+    const moreButton = document.querySelector('.protyle-breadcrumb__bar [data-type="more"]') as HTMLElement
 
-    mockRect(exitFocusButton, { left: 24, top: 360, width: 20, height: 20, right: 44, bottom: 380 });
-    mockRect(readonlyButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
-    mockRect(moreButton, { left: 80, top: 360, width: 20, height: 20, right: 100, bottom: 380 });
+    mockRect(exitFocusButton, {
+      left: 24,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 44,
+      bottom: 380,
+    })
+    mockRect(readonlyButton, {
+      left: 52,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 72,
+      bottom: 380,
+    })
+    mockRect(moreButton, {
+      left: 80,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 100,
+      bottom: 380,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
-    const canvasTitles = snapshot.filter(item => item.surface === "canvas").map(item => item.title);
-    const readonlyItem = snapshot.find(item => item.title === "只读");
+    const snapshot = readNativeSurfaceSnapshot(document)
+    const canvasTitles = snapshot.filter((item) => item.surface === "canvas").map((item) => item.title)
+    const readonlyItem = snapshot.find((item) => item.title === "只读")
 
-    expect(canvasTitles).toEqual(["退出聚焦", "只读", "更多"]);
-    expect(readonlyItem?.nativeSelectors).toContain(".protyle-breadcrumb__bar [data-type=\"readonly\"]");
-  });
+    expect(canvasTitles).toEqual(["退出聚焦", "只读", "更多"])
+    expect(readonlyItem?.nativeSelectors).toContain(".protyle-breadcrumb__bar [data-type=\"readonly\"]")
+  })
 
   it("reads editor utility actions when Siyuan renders them as block icons with data-action", () => {
     document.body.innerHTML = `
@@ -262,19 +466,33 @@ describe("runtime surface snapshot", () => {
           </div>
         </div>
       </div>
-    `;
+    `
 
-    const copyButton = document.querySelector('.protyle-util [data-action="copy"]') as HTMLElement;
-    const moreButton = document.querySelector('.protyle-util [data-action="more"]') as HTMLElement;
+    const copyButton = document.querySelector('.protyle-util [data-action="copy"]') as HTMLElement
+    const moreButton = document.querySelector('.protyle-util [data-action="more"]') as HTMLElement
 
-    mockRect(copyButton, { left: 24, top: 360, width: 20, height: 20, right: 44, bottom: 380 });
-    mockRect(moreButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
+    mockRect(copyButton, {
+      left: 24,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 44,
+      bottom: 380,
+    })
+    mockRect(moreButton, {
+      left: 52,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 72,
+      bottom: 380,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
-    const canvasTitles = snapshot.filter(item => item.surface === "canvas").map(item => item.title);
+    const snapshot = readNativeSurfaceSnapshot(document)
+    const canvasTitles = snapshot.filter((item) => item.surface === "canvas").map((item) => item.title)
 
-    expect(canvasTitles).toEqual(["复制", "更多"]);
-  });
+    expect(canvasTitles).toEqual(["复制", "更多"])
+  })
 
   it("reads buttons injected by other plugins into the active selection toolbar", () => {
     document.body.innerHTML = `
@@ -288,23 +506,44 @@ describe("runtime surface snapshot", () => {
         </button>
         <button data-type="siyuan-power-buttons-demo" class="protyle-toolbar__item" aria-label="随心按"></button>
       </div>
-    `;
+    `
 
-    const strongButton = document.querySelector('[data-type="strong"]') as HTMLElement;
-    const pluginButton = document.querySelector('[data-type="plugin-other-copy"]') as HTMLElement;
-    const ownButton = document.querySelector('[data-type="siyuan-power-buttons-demo"]') as HTMLElement;
+    const strongButton = document.querySelector('[data-type="strong"]') as HTMLElement
+    const pluginButton = document.querySelector('[data-type="plugin-other-copy"]') as HTMLElement
+    const ownButton = document.querySelector('[data-type="siyuan-power-buttons-demo"]') as HTMLElement
 
-    mockRect(strongButton, { left: 24, top: 120, width: 20, height: 20, right: 44, bottom: 140 });
-    mockRect(pluginButton, { left: 52, top: 120, width: 20, height: 20, right: 72, bottom: 140 });
-    mockRect(ownButton, { left: 80, top: 120, width: 20, height: 20, right: 100, bottom: 140 });
+    mockRect(strongButton, {
+      left: 24,
+      top: 120,
+      width: 20,
+      height: 20,
+      right: 44,
+      bottom: 140,
+    })
+    mockRect(pluginButton, {
+      left: 52,
+      top: 120,
+      width: 20,
+      height: 20,
+      right: 72,
+      bottom: 140,
+    })
+    mockRect(ownButton, {
+      left: 80,
+      top: 120,
+      width: 20,
+      height: 20,
+      right: 100,
+      bottom: 140,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
-    const toolbarItems = snapshot.filter(item => item.surface === "selection-toolbar");
+    const snapshot = readNativeSurfaceSnapshot(document)
+    const toolbarItems = snapshot.filter((item) => item.surface === "selection-toolbar")
 
-    expect(toolbarItems.map(item => item.title)).toEqual(["粗体", "插件复制"]);
-    expect(toolbarItems[1]?.nativeSelectors).toContain('[data-type="plugin-other-copy"]');
-    expect(toolbarItems.map(item => item.title)).not.toContain("随心按");
-  });
+    expect(toolbarItems.map((item) => item.title)).toEqual(["粗体", "插件复制"])
+    expect(toolbarItems[1]?.nativeSelectors).toContain('[data-type="plugin-other-copy"]')
+    expect(toolbarItems.map((item) => item.title)).not.toContain("随心按")
+  })
 
   it("inlines symbol-based native svg icons so they remain renderable outside the original toolbar", () => {
     document.body.innerHTML = `
@@ -322,17 +561,24 @@ describe("runtime surface snapshot", () => {
           </div>
         </div>
       </div>
-    `;
+    `
 
-    const readonlyButton = document.querySelector('.protyle-breadcrumb__bar [data-type="readonly"]') as HTMLElement;
-    mockRect(readonlyButton, { left: 52, top: 360, width: 20, height: 20, right: 72, bottom: 380 });
+    const readonlyButton = document.querySelector('.protyle-breadcrumb__bar [data-type="readonly"]') as HTMLElement
+    mockRect(readonlyButton, {
+      left: 52,
+      top: 360,
+      width: 20,
+      height: 20,
+      right: 72,
+      bottom: 380,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
-    const readonlyItem = snapshot.find(item => item.title === "只读");
+    const snapshot = readNativeSurfaceSnapshot(document)
+    const readonlyItem = snapshot.find((item) => item.title === "只读")
 
-    expect(readonlyItem?.iconMarkup).toContain("<path");
-    expect(readonlyItem?.iconMarkup).not.toContain("<use");
-  });
+    expect(readonlyItem?.iconMarkup).toContain("<path")
+    expect(readonlyItem?.iconMarkup).not.toContain("<use")
+  })
 
   it("preserves symbol attributes and hardens stroke-only shapes with style=fill:none against host overrides", () => {
     document.body.innerHTML = `
@@ -347,18 +593,25 @@ describe("runtime surface snapshot", () => {
           <svg><use xlink:href="#iconBack"></use></svg>
         </button>
       </div>
-    `;
+    `
 
-    const backButton = document.getElementById("barBack") as HTMLElement;
-    mockRect(backButton, { left: 10, top: 10, width: 24, height: 24, right: 34, bottom: 34 });
+    const backButton = document.getElementById("barBack") as HTMLElement
+    mockRect(backButton, {
+      left: 10,
+      top: 10,
+      width: 24,
+      height: 24,
+      right: 34,
+      bottom: 34,
+    })
 
-    const snapshot = readNativeSurfaceSnapshot(document);
-    const backItem = snapshot.find(item => item.title === "后退");
+    const snapshot = readNativeSurfaceSnapshot(document)
+    const backItem = snapshot.find((item) => item.title === "后退")
 
-    expect(backItem?.iconMarkup).toBeDefined();
-    expect(backItem?.iconMarkup).toContain('style="fill:none"');
-    expect(backItem?.iconMarkup).toContain('stroke-width="2"');
-    expect(backItem?.iconMarkup).toContain("<circle");
-    expect(backItem?.iconMarkup).not.toContain("<use");
-  });
-});
+    expect(backItem?.iconMarkup).toBeDefined()
+    expect(backItem?.iconMarkup).toContain('style="fill:none"')
+    expect(backItem?.iconMarkup).toContain('stroke-width="2"')
+    expect(backItem?.iconMarkup).toContain("<circle")
+    expect(backItem?.iconMarkup).not.toContain("<use")
+  })
+})

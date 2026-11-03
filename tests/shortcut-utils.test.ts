@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
 import {
   captureShortcutFromKeyboardEvent,
   findExperimentalShortcutConflict,
-} from "@/shared/shortcut-utils";
+} from "@/shared/shortcut-utils"
 
 describe("shortcut utils", () => {
   it("captures modifier combinations into a stable display format", () => {
@@ -15,7 +19,7 @@ describe("shortcut utils", () => {
     })).toEqual({
       kind: "set",
       shortcut: "Ctrl+Shift+B",
-    });
+    })
 
     expect(captureShortcutFromKeyboardEvent({
       key: "5",
@@ -26,8 +30,8 @@ describe("shortcut utils", () => {
     })).toEqual({
       kind: "set",
       shortcut: "Alt+5",
-    });
-  });
+    })
+  })
 
   it("ignores modifier-only presses and clears on bare delete keys", () => {
     expect(captureShortcutFromKeyboardEvent({
@@ -36,7 +40,7 @@ describe("shortcut utils", () => {
       shiftKey: true,
       altKey: false,
       metaKey: false,
-    })).toEqual({ kind: "ignore" });
+    })).toEqual({ kind: "ignore" })
 
     expect(captureShortcutFromKeyboardEvent({
       key: "Backspace",
@@ -44,8 +48,8 @@ describe("shortcut utils", () => {
       shiftKey: false,
       altKey: false,
       metaKey: false,
-    })).toEqual({ kind: "clear" });
-  });
+    })).toEqual({ kind: "clear" })
+  })
 
   it("finds conflicting experimental shortcuts after normalization", () => {
     const conflict = findExperimentalShortcutConflict([
@@ -67,8 +71,8 @@ describe("shortcut utils", () => {
           shortcut: "",
         },
       },
-    ], "item-b", "control + b");
+    ], "item-b", "control + b")
 
-    expect(conflict?.id).toBe("item-a");
-  });
-});
+    expect(conflict?.id).toBe("item-a")
+  })
+})

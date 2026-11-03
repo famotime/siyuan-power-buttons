@@ -1,34 +1,34 @@
-import { DEFAULT_PLUGIN_COMMAND } from "@/shared/constants";
 import type {
   ActionType,
   ClickSequenceStep,
   ExperimentalClickSequenceConfig,
   ExperimentalShortcutConfig,
-} from "@/shared/types";
+} from "@/shared/types"
+import { DEFAULT_PLUGIN_COMMAND } from "@/shared/constants"
 
-export const DEFAULT_CLICK_SEQUENCE_SELECTOR = "text:设置";
-export const DEFAULT_BUILTIN_COMMAND_ID = "recentDocs";
+export const DEFAULT_CLICK_SEQUENCE_SELECTOR = "text:设置"
+export const DEFAULT_BUILTIN_COMMAND_ID = "recentDocs"
 
 /** 验证并返回非负整数，无效时返回 fallback */
 function safeNonNegativeInt(value: unknown, fallback: number): number {
-  return Number.isFinite(value) && Number(value) >= 0 ? Number(value) : fallback;
+  return Number.isFinite(value) && Number(value) >= 0 ? Number(value) : fallback
 }
 
 export function getDefaultActionId(actionType: ActionType): string {
   if (actionType === "experimental-shortcut") {
-    return "";
+    return ""
   }
   if (actionType === "plugin-command") {
-    return DEFAULT_PLUGIN_COMMAND;
+    return DEFAULT_PLUGIN_COMMAND
   }
   if (actionType === "experimental-click-sequence") {
-    return DEFAULT_CLICK_SEQUENCE_SELECTOR;
+    return DEFAULT_CLICK_SEQUENCE_SELECTOR
   }
-  return DEFAULT_BUILTIN_COMMAND_ID;
+  return DEFAULT_BUILTIN_COMMAND_ID
 }
 
 export function getClickSequenceFallbackSelector(actionId: string): string {
-  return actionId && actionId !== DEFAULT_BUILTIN_COMMAND_ID ? actionId : DEFAULT_CLICK_SEQUENCE_SELECTOR;
+  return actionId && actionId !== DEFAULT_BUILTIN_COMMAND_ID ? actionId : DEFAULT_CLICK_SEQUENCE_SELECTOR
 }
 
 export function createExperimentalShortcutConfig(
@@ -40,7 +40,7 @@ export function createExperimentalShortcutConfig(
     sendEscapeBefore: overrides.sendEscapeBefore ?? false,
     dispatchTarget: overrides.dispatchTarget || "auto",
     allowDirectWindowDispatch: overrides.allowDirectWindowDispatch ?? false,
-  };
+  }
 }
 
 export function sanitizeExperimentalShortcutConfig(
@@ -58,7 +58,7 @@ export function sanitizeExperimentalShortcutConfig(
     allowDirectWindowDispatch: typeof input.allowDirectWindowDispatch === "boolean"
       ? input.allowDirectWindowDispatch
       : undefined,
-  }, actionId);
+  }, actionId)
 }
 
 export function createClickSequenceStep(
@@ -67,7 +67,7 @@ export function createClickSequenceStep(
 ): ClickSequenceStep {
   const normalizedValue = typeof overrides.value === "string" && overrides.value.length > 0
     ? overrides.value
-    : undefined;
+    : undefined
 
   return {
     selector: overrides.selector || fallbackSelector,
@@ -77,43 +77,43 @@ export function createClickSequenceStep(
     retryCount: safeNonNegativeInt(overrides.retryCount, 1),
     retryDelayMs: safeNonNegativeInt(overrides.retryDelayMs, 300),
     delayAfterMs: safeNonNegativeInt(overrides.delayAfterMs, 200),
-  };
+  }
 }
 
 export function createExperimentalClickSequenceConfig(
   overrides: Partial<ExperimentalClickSequenceConfig> = {},
   actionId = DEFAULT_CLICK_SEQUENCE_SELECTOR,
 ): ExperimentalClickSequenceConfig {
-  const fallbackSelector = getClickSequenceFallbackSelector(actionId);
+  const fallbackSelector = getClickSequenceFallbackSelector(actionId)
 
   return {
     steps: overrides.steps?.length
-      ? overrides.steps.map(step => createClickSequenceStep(step, fallbackSelector))
+      ? overrides.steps.map((step) => createClickSequenceStep(step, fallbackSelector))
       : [createClickSequenceStep(undefined, fallbackSelector)],
     stopOnFailure: overrides.stopOnFailure ?? true,
-  };
+  }
 }
 
 export function sanitizeExperimentalClickSequenceConfig(
   input: Partial<ExperimentalClickSequenceConfig> = {},
   actionId = DEFAULT_CLICK_SEQUENCE_SELECTOR,
 ): ExperimentalClickSequenceConfig {
-  const fallbackSelector = getClickSequenceFallbackSelector(actionId);
+  const fallbackSelector = getClickSequenceFallbackSelector(actionId)
 
   return createExperimentalClickSequenceConfig({
     steps: Array.isArray(input.steps)
-      ? input.steps.map(step => createClickSequenceStep({
-        selector: typeof step?.selector === "string" && step.selector.trim()
-          ? step.selector.trim()
-          : undefined,
-        value: typeof step?.value === "string" ? step.value : undefined,
-        valueMode: step?.valueMode === "text" ? "text" : step?.valueMode === "value" ? "value" : undefined,
-        timeoutMs: safeNonNegativeInt(step?.timeoutMs, undefined as unknown as number),
-        retryCount: safeNonNegativeInt(step?.retryCount, undefined as unknown as number),
-        retryDelayMs: safeNonNegativeInt(step?.retryDelayMs, undefined as unknown as number),
-        delayAfterMs: safeNonNegativeInt(step?.delayAfterMs, undefined as unknown as number),
-      }, fallbackSelector))
+      ? input.steps.map((step) => createClickSequenceStep({
+          selector: typeof step?.selector === "string" && step.selector.trim()
+            ? step.selector.trim()
+            : undefined,
+          value: typeof step?.value === "string" ? step.value : undefined,
+          valueMode: step?.valueMode === "text" ? "text" : step?.valueMode === "value" ? "value" : undefined,
+          timeoutMs: safeNonNegativeInt(step?.timeoutMs, undefined as unknown as number),
+          retryCount: safeNonNegativeInt(step?.retryCount, undefined as unknown as number),
+          retryDelayMs: safeNonNegativeInt(step?.retryDelayMs, undefined as unknown as number),
+          delayAfterMs: safeNonNegativeInt(step?.delayAfterMs, undefined as unknown as number),
+        }, fallbackSelector))
       : undefined,
     stopOnFailure: typeof input.stopOnFailure === "boolean" ? input.stopOnFailure : undefined,
-  }, actionId);
+  }, actionId)
 }

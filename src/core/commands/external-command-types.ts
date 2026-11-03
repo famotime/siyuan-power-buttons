@@ -1,31 +1,31 @@
 export interface ExternalCommandProviderSummary {
-  providerId: string;
-  providerName: string;
-  providerVersion?: string;
+  providerId: string
+  providerName: string
+  providerVersion?: string
 }
 
 export interface ExternalPluginCommandDefinition {
-  id: string;
-  title: string;
-  description?: string;
-  category?: string;
-  icon?: string;
-  keywords?: string[];
-  desktopOnly?: boolean;
-  supportsMobile?: boolean;
-  supportsTargetDoc?: boolean;
-  supportsSelection?: boolean;
+  id: string
+  title: string
+  description?: string
+  category?: string
+  icon?: string
+  keywords?: string[]
+  desktopOnly?: boolean
+  supportsMobile?: boolean
+  supportsTargetDoc?: boolean
+  supportsSelection?: boolean
 }
 
 export interface ExternalCommandInvokeContext {
-  trigger: "button-click" | "workflow-step";
-  sourcePlugin: string;
-  sourcePluginVersion?: string;
-  surface?: string;
-  buttonId?: string;
-  docId?: string;
-  scope?: "full-doc" | "selection" | "related-docs";
-  selectionBlockIds?: string[];
+  trigger: "button-click" | "workflow-step"
+  sourcePlugin: string
+  sourcePluginVersion?: string
+  surface?: string
+  buttonId?: string
+  docId?: string
+  scope?: "full-doc" | "selection" | "related-docs"
+  selectionBlockIds?: string[]
 }
 
 type ExternalCommandInvokeErrorCode =
@@ -33,72 +33,72 @@ type ExternalCommandInvokeErrorCode =
   | "provider-unavailable"
   | "context-unavailable"
   | "not-supported"
-  | "execution-failed";
+  | "execution-failed"
 
 export type ExternalCommandInvokeResult =
   | {
-      ok: true;
-      message?: string;
-      alreadyNotified?: boolean;
-    }
+    ok: true
+    message?: string
+    alreadyNotified?: boolean
+  }
   | {
-      ok: false;
-      message?: string;
-      alreadyNotified?: boolean;
-      errorCode: ExternalCommandInvokeErrorCode;
-    };
+    ok: false
+    message?: string
+    alreadyNotified?: boolean
+    errorCode: ExternalCommandInvokeErrorCode
+  }
 
 export interface ExternalCommandProvider extends ExternalCommandProviderSummary {
-  protocol: "power-buttons-command-provider";
-  protocolVersion: 1 | 2;
-  listCommands: () => Promise<ExternalPluginCommandDefinition[]> | ExternalPluginCommandDefinition[];
+  protocol: "power-buttons-command-provider"
+  protocolVersion: 1 | 2
+  listCommands: () => Promise<ExternalPluginCommandDefinition[]> | ExternalPluginCommandDefinition[]
   invokeCommand: (
     commandId: string,
     context: ExternalCommandInvokeContext,
-  ) => Promise<ExternalCommandInvokeResult> | ExternalCommandInvokeResult;
+  ) => Promise<ExternalCommandInvokeResult> | ExternalCommandInvokeResult
 }
 
 export function formatExternalCommandActionId(providerId: string, commandId: string): string {
   if (providerId.trim() !== providerId || commandId.trim() !== commandId) {
-    throw new Error("External command action id parts must not include padding whitespace.");
+    throw new Error("External command action id parts must not include padding whitespace.")
   }
   if (!providerId || !commandId) {
-    throw new Error("External command action id parts must be non-empty.");
+    throw new Error("External command action id parts must be non-empty.")
   }
   if (providerId.includes(":") || commandId.includes(":")) {
-    throw new Error("External command action id parts must not include colons.");
+    throw new Error("External command action id parts must not include colons.")
   }
-  return `${providerId}:${commandId}`;
+  return `${providerId}:${commandId}`
 }
 
 export function parseExternalCommandActionId(
   actionId: string,
-): { providerId: string; commandId: string } | null {
-  const trimmed = actionId.trim();
+): { providerId: string, commandId: string } | null {
+  const trimmed = actionId.trim()
   if (!trimmed || trimmed !== actionId) {
-    return null;
+    return null
   }
-  const separator = trimmed.indexOf(":");
+  const separator = trimmed.indexOf(":")
   if (separator <= 0 || separator === trimmed.length - 1 || separator !== trimmed.lastIndexOf(":")) {
-    return null;
+    return null
   }
-  const providerId = trimmed.slice(0, separator);
-  const commandId = trimmed.slice(separator + 1);
+  const providerId = trimmed.slice(0, separator)
+  const commandId = trimmed.slice(separator + 1)
   if (!providerId || !commandId) {
-    return null;
+    return null
   }
   if (providerId.trim() !== providerId || commandId.trim() !== commandId) {
-    return null;
+    return null
   }
   if (providerId.includes(":") || commandId.includes(":")) {
-    return null;
+    return null
   }
   return {
     providerId,
     commandId,
-  };
+  }
 }
 
 export function isExternalCommandActionId(actionId: string): boolean {
-  return parseExternalCommandActionId(actionId) !== null;
+  return parseExternalCommandActionId(actionId) !== null
 }

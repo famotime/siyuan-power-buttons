@@ -2,47 +2,47 @@ import type {
   ExternalCommandProvider,
   ExternalCommandProviderSummary,
   ExternalPluginCommandDefinition,
-} from "@/core/commands/external-command-types";
-import { formatExternalCommandActionId } from "@/core/commands/external-command-types";
+} from "@/core/commands/external-command-types"
+import { formatExternalCommandActionId } from "@/core/commands/external-command-types"
 
-type IntegratablePlugin = {
-  name?: string;
-  getPowerButtonsIntegration?: () => unknown;
-};
+interface IntegratablePlugin {
+  name?: string
+  getPowerButtonsIntegration?: () => unknown
+}
 
 interface ExternalCommandRegistryOptions {
-  getPlugins: () => IntegratablePlugin[] | undefined;
+  getPlugins: () => IntegratablePlugin[] | undefined
 }
 
 function isValidProvider(provider: unknown): provider is ExternalCommandProvider {
   if (!provider || typeof provider !== "object") {
-    return false;
+    return false
   }
 
-  const candidate = provider as Partial<ExternalCommandProvider>;
+  const candidate = provider as Partial<ExternalCommandProvider>
   if (candidate.protocol !== "power-buttons-command-provider" || (candidate.protocolVersion !== 1 && candidate.protocolVersion !== 2)) {
-    return false;
+    return false
   }
 
   if (typeof candidate.providerId !== "string" || !candidate.providerId.trim()) {
-    return false;
+    return false
   }
 
   if (candidate.providerId.trim() !== candidate.providerId) {
-    return false;
+    return false
   }
 
   try {
-    formatExternalCommandActionId(candidate.providerId, "probe-command");
+    formatExternalCommandActionId(candidate.providerId, "probe-command")
   } catch {
-    return false;
+    return false
   }
 
   if (typeof candidate.providerName !== "string" || !candidate.providerName.trim()) {
-    return false;
+    return false
   }
 
-  return typeof candidate.listCommands === "function" && typeof candidate.invokeCommand === "function";
+  return typeof candidate.listCommands === "function" && typeof candidate.invokeCommand === "function"
 }
 
 function isValidCommandDefinition(
@@ -50,99 +50,103 @@ function isValidCommandDefinition(
   command: unknown,
 ): command is ExternalPluginCommandDefinition {
   if (!command || typeof command !== "object") {
-    return false;
+    return false
   }
 
-  const candidate = command as Partial<ExternalPluginCommandDefinition>;
+  const candidate = command as Partial<ExternalPluginCommandDefinition>
   if (typeof candidate.id !== "string" || !candidate.id.trim()) {
-    return false;
+    return false
   }
 
   if (candidate.id.trim() !== candidate.id) {
-    return false;
+    return false
   }
 
   if (typeof candidate.title !== "string" || !candidate.title.trim()) {
-    return false;
+    return false
   }
 
   try {
-    formatExternalCommandActionId(providerId, candidate.id);
+    formatExternalCommandActionId(providerId, candidate.id)
   } catch {
-    return false;
+    return false
   }
 
-  return true;
+  return true
 }
 
 export class ExternalCommandRegistry {
-  private readonly providers = new Map<string, ExternalCommandProvider>();
-  private readonly commandCache = new Map<string, ExternalPluginCommandDefinition[]>();
+  private readonly providers = new Map<string, ExternalCommandProvider>()
+  private readonly commandCache = new Map<string, ExternalPluginCommandDefinition[]>()
 
   constructor(private readonly options: ExternalCommandRegistryOptions) {}
 
   async refresh(): Promise<void> {
-    const plugins = this.options.getPlugins() ?? [];
-    const nextProviders = new Map<string, ExternalCommandProvider>();
-    const nextCommandCache = new Map<string, ExternalPluginCommandDefinition[]>();
+    const plugins = this.options.getPlugins() ?? []
+    const nextProviders = new Map<string, ExternalCommandProvider>()
+    const nextCommandCache = new Map<string, ExternalPluginCommandDefinition[]>()
 
     for (const plugin of plugins) {
-      let provider: unknown;
+      let provider: unknown
 
       try {
-        provider = plugin.getPowerButtonsIntegration?.();
+        provider = plugin.getPowerButtonsIntegration?.()
       } catch {
-        continue;
+        continue
       }
 
       if (!isValidProvider(provider)) {
-        continue;
+        continue
       }
 
       if (nextProviders.has(provider.providerId)) {
-        continue;
+        continue
       }
 
-      let commands: ExternalPluginCommandDefinition[];
+      let commands: ExternalPluginCommandDefinition[]
       try {
-        const result = await provider.listCommands();
+        const result = await provider.listCommands()
         if (!Array.isArray(result)) {
-          continue;
+          continue
         }
-        commands = result.filter(command => isValidCommandDefinition(provider.providerId, command));
+        commands = result.filter((command) => isValidCommandDefinition(provider.providerId, command))
       } catch {
-        continue;
+        continue
       }
 
-      nextProviders.set(provider.providerId, provider);
-      nextCommandCache.set(provider.providerId, commands);
+      nextProviders.set(provider.providerId, provider)
+      nextCommandCache.set(provider.providerId, commands)
     }
 
-    this.providers.clear();
-    this.commandCache.clear();
+    this.providers.clear()
+    this.commandCache.clear()
     nextProviders.forEach((provider, providerId) => {
-      this.providers.set(providerId, provider);
-    });
+      this.providers.set(providerId, provider)
+    })
     nextCommandCache.forEach((commands, providerId) => {
-      this.commandCache.set(providerId, commands);
-    });
+      this.commandCache.set(providerId, commands)
+    })
   }
 
   listProviders(): ExternalCommandProviderSummary[] {
     return Array.from(this.providers.values()).map(
-      ({ providerId, providerName, providerVersion }) => ({
+      ({
+        providerId,
+        providerName,
+        providerVersion,
+      }) => ({
         providerId,
         providerName,
         providerVersion,
       }),
-    );
+    )
   }
 
   async listCommands(providerId: string): Promise<ExternalPluginCommandDefinition[]> {
-    return this.commandCache.get(providerId) || [];
+    return this.commandCache.get(providerId) || []
   }
 
   getProvider(providerId: string): ExternalCommandProvider | null {
-    return this.providers.get(providerId) || null;
+    return this.providers.get(providerId) || null
   }
 }

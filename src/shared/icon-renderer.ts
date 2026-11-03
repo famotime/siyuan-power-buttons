@@ -1,10 +1,10 @@
-import { DEFAULT_ICONPARK_ICON } from "@/shared/constants";
+import { DEFAULT_ICONPARK_ICON } from "@/shared/constants"
 import {
   getIconParkMarkup,
   normalizeIconValue,
-} from "@/shared/icon-catalog";
+} from "@/shared/icon-catalog"
 
-type QueryRoot = Pick<ParentNode, "querySelector"> | null | undefined;
+type QueryRoot = Pick<ParentNode, "querySelector"> | null | undefined
 
 const BUNDLED_ICON_MARKUP: Partial<Record<string, string>> = {
   iconHome: `
@@ -22,106 +22,107 @@ const BUNDLED_ICON_MARKUP: Partial<Record<string, string>> = {
       <path fill="currentColor" d="M3 11.5V5h7.5L21 15.5 15.5 21 5 10.5zm2-4.5v2.67L15.5 20l2.67-2.67L9.67 7zm2 .25A1.25 1.25 0 1 0 7 9.75a1.25 1.25 0 0 0 0-2.5Z" />
     </svg>
   `,
-};
+}
 
 function escapeAttribute(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
 }
 
 function createSpriteIconMarkup(iconName: string): string {
-  return `<svg class="siyuan-power-buttons__icon" aria-hidden="true"><use xlink:href="#${escapeAttribute(iconName)}"></use></svg>`;
+  return `<svg class="siyuan-power-buttons__icon" aria-hidden="true"><use xlink:href="#${escapeAttribute(iconName)}"></use></svg>`
 }
 
-const SHAPE_TAGS = /<(path|circle|rect|ellipse|polygon|polyline|line)\b([^>]*?)(\/?)>/gi;
+const SHAPE_TAGS = /<(path|circle|rect|ellipse|polygon|polyline|line)\b([^>]*?)(\/?)>/gi
 
 export function hardenStrokeOnlySvgFill(svg: string): string {
-  const trimmed = svg.trim();
+  const trimmed = svg.trim()
   if (!trimmed || !trimmed.startsWith("<svg")) {
-    return svg;
+    return svg
   }
 
-  const isRootFillNone = /<svg\b[^>]*\bfill="none"[^>]*>/i.test(trimmed);
+  const rootOpenTag = /<svg\b[^>]*>/i.exec(trimmed)?.[0]
+  const isRootFillNone = rootOpenTag != null && /\bfill="none"/i.test(rootOpenTag)
 
   return trimmed.replace(SHAPE_TAGS, (match, tag: string, attrs: string, selfClosing: string) => {
-    const hasFill = /\bfill="/i.test(attrs);
-    const fillIsNone = /\bfill="none"/i.test(attrs);
-    const hasStyle = /\bstyle="/i.test(attrs);
-    const styleDefinesFill = /\bstyle="[^"]*\bfill\s*:/i.test(attrs);
-    const styleFillIsNone = /\bstyle="[^"]*\bfill\s*:\s*none/i.test(attrs);
-    const hasStroke = /\bstroke(?:-width)?="[^"]+"/i.test(attrs) || /\bstyle="[^"]*\bstroke/i.test(attrs);
+    const hasFill = /\bfill="/i.test(attrs)
+    const fillIsNone = /\bfill="none"/i.test(attrs)
+    const hasStyle = /\bstyle="/i.test(attrs)
+    const styleDefinesFill = /\bstyle="[^"]*\bfill\s*:/i.test(attrs)
+    const styleFillIsNone = /\bstyle="[^"]*\bfill\s*:\s*none/i.test(attrs)
+    const hasStroke = /\bstroke(?:-width)?="[^"]+"/i.test(attrs) || /\bstyle="[^"]*\bstroke/i.test(attrs)
 
-    const hasExplicitFill = (hasFill && !fillIsNone) || (styleDefinesFill && !styleFillIsNone);
+    const hasExplicitFill = (hasFill && !fillIsNone) || (styleDefinesFill && !styleFillIsNone)
     if (hasExplicitFill) {
-      return match;
+      return match
     }
 
     if (!fillIsNone && !hasStroke && !isRootFillNone) {
-      return match;
+      return match
     }
 
-    let nextAttrs = attrs;
+    let nextAttrs = attrs
     if (!hasFill) {
-      nextAttrs += ' fill="none"';
+      nextAttrs += ' fill="none"'
     }
 
     if (hasStyle) {
       if (styleDefinesFill) {
         if (styleFillIsNone) {
-          return `<${tag}${nextAttrs}${selfClosing}>`;
+          return `<${tag}${nextAttrs}${selfClosing}>`
         }
-        return match;
+        return match
       }
       nextAttrs = nextAttrs.replace(/\bstyle="([^"]*)"/i, (_, style: string) => {
-        const normalized = style.trim().endsWith(";") ? style.trim() : `${style.trim()};`;
-        return `style="${normalized}fill:none"`;
-      });
+        const normalized = style.trim().endsWith(";") ? style.trim() : `${style.trim()};`
+        return `style="${normalized}fill:none"`
+      })
     } else {
-      nextAttrs += ' style="fill:none"';
+      nextAttrs += ' style="fill:none"'
     }
 
-    return `<${tag}${nextAttrs}${selfClosing}>`;
-  });
+    return `<${tag}${nextAttrs}${selfClosing}>`
+  })
 }
 
 function hasHostIconSymbol(iconName: string, root?: QueryRoot): boolean {
-  const queryRoot = root || (typeof document !== "undefined" ? document : null);
+  const queryRoot = root || (typeof document !== "undefined" ? document : null)
   if (!queryRoot || typeof queryRoot.querySelector !== "function") {
-    return false;
+    return false
   }
 
-  return Boolean(queryRoot.querySelector(`[id="${iconName}"]`));
+  return Boolean(queryRoot.querySelector(`[id="${iconName}"]`))
 }
 
 export function renderBuiltinIconMarkup(iconName: string, root?: QueryRoot): string {
-  const normalized = iconName.trim() || DEFAULT_ICONPARK_ICON;
+  const normalized = iconName.trim() || DEFAULT_ICONPARK_ICON
   if (hasHostIconSymbol(normalized, root) || !BUNDLED_ICON_MARKUP[normalized]) {
-    return createSpriteIconMarkup(normalized);
+    return createSpriteIconMarkup(normalized)
   }
 
-  return BUNDLED_ICON_MARKUP[normalized];
+  return BUNDLED_ICON_MARKUP[normalized]
 }
 
 export function renderIconMarkup(
-  item: Pick<{ iconType: string; iconValue: string }, "iconType" | "iconValue">,
+  item: Pick<{ iconType: string, iconValue: string }, "iconType" | "iconValue">,
   root?: QueryRoot,
 ): string {
   if (item.iconType === "emoji") {
-    const safeEmoji = item.iconValue || "⚡";
-    return `<span class="emoji-icon">${safeEmoji}</span>`;
+    const safeEmoji = item.iconValue || "⚡"
+    return `<span class="emoji-icon">${safeEmoji}</span>`
   }
 
   if (item.iconType === "svg") {
-    const raw = item.iconValue.trim();
-    return raw ? hardenStrokeOnlySvgFill(raw) : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
+    const raw = item.iconValue.trim()
+    return raw ? hardenStrokeOnlySvgFill(raw) : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root)
   }
 
-  const normalizedIcon = normalizeIconValue(item.iconType, item.iconValue);
-  const iconParkMarkup = getIconParkMarkup(normalizedIcon);
+  const normalizedIcon = normalizeIconValue(item.iconType, item.iconValue)
+  const iconParkMarkup = getIconParkMarkup(normalizedIcon)
   return iconParkMarkup
     ? hardenStrokeOnlySvgFill(iconParkMarkup)
-    : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
+    : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root)
 }

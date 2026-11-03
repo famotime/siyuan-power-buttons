@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
-import type { ExternalCommandProvider } from "@/core/commands/external-command-types";
-import { ExternalCommandRegistry } from "@/core/commands/external-command-registry";
+import type { ExternalCommandProvider } from "@/core/commands/external-command-types"
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
+import { ExternalCommandRegistry } from "@/core/commands/external-command-registry"
 
-describe("ExternalCommandRegistry", () => {
+describe("externalCommandRegistry", () => {
   it("discovers valid providers and ignores invalid ones", async () => {
     const mockProvider: ExternalCommandProvider = {
       protocol: "power-buttons-command-provider",
@@ -20,7 +24,7 @@ describe("ExternalCommandRegistry", () => {
         Promise.resolve({
           ok: true,
         }),
-    };
+    }
 
     const v2Provider: ExternalCommandProvider = {
       protocol: "power-buttons-command-provider",
@@ -38,7 +42,7 @@ describe("ExternalCommandRegistry", () => {
         Promise.resolve({
           ok: true,
         }),
-    };
+    }
 
     const registry = new ExternalCommandRegistry({
       getPlugins: () => [
@@ -62,9 +66,9 @@ describe("ExternalCommandRegistry", () => {
           getPowerButtonsIntegration: () => v2Provider,
         },
       ],
-    });
+    })
 
-    await registry.refresh();
+    await registry.refresh()
 
     expect(registry.listProviders()).toEqual(
       expect.arrayContaining([
@@ -77,25 +81,25 @@ describe("ExternalCommandRegistry", () => {
           providerName: "文档助手 v2",
         }),
       ]),
-    );
+    )
 
     expect(await registry.listCommands("siyuan-doc-assist")).toEqual([
       expect.objectContaining({
         id: "insert-doc-summary",
       }),
-    ]);
+    ])
 
     expect(await registry.listCommands("siyuan-doc-assist-v2")).toEqual([
       expect.objectContaining({
         id: "insert-doc-summary",
         supportsTargetDoc: true,
       }),
-    ]);
+    ])
 
-    expect(registry.getProvider("siyuan-doc-assist")).toBe(mockProvider);
-    expect(registry.getProvider("siyuan-doc-assist-v2")).toBe(v2Provider);
-    expect(registry.getProvider("should-be-ignored")).toBeNull();
-  });
+    expect(registry.getProvider("siyuan-doc-assist")).toBe(mockProvider)
+    expect(registry.getProvider("siyuan-doc-assist-v2")).toBe(v2Provider)
+    expect(registry.getProvider("should-be-ignored")).toBeNull()
+  })
 
   it("skips malformed, throwing, and duplicate providers during refresh", async () => {
     const primaryProvider: ExternalCommandProvider = {
@@ -103,21 +107,27 @@ describe("ExternalCommandRegistry", () => {
       protocolVersion: 1,
       providerId: "siyuan-doc-assist",
       providerName: "文档助手 / Doc Assist",
-      listCommands: () => [{ id: "insert-doc-summary", title: "插入文档摘要" }],
+      listCommands: () => [{
+        id: "insert-doc-summary",
+        title: "插入文档摘要",
+      }],
       invokeCommand: () => Promise.resolve({ ok: true }),
-    };
+    }
     const shadowProvider: ExternalCommandProvider = {
       ...primaryProvider,
       providerName: "Shadow Provider",
-      listCommands: () => [{ id: "shadow-command", title: "Shadow" }],
-    };
+      listCommands: () => [{
+        id: "shadow-command",
+        title: "Shadow",
+      }],
+    }
 
     const registry = new ExternalCommandRegistry({
       getPlugins: () => [
         {
           name: "throws-integration",
           getPowerButtonsIntegration: () => {
-            throw new Error("broken integration");
+            throw new Error("broken integration")
           },
         },
         {
@@ -145,7 +155,7 @@ describe("ExternalCommandRegistry", () => {
             ...primaryProvider,
             providerId: "throws-list",
             listCommands: () => {
-              throw new Error("commands unavailable");
+              throw new Error("commands unavailable")
             },
           }),
         },
@@ -154,9 +164,18 @@ describe("ExternalCommandRegistry", () => {
           getPowerButtonsIntegration: () => ({
             ...primaryProvider,
             listCommands: () => [
-              { id: "insert-doc-summary", title: "插入文档摘要" },
-              { id: "bad:command", title: "Bad Command Id" },
-              { id: "trimmed-command", title: "  " },
+              {
+                id: "insert-doc-summary",
+                title: "插入文档摘要",
+              },
+              {
+                id: "bad:command",
+                title: "Bad Command Id",
+              },
+              {
+                id: "trimmed-command",
+                title: "  ",
+              },
             ],
           }),
         },
@@ -165,9 +184,9 @@ describe("ExternalCommandRegistry", () => {
           getPowerButtonsIntegration: () => shadowProvider,
         },
       ],
-    });
+    })
 
-    await registry.refresh();
+    await registry.refresh()
 
     expect(registry.listProviders()).toEqual([
       {
@@ -175,12 +194,15 @@ describe("ExternalCommandRegistry", () => {
         providerName: "文档助手 / Doc Assist",
         providerVersion: undefined,
       },
-    ]);
+    ])
     expect(await registry.listCommands("siyuan-doc-assist")).toEqual([
-      { id: "insert-doc-summary", title: "插入文档摘要" },
-    ]);
-    expect(registry.getProvider("bad:id")).toBeNull();
-  });
+      {
+        id: "insert-doc-summary",
+        title: "插入文档摘要",
+      },
+    ])
+    expect(registry.getProvider("bad:id")).toBeNull()
+  })
 
   it("preserves the previous snapshot when refresh fails before a new snapshot is ready", async () => {
     const mockProvider: ExternalCommandProvider = {
@@ -188,38 +210,44 @@ describe("ExternalCommandRegistry", () => {
       protocolVersion: 1,
       providerId: "siyuan-doc-assist",
       providerName: "文档助手 / Doc Assist",
-      listCommands: () => [{ id: "insert-doc-summary", title: "插入文档摘要" }],
+      listCommands: () => [{
+        id: "insert-doc-summary",
+        title: "插入文档摘要",
+      }],
       invokeCommand: () => Promise.resolve({ ok: true }),
-    };
+    }
 
-    let shouldThrow = false;
+    let shouldThrow = false
     const registry = new ExternalCommandRegistry({
       getPlugins: () => {
         if (shouldThrow) {
-          throw new Error("plugin enumeration failed");
+          throw new Error("plugin enumeration failed")
         }
         return [
           {
             name: "doc-assist",
             getPowerButtonsIntegration: () => mockProvider,
           },
-        ];
+        ]
       },
-    });
+    })
 
-    await registry.refresh();
-    shouldThrow = true;
+    await registry.refresh()
+    shouldThrow = true
 
-    await expect(registry.refresh()).rejects.toThrow("plugin enumeration failed");
+    await expect(registry.refresh()).rejects.toThrow("plugin enumeration failed")
     expect(registry.listProviders()).toEqual([
       {
         providerId: "siyuan-doc-assist",
         providerName: "文档助手 / Doc Assist",
         providerVersion: undefined,
       },
-    ]);
+    ])
     expect(await registry.listCommands("siyuan-doc-assist")).toEqual([
-      { id: "insert-doc-summary", title: "插入文档摘要" },
-    ]);
-  });
-});
+      {
+        id: "insert-doc-summary",
+        title: "插入文档摘要",
+      },
+    ])
+  })
+})

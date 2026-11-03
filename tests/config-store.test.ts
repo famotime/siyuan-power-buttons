@@ -1,21 +1,25 @@
-import { describe, expect, it } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
 import {
   ConfigStore,
   createButtonItem,
   createDefaultConfig,
   sanitizeConfig,
-} from "@/core/config";
-import { CONFIGURABLE_SURFACES } from "@/shared/types";
+} from "@/core/config"
+import { CONFIGURABLE_SURFACES } from "@/shared/types"
 
 describe("config store model", () => {
   it("creates a desktop-only documented default config without native suppression defaults", () => {
-    const config = createDefaultConfig();
+    const config = createDefaultConfig()
 
-    expect(config.version).toBe(2);
-    expect(config.desktopOnly).toBe(true);
-    expect(config.items.length).toBe(13);
-    expect(config.items.every(item => item.visible)).toBe(true);
-    expect(config.items.map(item => item.title)).toEqual([
+    expect(config.version).toBe(2)
+    expect(config.desktopOnly).toBe(true)
+    expect(config.items.length).toBe(13)
+    expect(config.items.every((item) => item.visible)).toBe(true)
+    expect(config.items.map((item) => item.title)).toEqual([
       "今日日记",
       "全部面板浮动切换",
       "在浏览器打开",
@@ -29,32 +33,32 @@ describe("config store model", () => {
       "切换到英文",
       "随心按设置",
       "仅导出当前文档",
-    ]);
-    expect(config.surfaceLayouts?.["dock-panel"]?.filter(entry => entry.type === "divider").map(d => d.title)).toEqual([
+    ])
+    expect(config.surfaceLayouts?.["dock-panel"]?.filter((entry) => entry.type === "divider").map((d) => d.title)).toEqual([
       "文档与视图",
       "实用工具",
       "插件命令",
       "偏好与设置",
       "插件入口",
-    ]);
-    expect(config.items.every(item => item.iconType === "iconpark")).toBe(true);
-    expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(true);
-    expect(config.items.some(item => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-in-browser")).toBe(true);
-    expect(config.items.some(item => item.actionType === "builtin-global-command" && item.actionId === "dataHistory")).toBe(true);
-    expect(config.items.some(item => item.actionType === "experimental-click-sequence")).toBe(true);
-    expect(config.items.every(item => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true);
-    expect(config.disabledNativeButtons).toEqual([]);
-    expect(config.experimental.shortcutAdapter).toBe(true);
-    expect(config.experimental.clickSequenceAdapter).toBe(true);
-  });
+    ])
+    expect(config.items.every((item) => item.iconType === "iconpark")).toBe(true)
+    expect(config.items.some((item) => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-settings")).toBe(true)
+    expect(config.items.some((item) => item.actionType === "plugin-command" && item.actionId === "siyuan-power-buttons:open-in-browser")).toBe(true)
+    expect(config.items.some((item) => item.actionType === "builtin-global-command" && item.actionId === "dataHistory")).toBe(true)
+    expect(config.items.some((item) => item.actionType === "experimental-click-sequence")).toBe(true)
+    expect(config.items.every((item) => CONFIGURABLE_SURFACES.includes(item.surface))).toBe(true)
+    expect(config.disabledNativeButtons).toEqual([])
+    expect(config.experimental.shortcutAdapter).toBe(true)
+    expect(config.experimental.clickSequenceAdapter).toBe(true)
+  })
 
   it("creates new buttons with the default title and independent side panel placement", () => {
-    const item = createButtonItem();
+    const item = createButtonItem()
 
-    expect(item.title).toBe("新建");
-    expect(item.surface).toBe("dock-panel");
-    expect(item.surfaces).toEqual(["dock-panel"]);
-  });
+    expect(item.title).toBe("新建")
+    expect(item.surface).toBe("dock-panel")
+    expect(item.surfaces).toEqual(["dock-panel"])
+  })
 
   it("sanitizes malformed input into a safe config", () => {
     const config = sanitizeConfig({
@@ -74,18 +78,18 @@ describe("config store model", () => {
         },
       ],
       experimental: null,
-    });
+    })
 
-    expect(config.version).toBe(2);
-    expect(config.desktopOnly).toBe(true);
-    expect(config.items).toHaveLength(1);
-    expect(config.items[0].surface).toBe("topbar");
-    expect(config.items[0].actionType).toBe("builtin-global-command");
-    expect(config.items[0].iconType).toBe("iconpark");
-    expect(config.items[0].title.length).toBeGreaterThan(0);
-    expect(config.experimental.shortcutAdapter).toBe(true);
-    expect(config.experimental.clickSequenceAdapter).toBe(true);
-  });
+    expect(config.version).toBe(2)
+    expect(config.desktopOnly).toBe(true)
+    expect(config.items).toHaveLength(1)
+    expect(config.items[0].surface).toBe("topbar")
+    expect(config.items[0].actionType).toBe("builtin-global-command")
+    expect(config.items[0].iconType).toBe("iconpark")
+    expect(config.items[0].title.length).toBeGreaterThan(0)
+    expect(config.experimental.shortcutAdapter).toBe(true)
+    expect(config.experimental.clickSequenceAdapter).toBe(true)
+  })
 
   it("preserves iconpark icon selections during sanitization", () => {
     const config = sanitizeConfig({
@@ -105,11 +109,11 @@ describe("config store model", () => {
         },
       ],
       experimental: null,
-    });
+    })
 
-    expect(config.items[0].iconType).toBe("iconpark");
-    expect(config.items[0].iconValue).toBe("iconpark:Search");
-  });
+    expect(config.items[0].iconType).toBe("iconpark")
+    expect(config.items[0].iconValue).toBe("iconpark:Search")
+  })
 
   it("migrates legacy dock surfaces into dock-panel surface", () => {
     const config = sanitizeConfig({
@@ -133,14 +137,14 @@ describe("config store model", () => {
         }),
       ],
       experimental: null,
-    });
+    })
 
-    expect(config.items.map(item => item.surface)).toEqual([
+    expect(config.items.map((item) => item.surface)).toEqual([
       "dock-panel",
       "dock-panel",
       "dock-panel",
-    ]);
-  });
+    ])
+  })
 
   it("migrates deprecated dock surfaces for version 2 configs into dock-panel", () => {
     const config = sanitizeConfig({
@@ -154,10 +158,10 @@ describe("config store model", () => {
         }),
       ],
       experimental: null,
-    });
+    })
 
-    expect(config.items[0].surface).toBe("dock-panel");
-  });
+    expect(config.items[0].surface).toBe("dock-panel")
+  })
 
   it("preserves experimental shortcut items and adapter flags", () => {
     const config = sanitizeConfig({
@@ -188,20 +192,20 @@ describe("config store model", () => {
         shortcutAdapter: true,
         clickSequenceAdapter: false,
       },
-    });
+    })
 
-    expect(config.version).toBe(2);
-    expect(config.items[0].actionType).toBe("experimental-shortcut");
-    expect(config.items[0].actionId).toBe("Ctrl+B");
+    expect(config.version).toBe(2)
+    expect(config.items[0].actionType).toBe("experimental-shortcut")
+    expect(config.items[0].actionId).toBe("Ctrl+B")
     expect(config.items[0].experimentalShortcut).toEqual({
       shortcut: "Ctrl+B",
       sendEscapeBefore: true,
       dispatchTarget: "active-editor",
       allowDirectWindowDispatch: false,
-    });
-    expect(config.experimental.shortcutAdapter).toBe(true);
-    expect(config.experimental.clickSequenceAdapter).toBe(false);
-  });
+    })
+    expect(config.experimental.shortcutAdapter).toBe(true)
+    expect(config.experimental.clickSequenceAdapter).toBe(false)
+  })
 
   it("preserves experimental click sequence items and adapter flags", () => {
     const config = sanitizeConfig({
@@ -250,9 +254,9 @@ describe("config store model", () => {
         shortcutAdapter: false,
         clickSequenceAdapter: true,
       },
-    });
+    })
 
-    expect(config.items[0].actionType).toBe("experimental-click-sequence");
+    expect(config.items[0].actionType).toBe("experimental-click-sequence")
     expect(config.items[0].experimentalClickSequence).toEqual({
       stopOnFailure: true,
       steps: [
@@ -275,9 +279,9 @@ describe("config store model", () => {
           delayAfterMs: 200,
         },
       ],
-    });
-    expect(config.experimental.clickSequenceAdapter).toBe(true);
-  });
+    })
+    expect(config.experimental.clickSequenceAdapter).toBe(true)
+  })
 
   it("preserves valid plugin command bindings and resets invalid ones", () => {
     const config = sanitizeConfig({
@@ -308,39 +312,39 @@ describe("config store model", () => {
         },
       ],
       experimental: null,
-    });
+    })
 
-    expect(config.items[0].actionType).toBe("plugin-command");
-    expect(config.items[0].actionId).toBe("siyuan-doc-assist:insert-doc-summary");
-    expect(config.items[1].actionType).toBe("plugin-command");
-    expect(config.items[1].actionId).toBe("siyuan-power-buttons:open-settings");
-  });
+    expect(config.items[0].actionType).toBe("plugin-command")
+    expect(config.items[0].actionId).toBe("siyuan-doc-assist:insert-doc-summary")
+    expect(config.items[1].actionType).toBe("plugin-command")
+    expect(config.items[1].actionId).toBe("siyuan-power-buttons:open-settings")
+  })
 
   it("returns isolated snapshots when replacing and resetting store state", async () => {
     const plugin = {
       loadData: async () => null,
       saveData: async () => undefined,
-    } as never;
-    const store = new ConfigStore(plugin);
-    const notified: string[] = [];
+    } as never
+    const store = new ConfigStore(plugin)
+    const notified: string[] = []
 
     store.subscribe((config) => {
-      notified.push(config.items[0]?.title || "");
-      config.items[0].title = "listener mutation";
-    });
+      notified.push(config.items[0]?.title || "")
+      config.items[0].title = "listener mutation"
+    })
 
-    await store.replace(createDefaultConfig());
-    const snapshot = store.snapshot();
-    snapshot.items[0].title = "snapshot mutation";
+    await store.replace(createDefaultConfig())
+    const snapshot = store.snapshot()
+    snapshot.items[0].title = "snapshot mutation"
 
-    expect(store.getConfig().items[0].title).toBe("今日日记");
-    expect(notified).toEqual(["今日日记"]);
+    expect(store.getConfig().items[0].title).toBe("今日日记")
+    expect(notified).toEqual(["今日日记"])
 
-    const resetSnapshot = await store.reset();
-    resetSnapshot.items[0].title = "reset snapshot mutation";
+    const resetSnapshot = await store.reset()
+    resetSnapshot.items[0].title = "reset snapshot mutation"
 
-    expect(store.getConfig().items[0].title).toBe("今日日记");
-  });
+    expect(store.getConfig().items[0].title).toBe("今日日记")
+  })
 
   it("preserves native suppression rules when sanitizing config", () => {
     const config = sanitizeConfig({
@@ -368,7 +372,7 @@ describe("config store model", () => {
         shortcutAdapter: true,
         clickSequenceAdapter: true,
       },
-    });
+    })
 
     expect(config.disabledNativeButtons).toEqual([
       {
@@ -378,21 +382,21 @@ describe("config store model", () => {
         selectors: ["#toolbarReadonly", "[data-type='readonly']"],
         iconMarkup: "<svg viewBox='0 0 24 24'></svg>",
       },
-    ]);
-  });
+    ])
+  })
 
   it("supports save as an alias to replace", async () => {
     const store = new ConfigStore({
       loadData: () => Promise.resolve(null),
       saveData: () => Promise.resolve(undefined),
-    } as never);
+    } as never)
 
-    await store.load();
-    const config = store.snapshot();
-    config.items = [];
-    const saved = await store.save(config);
+    await store.load()
+    const config = store.snapshot()
+    config.items = []
+    const saved = await store.save(config)
 
-    expect(saved.items).toEqual([]);
-    expect(store.getConfig().items).toEqual([]);
-  });
-});
+    expect(saved.items).toEqual([])
+    expect(store.getConfig().items).toEqual([])
+  })
+})

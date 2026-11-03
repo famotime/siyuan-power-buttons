@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+} from "vitest"
 import {
   createClickSequenceStep,
   createExperimentalClickSequenceConfig,
@@ -7,21 +11,21 @@ import {
   getDefaultActionId,
   sanitizeExperimentalClickSequenceConfig,
   sanitizeExperimentalShortcutConfig,
-} from "@/core/config/item-defaults";
+} from "@/core/config/item-defaults"
 
 describe("config item defaults", () => {
   it("returns stable action id defaults for supported action types", () => {
-    expect(getDefaultActionId("builtin-global-command")).toBe("recentDocs");
-    expect(getDefaultActionId("plugin-command")).toBe("siyuan-power-buttons:open-settings");
-    expect(getDefaultActionId("experimental-shortcut")).toBe("");
-    expect(getDefaultActionId("experimental-click-sequence")).toBe("text:设置");
-  });
+    expect(getDefaultActionId("builtin-global-command")).toBe("recentDocs")
+    expect(getDefaultActionId("plugin-command")).toBe("siyuan-power-buttons:open-settings")
+    expect(getDefaultActionId("experimental-shortcut")).toBe("")
+    expect(getDefaultActionId("experimental-click-sequence")).toBe("text:设置")
+  })
 
   it("derives click-sequence fallbacks from the action id", () => {
-    expect(getClickSequenceFallbackSelector("barSettings")).toBe("barSettings");
-    expect(getClickSequenceFallbackSelector("recentDocs")).toBe("text:设置");
-    expect(getClickSequenceFallbackSelector("")).toBe("text:设置");
-  });
+    expect(getClickSequenceFallbackSelector("barSettings")).toBe("barSettings")
+    expect(getClickSequenceFallbackSelector("recentDocs")).toBe("text:设置")
+    expect(getClickSequenceFallbackSelector("")).toBe("text:设置")
+  })
 
   it("builds reusable default shortcut and click-sequence configs", () => {
     expect(createExperimentalShortcutConfig()).toEqual({
@@ -29,7 +33,7 @@ describe("config item defaults", () => {
       sendEscapeBefore: false,
       dispatchTarget: "auto",
       allowDirectWindowDispatch: false,
-    });
+    })
 
     expect(createExperimentalClickSequenceConfig({
       steps: [],
@@ -47,8 +51,8 @@ describe("config item defaults", () => {
         },
       ],
       stopOnFailure: false,
-    });
-  });
+    })
+  })
 
   it("normalizes individual click-sequence steps with fallback values", () => {
     expect(createClickSequenceStep({
@@ -62,8 +66,8 @@ describe("config item defaults", () => {
       retryCount: 1,
       retryDelayMs: 300,
       delayAfterMs: 200,
-    });
-  });
+    })
+  })
 
   it("builds reusable click-sequence configs with form-value defaults", () => {
     expect(createExperimentalClickSequenceConfig({
@@ -86,8 +90,8 @@ describe("config item defaults", () => {
         },
       ],
       stopOnFailure: true,
-    });
-  });
+    })
+  })
 
   it("sanitizes experimental action configs with the same fallback rules used by settings and import", () => {
     expect(sanitizeExperimentalShortcutConfig({
@@ -100,7 +104,7 @@ describe("config item defaults", () => {
       sendEscapeBefore: true,
       dispatchTarget: "window",
       allowDirectWindowDispatch: true,
-    });
+    })
 
     expect(sanitizeExperimentalClickSequenceConfig({
       steps: [
@@ -123,6 +127,6 @@ describe("config item defaults", () => {
         },
       ],
       stopOnFailure: false,
-    });
-  });
-});
+    })
+  })
+})

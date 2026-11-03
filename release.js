@@ -6,7 +6,10 @@ import {
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import readline from 'node:readline'
-import { extractReleaseNotes, getLatestChangelogVersion } from './scripts/extract-changelog.mjs'
+import {
+  extractReleaseNotes,
+  getLatestChangelogVersion,
+} from './scripts/extract-changelog.mjs'
 
 const require = createRequire(import.meta.url)
 const PluginInfo = require('./plugin.json')
@@ -79,7 +82,7 @@ const main = async () => {
     try {
       changelogContent = readFileSync('./CHANGELOG.md', 'utf8')
       latestChangelog = getLatestChangelogVersion(changelogContent)
-    } catch (e) {
+    } catch {
       // 忽略读取错误，后续有存在性提示
     }
 
@@ -178,7 +181,10 @@ const main = async () => {
     // 检查 CHANGELOG.md 是否已有当前版本的记录
     try {
       const changelogCheckContent = readFileSync('./CHANGELOG.md', 'utf8')
-      const { found, availableVersions } = extractReleaseNotes(changelogCheckContent, `v${newVersion}`)
+      const {
+        found,
+        availableVersions,
+      } = extractReleaseNotes(changelogCheckContent, `v${newVersion}`)
       if (!found) {
         console.warn(`\n\x1B[33m⚠️  警告: CHANGELOG.md 中未找到 [v${newVersion}] 的更新日志！\x1B[0m`)
         console.warn(`\x1B[90m当前已存在的版本: ${availableVersions.length > 0 ? availableVersions.join(', ') : '无'}\x1B[0m`)
@@ -214,7 +220,7 @@ const main = async () => {
     console.log('🔄  \x1B[90m Ready to commit new version and create tag...\x1B[0m')
     exec(
       `git add ./plugin.json ./package.json ./CHANGELOG.md && git commit -m "chore(release): 升级版本至 v${newVersion}" && git push && git tag v${newVersion}`,
-      (err, stdout) => {
+      (err) => {
         if (err) {
           console.error('\x1B[31m%s\x1B[0m', '❌  Error for adding and committing:', err)
           process.exit(1)

@@ -1,34 +1,34 @@
-type ApiResponse<T> = {
-  code?: number;
-  msg?: string;
-  data?: T;
-};
+interface ApiResponse<T> {
+  code?: number
+  msg?: string
+  data?: T
+}
 
-type NotebookSummary = {
-  id: string;
-  closed?: boolean;
-};
+interface NotebookSummary {
+  id: string
+  closed?: boolean
+}
 
-type NotebookConfResponse = {
+interface NotebookConfResponse {
   conf?: {
-    dailyNoteSavePath?: string;
-  };
-};
+    dailyNoteSavePath?: string
+  }
+}
 
-type BazaarConfig = {
-  trust?: boolean;
-  petalDisabled: boolean;
-  [key: string]: unknown;
-};
+interface BazaarConfig {
+  trust?: boolean
+  petalDisabled: boolean
+  [key: string]: unknown
+}
 
-type FetchPost = (url: string, data: unknown) => Promise<ApiResponse<unknown>>;
+type FetchPost = (url: string, data: unknown) => Promise<ApiResponse<unknown>>
 
 function isOkResponse<T>(response: ApiResponse<T> | null | undefined): response is ApiResponse<T> & { code: 0 } {
-  return response?.code === 0;
+  return response?.code === 0
 }
 
 function escapeSqlString(value: string): string {
-  return value.replaceAll("'", "''");
+  return value.replaceAll("'", "''")
 }
 
 async function setBazaarPluginAvailability(
@@ -39,85 +39,85 @@ async function setBazaarPluginAvailability(
   const response = await fetchPost("/api/setting/setBazaar", {
     ...currentConfig,
     petalDisabled,
-  });
+  })
 
-  return isOkResponse(response);
+  return isOkResponse(response)
 }
 
 async function resolveDailyNotePath(fetchPost: FetchPost, notebookId: string): Promise<string | null> {
   const confResponse = await fetchPost("/api/notebook/getNotebookConf", {
     notebook: notebookId,
-  }) as ApiResponse<NotebookConfResponse>;
+  }) as ApiResponse<NotebookConfResponse>
   const template = isOkResponse(confResponse)
     ? confResponse.data?.conf?.dailyNoteSavePath?.trim()
-    : "";
+    : ""
   if (!template) {
-    return null;
+    return null
   }
 
   const pathResponse = await fetchPost("/api/template/renderSprig", {
     template,
-  }) as ApiResponse<string>;
+  }) as ApiResponse<string>
   const path = isOkResponse(pathResponse) && typeof pathResponse.data === "string"
     ? pathResponse.data.trim()
-    : "";
+    : ""
 
-  return path || null;
+  return path || null
 }
 
 async function findExistingDocId(fetchPost: FetchPost, notebookId: string, hpath: string): Promise<string | null> {
   const response = await fetchPost("/api/query/sql", {
     stmt: `SELECT id FROM blocks WHERE box = '${escapeSqlString(notebookId)}' AND hpath = '${escapeSqlString(hpath)}' AND type = 'd' LIMIT 1`,
-  }) as ApiResponse<Array<{ id?: string }>>;
-  const id = isOkResponse(response) ? response.data?.[0]?.id?.trim() : "";
-  return id || null;
+  }) as ApiResponse<Array<{ id?: string }>>
+  const id = isOkResponse(response) ? response.data?.[0]?.id?.trim() : ""
+  return id || null
 }
 
 async function openDailyNoteByApi(options: {
-  app: unknown;
-  openTab: (options: { app: unknown; doc: { id: string } }) => void;
-  fetchPost: FetchPost;
+  app: unknown
+  openTab: (options: { app: unknown, doc: { id: string } }) => void
+  fetchPost: FetchPost
 }): Promise<boolean> {
-  const notebooksResponse = await options.fetchPost("/api/notebook/lsNotebooks", "") as ApiResponse<{ notebooks?: NotebookSummary[] }>;
+  const notebooksResponse = await options.fetchPost("/api/notebook/lsNotebooks", "") as ApiResponse<{ notebooks?: NotebookSummary[] }>
   const notebooks = isOkResponse(notebooksResponse) && Array.isArray(notebooksResponse.data?.notebooks)
     ? notebooksResponse.data.notebooks
-    : [];
+    : []
   const notebookCandidates = [
-    ...notebooks.filter(candidate => !candidate.closed),
-    ...notebooks.filter(candidate => candidate.closed),
-  ];
+    ...notebooks.filter((candidate) => !candidate.closed),
+    ...notebooks.filter((candidate) => candidate.closed),
+  ]
 
   for (const notebook of notebookCandidates) {
     if (!notebook?.id) {
-      continue;
+      continue
     }
 
-    const hpath = await resolveDailyNotePath(options.fetchPost, notebook.id);
+    const hpath = await resolveDailyNotePath(options.fetchPost, notebook.id)
     if (!hpath) {
-      continue;
+      continue
     }
 
-    const existingDocId = await findExistingDocId(options.fetchPost, notebook.id, hpath);
+    const existingDocId = await findExistingDocId(options.fetchPost, notebook.id, hpath)
     if (existingDocId) {
       options.openTab({
         app: options.app,
         doc: {
           id: existingDocId,
         },
-      });
-      return true;
+      })
+      return true
     }
 
     const createResponse = await options.fetchPost("/api/filetree/createDocWithMd", {
       notebook: notebook.id,
       path: hpath,
       markdown: "",
-    }) as ApiResponse<string>;
+    }) as ApiResponse<string>
     const createdDocId = isOkResponse(createResponse) && typeof createResponse.data === "string"
       ? createResponse.data.trim()
-      : "";
+      : ""
     if (!createdDocId) {
-      continue;
+      continue
     }
 
     options.openTab({
@@ -125,171 +125,171 @@ async function openDailyNoteByApi(options: {
       doc: {
         id: createdDocId,
       },
-    });
-    return true;
+    })
+    return true
   }
 
-  return false;
+  return false
 }
 
-export type SiyuanDockLike = {
-  togglePin?: () => void;
-  isFloating?: () => boolean;
-  pin?: boolean;
-};
+export interface SiyuanDockLike {
+  togglePin?: () => void
+  isFloating?: () => boolean
+  pin?: boolean
+}
 
-export type SiyuanLayoutLike = {
-  leftDock?: SiyuanDockLike;
-  rightDock?: SiyuanDockLike;
-  bottomDock?: SiyuanDockLike;
-};
+export interface SiyuanLayoutLike {
+  leftDock?: SiyuanDockLike
+  rightDock?: SiyuanDockLike
+  bottomDock?: SiyuanDockLike
+}
 
 export function isDockFloating(dock: SiyuanDockLike): boolean {
   if (typeof dock.isFloating === "function") {
-    return Boolean(dock.isFloating());
+    return Boolean(dock.isFloating())
   }
   if (typeof dock.pin === "boolean") {
-    return !dock.pin;
+    return !dock.pin
   }
-  return false;
+  return false
 }
 
 export function toggleAllDocks(layout: SiyuanLayoutLike): boolean {
   const docks = [layout.leftDock, layout.rightDock, layout.bottomDock].filter(
     (dock): dock is SiyuanDockLike & { togglePin: () => void } =>
       typeof dock?.togglePin === "function",
-  );
+  )
 
   if (docks.length === 0) {
-    return false;
+    return false
   }
 
-  const allFloating = docks.every(dock => isDockFloating(dock));
+  const allFloating = docks.every((dock) => isDockFloating(dock))
   if (allFloating) {
     for (const dock of docks) {
-      dock.togglePin();
+      dock.togglePin()
     }
   } else {
     for (const dock of docks) {
       if (!isDockFloating(dock)) {
-        dock.togglePin();
+        dock.togglePin()
       }
     }
   }
 
-  return true;
+  return true
 }
 
 export async function executeBuiltinCommandStable(commandId: string, options: {
-  app?: unknown;
-  openAppSetting?: (app: unknown) => void;
-  openTab?: (options: { app: unknown; doc: { id: string } }) => void;
-  fetchPost?: FetchPost;
-  getBazaarConfig?: () => BazaarConfig | null | undefined;
-  getLayout?: () => SiyuanLayoutLike | null | undefined;
-  globalCommand?: (command: string) => boolean | void;
-  reloadWindow?: () => void;
-  runBuiltinCommandByDom: (commandId: string) => boolean | Promise<boolean>;
+  app?: unknown
+  openAppSetting?: (app: unknown) => void
+  openTab?: (options: { app: unknown, doc: { id: string } }) => void
+  fetchPost?: FetchPost
+  getBazaarConfig?: () => BazaarConfig | null | undefined
+  getLayout?: () => SiyuanLayoutLike | null | undefined
+  globalCommand?: (command: string) => boolean | void
+  reloadWindow?: () => void
+  runBuiltinCommandByDom: (commandId: string) => boolean | Promise<boolean>
 }): Promise<boolean> {
   if (commandId === "config" && options.app && options.openAppSetting) {
-    options.openAppSetting(options.app);
-    return true;
+    options.openAppSetting(options.app)
+    return true
   }
 
   if (commandId === "switchLeftDock") {
-    const layout = options.getLayout?.();
+    const layout = options.getLayout?.()
     if (layout?.leftDock && typeof layout.leftDock.togglePin === "function") {
-      layout.leftDock.togglePin();
-      return true;
+      layout.leftDock.togglePin()
+      return true
     }
     if (options.globalCommand?.("switchLeftDock")) {
-      return true;
+      return true
     }
     if (await options.runBuiltinCommandByDom(commandId)) {
-      return true;
+      return true
     }
-    return false;
+    return false
   }
 
   if (commandId === "switchRightDock") {
-    const layout = options.getLayout?.();
+    const layout = options.getLayout?.()
     if (layout?.rightDock && typeof layout.rightDock.togglePin === "function") {
-      layout.rightDock.togglePin();
-      return true;
+      layout.rightDock.togglePin()
+      return true
     }
     if (options.globalCommand?.("switchRightDock")) {
-      return true;
+      return true
     }
     if (await options.runBuiltinCommandByDom(commandId)) {
-      return true;
+      return true
     }
-    return false;
+    return false
   }
 
   if (commandId === "switchBottomDock") {
-    const layout = options.getLayout?.();
+    const layout = options.getLayout?.()
     if (layout?.bottomDock && typeof layout.bottomDock.togglePin === "function") {
-      layout.bottomDock.togglePin();
-      return true;
+      layout.bottomDock.togglePin()
+      return true
     }
     if (options.globalCommand?.("switchBottomDock")) {
-      return true;
+      return true
     }
     if (await options.runBuiltinCommandByDom(commandId)) {
-      return true;
+      return true
     }
-    return false;
+    return false
   }
 
   if (commandId === "switchAllDock") {
-    const layout = options.getLayout?.();
+    const layout = options.getLayout?.()
     if (layout && toggleAllDocks(layout)) {
-      return true;
+      return true
     }
     if (options.globalCommand) {
-      options.globalCommand("switchLeftDock");
-      options.globalCommand("switchRightDock");
-      options.globalCommand("switchBottomDock");
-      return true;
+      options.globalCommand("switchLeftDock")
+      options.globalCommand("switchRightDock")
+      options.globalCommand("switchBottomDock")
+      return true
     }
     if (await options.runBuiltinCommandByDom(commandId)) {
-      return true;
+      return true
     }
-    return false;
+    return false
   }
 
   if (commandId === "restartPlugins" && options.fetchPost) {
     try {
-      const currentConfig = options.getBazaarConfig?.();
+      const currentConfig = options.getBazaarConfig?.()
       if (!currentConfig) {
-        return false;
+        return false
       }
 
       if (!await setBazaarPluginAvailability(options.fetchPost, currentConfig, true)) {
-        return false;
+        return false
       }
 
       if (!await setBazaarPluginAvailability(options.fetchPost, currentConfig, false)) {
-        return false;
+        return false
       }
 
-      options.reloadWindow?.();
-      return true;
+      options.reloadWindow?.()
+      return true
     } catch {
-      return false;
+      return false
     }
   }
 
   if (options.globalCommand?.(commandId)) {
-    return true;
+    return true
   }
 
   if (await options.runBuiltinCommandByDom(commandId)) {
-    return true;
+    return true
   }
 
   if (commandId !== "dailyNote" || !options.app || !options.openTab || !options.fetchPost) {
-    return false;
+    return false
   }
 
   try {
@@ -297,8 +297,8 @@ export async function executeBuiltinCommandStable(commandId: string, options: {
       app: options.app,
       openTab: options.openTab,
       fetchPost: options.fetchPost,
-    });
+    })
   } catch {
-    return false;
+    return false
   }
 }
