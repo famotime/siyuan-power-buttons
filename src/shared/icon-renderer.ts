@@ -6,8 +6,6 @@ import {
 
 type QueryRoot = Pick<ParentNode, "querySelector"> | null | undefined;
 
-const STROKED_SHAPE_TAGS = /<(path|circle|rect|ellipse|polygon|polyline)\b([^>]*\bstroke="[^"]+"[^>]*?)(\/?)>/g;
-
 const BUNDLED_ICON_MARKUP: Partial<Record<string, string>> = {
   iconHome: `
     <svg class="siyuan-power-buttons__icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -118,7 +116,7 @@ export function renderIconMarkup(
 
   if (item.iconType === "svg") {
     const raw = item.iconValue.trim();
-    return raw ? hardenStrokeOnlySvgFill(raw, root) : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
+    return raw ? hardenStrokeOnlySvgFill(raw) : renderBuiltinIconMarkup(DEFAULT_ICONPARK_ICON, root);
   }
 
   const normalizedIcon = normalizeIconValue(item.iconType, item.iconValue);

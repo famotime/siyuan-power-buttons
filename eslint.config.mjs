@@ -1,6 +1,4 @@
 import antfu from '@antfu/eslint-config'
-import perfectionist from 'eslint-plugin-perfectionist'
-import i18nPlugin from './src/utils/eslint/i18n-validate-keys.mjs'
 
 export default antfu(
   {
@@ -121,7 +119,6 @@ export default antfu(
       }],
       'vue/object-property-newline': ['error', {
         allowAllPropertiesOnSameLine: false,
-        allowMultiplePropertiesPerLine: true,
       }],
     },
   },

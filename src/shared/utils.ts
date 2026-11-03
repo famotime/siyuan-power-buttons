@@ -25,8 +25,10 @@ export function normalizeItemOrder(items: PowerButtonItem[]): PowerButtonItem[] 
   }));
 }
 
-export function sortItems(items: PowerButtonItem[]): PowerButtonItem[] {
-  return [...items].sort((left, right) => left.order - right.order || left.title.localeCompare(right.title));
+export function sortItems<T extends { order: number; title?: string }>(items: T[]): T[] {
+  return [...items].sort((left, right) =>
+    left.order - right.order
+    || (left.title ?? "").localeCompare(right.title ?? ""));
 }
 
 export function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {

@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import { fetchSyncPost } from 'siyuan';
-import { movePreviewItem, moveSurfaceItem } from '@/shared/preview-layout';
+import { moveSurfaceItem } from '@/shared/preview-layout';
 import { isDockSurface } from '@/shared/surface-metadata';
 import { CONFIGURABLE_SURFACES } from '@/shared/types';
 import type {

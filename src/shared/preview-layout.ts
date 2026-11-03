@@ -31,7 +31,7 @@ export interface PreviewLayout<T> {
   dockPanel: T[];
 }
 
-export function buildPreviewLayout<T extends Pick<PreviewButtonItem, "surface" | "order" | "visible"> & { surfaces?: SurfaceType[] }>(
+export function buildPreviewLayout<T extends Pick<PreviewButtonItem, "surface" | "order" | "visible" | "title"> & { surfaces?: SurfaceType[] }>(
   items: T[],
   options: PreviewLayoutOptions = {},
 ): PreviewLayout<T> {
@@ -58,7 +58,7 @@ export function buildPreviewLayout<T extends Pick<PreviewButtonItem, "surface" |
         layout[key].push({
           ...item,
           surface,
-        });
+        } as T);
       }
     }
   }

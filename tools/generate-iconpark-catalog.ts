@@ -110,7 +110,7 @@ function normalizeSvg(svg: string): string {
     .trim();
 }
 
-function toEntry(name: string, render: IconParkExport): IconParkEntry {
+function toEntry(name: string, _render: IconParkExport): IconParkEntry {
   return {
     value: `iconpark:${name}`,
     name,

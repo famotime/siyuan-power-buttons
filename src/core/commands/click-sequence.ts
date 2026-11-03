@@ -91,7 +91,11 @@ async function resolveStepElement(step: ClickSequenceStep, root: ParentNode): Pr
   return null;
 }
 
-function clickElement(element: HTMLElement, windowTarget: Window): boolean {
+// DOM 构造器（MouseEvent/HTMLSelectElement 等）挂在全局对象上而非 Window 接口，
+// 运行时任何真实 window（含 iframe contentWindow）都能取到，这里按实际能力收窄类型
+type GlobalWindow = Window & typeof globalThis;
+
+function clickElement(element: HTMLElement, windowTarget: GlobalWindow): boolean {
   const pickerElement = element as HTMLElement & {
     showPicker?: () => void;
   };
@@ -118,12 +122,12 @@ function clickElement(element: HTMLElement, windowTarget: Window): boolean {
   }
 }
 
-function dispatchFormEvents(element: HTMLElement, windowTarget: Window): void {
+function dispatchFormEvents(element: HTMLElement, windowTarget: GlobalWindow): void {
   element.dispatchEvent(new windowTarget.Event("input", { bubbles: true }));
   element.dispatchEvent(new windowTarget.Event("change", { bubbles: true }));
 }
 
-function setFormControlValue(step: ClickSequenceStep, element: HTMLElement, windowTarget: Window): boolean {
+function setFormControlValue(step: ClickSequenceStep, element: HTMLElement, windowTarget: GlobalWindow): boolean {
   if (element instanceof windowTarget.HTMLSelectElement) {
     const options = Array.from(element.options);
     const match = step.valueMode === "text"
@@ -171,7 +175,7 @@ export async function executeExperimentalClickSequence(
   const clickSequence = defaultExperimentalClickSequence(item.actionId, item.experimentalClickSequence);
   const ownerDocument = options.document || document;
   const root = options.root || ownerDocument;
-  const windowTarget = options.windowTarget || window;
+  const windowTarget = (options.windowTarget || window) as GlobalWindow;
   let allStepsSucceeded = true;
 
   for (let index = 0; index < clickSequence.steps.length; index += 1) {

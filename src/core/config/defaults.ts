@@ -12,9 +12,6 @@ import {
   normalizeItemOrder,
 } from "@/shared/utils";
 import { normalizeSurface } from "@/shared/surface-metadata";
-import {
-  CONFIGURABLE_SURFACES,
-} from "@/shared/types";
 import type {
   ActionType,
   IconType,

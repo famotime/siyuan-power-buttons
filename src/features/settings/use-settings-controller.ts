@@ -16,13 +16,10 @@ import {
 } from "@/core/config/item-defaults";
 import {
   ACTION_TYPE_LABELS,
-  INTERNAL_PLUGIN_PROVIDER_ID,
-  INTERNAL_PLUGIN_PROVIDER_NAME,
   SURFACE_LABELS,
 } from "@/shared/constants";
 import {
   buildPreviewLayout,
-  movePreviewItem,
 } from "@/shared/preview-layout";
 import {
   formatExternalCommandActionId,

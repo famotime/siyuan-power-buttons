@@ -33,7 +33,7 @@ export class CommandExecutor {
     getPlugins?: () => unknown[] | undefined;
   }) {}
 
-  private notify(message: string, type?: string): void {
+  private notify(message: string, type?: "info" | "error"): void {
     this.options.notify?.(message, type);
   }
 
@@ -42,7 +42,8 @@ export class CommandExecutor {
   }
 
   async execute(
-    item: Pick<PowerButtonItem, "id" | "surface" | "actionType" | "actionId" | "experimentalShortcut" | "experimentalClickSequence">,
+    item: Pick<PowerButtonItem, "actionType" | "actionId" | "experimentalShortcut" | "experimentalClickSequence">
+      & Partial<Pick<PowerButtonItem, "id" | "surface">>,
   ): Promise<void> {
     switch (item.actionType) {
       case "builtin-global-command":
@@ -121,7 +122,8 @@ export class CommandExecutor {
           if (el) {
             const htmlEl = el as HTMLElement;
             if (typeof htmlEl.onclick === "function") {
-              htmlEl.onclick(new MouseEvent("click", { bubbles: true, cancelable: true }));
+              // lib.dom 将 onclick 形参定义为 PointerEvent，运行时直接调用处理器传入 MouseEvent 即可
+              htmlEl.onclick(new MouseEvent("click", { bubbles: true, cancelable: true }) as PointerEvent);
             } else {
               htmlEl.click?.();
               htmlEl.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
@@ -159,7 +161,8 @@ export class CommandExecutor {
           if (el) {
             const htmlEl = el as HTMLElement;
             if (typeof htmlEl.onclick === "function") {
-              htmlEl.onclick(new MouseEvent("click", { bubbles: true, cancelable: true }));
+              // lib.dom 将 onclick 形参定义为 PointerEvent，运行时直接调用处理器传入 MouseEvent 即可
+              htmlEl.onclick(new MouseEvent("click", { bubbles: true, cancelable: true }) as PointerEvent);
             } else {
               htmlEl.click?.();
               htmlEl.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));

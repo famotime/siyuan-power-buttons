@@ -28,7 +28,7 @@ export function renderSettingsIconMarkup(
   }
   if (item.iconType === "svg") {
     const raw = item.iconValue?.trim();
-    return raw ? hardenStrokeOnlySvgFill(raw, ownerDocument) : renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
+    return raw ? hardenStrokeOnlySvgFill(raw) : renderNamedIcon(DEFAULT_ICONPARK_ICON, ownerDocument);
   }
   return renderIconMarkup(item, ownerDocument);
 }
@@ -76,7 +76,7 @@ export function resolveSvgPreviewState(
   }
 
   return {
-    markup: hardenStrokeOnlySvgFill(trimmed, ownerDocument),
+    markup: hardenStrokeOnlySvgFill(trimmed),
     invalid: false,
   };
 }

@@ -82,7 +82,8 @@ export function isDockPanelSurface(surface: SurfaceType): surface is "dock-panel
 }
 
 export function isStatusBarSurface(surface: SurfaceType): surface is Extract<SurfaceType, `statusbar-${string}`> {
-  return surface.startsWith("statusbar-") || surface === "statusbar";
+  // "statusbar" 是旧版配置的遗留值，normalizeSurface 会将其归一化，但调用方可能传入未归一化的原始值
+  return surface.startsWith("statusbar-") || (surface as string) === "statusbar";
 }
 
 export function isConfigurableSurface(surface: SurfaceType): surface is typeof CONFIGURABLE_SURFACES[number] {

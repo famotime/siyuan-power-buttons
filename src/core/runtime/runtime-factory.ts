@@ -94,7 +94,7 @@ export function createExperimentalActionRunners(options: {
         root: options.document,
         windowTarget: options.windowTarget,
         onStepError: ({ index, selector }) => {
-          options.showMessage(options.t('clickSequenceStepFailed', { step: index + 1, selector }), 5000, 'error');
+          options.showMessage(options.t('clickSequenceStepFailed', { step: String(index + 1), selector }), 5000, 'error');
         },
       });
     },

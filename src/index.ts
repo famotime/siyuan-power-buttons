@@ -156,7 +156,9 @@ export default class SiyuanPowerButtonsPlugin extends Plugin {
     createSurfaceManager: () => new SurfaceManager(
       this,
       this.executor,
-      config => this.configStore.replace(config),
+      async config => {
+        await this.configStore.replace(config);
+      },
       () => this.getInstalledPlugins(),
       this.settingsUiStateStore,
       this.pluginStateManager,

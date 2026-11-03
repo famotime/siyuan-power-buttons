@@ -1,7 +1,7 @@
 import {
   formatPluginCommandMenuTitle,
 } from "@/core/commands";
-import type { PluginCommandDefinition } from "@/shared/types";
+import type { PluginCommandDefinition, PowerButtonsConfig } from "@/shared/types";
 import type { SettingsAppProps } from "@/features/settings/types";
 
 type ConfigStoreLike<TConfig> = {
@@ -34,10 +34,6 @@ type ClipboardLike = {
   writeText: (value: string) => Promise<void>;
 };
 
-type PowerButtonsConfigLike = {
-  desktopOnly: boolean;
-};
-
 type SurfaceFrontend = "desktop" | "desktop-window" | "browser-desktop" | string;
 
 type ExternalCommandRegistryLike = {
@@ -55,7 +51,7 @@ type ExternalCommandRegistryLike = {
   }>>;
 };
 
-export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
+export class PowerButtonsRuntime<TConfig extends PowerButtonsConfig = PowerButtonsConfig> {
   private surfaceManager: SurfaceManagerLike<TConfig> | null = null;
   private unsubscribeConfig: (() => void) | null = null;
   private externalCommandProviders: SettingsAppProps["externalCommandProviders"] = [];
@@ -156,7 +152,9 @@ export class PowerButtonsRuntime<TConfig extends PowerButtonsConfigLike> {
       builtinCommands: this.options.builtinCommands,
       pluginCommands: this.options.pluginCommands,
       externalCommandProviders: this.externalCommandProviders,
-      onChange: async config => this.options.configStore.replace(config as TConfig),
+      onChange: async config => {
+        await this.options.configStore.replace(config as TConfig);
+      },
       onNotify: (message, type = "info") => {
         this.options.showMessage(message, 4000, type);
       },

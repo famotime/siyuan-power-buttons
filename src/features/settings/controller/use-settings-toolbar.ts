@@ -6,15 +6,16 @@ import {
 import {
   moveItem,
 } from "@/shared/utils";
+import {
+  movePreviewItem,
+} from "@/shared/preview-layout";
 import type {
-  DisabledNativeButton,
   PowerButtonItem,
   PowerButtonsConfig,
   SelectionToolbarLayoutItem,
 } from "@/shared/types";
 import { renderSettingsIconMarkup } from "@/features/settings/view-helpers";
 import { getNativeToolbarIcon } from "@/shared/native-icon";
-import { isSameNativeButton } from "@/features/settings/controller/preview-interactions";
 import { itemHasSurface } from "@/shared/surface-metadata";
 
 export type SelectionToolbarPreviewItem = {
@@ -256,7 +257,7 @@ export function useSettingsToolbar(options: UseSettingsToolbarOptions) {
       .slice(0, clampedIndex)
       .filter(item => item.type === "custom")
       .length;
-    config.items = moveItem(config.items, dragItem.itemId, "selection-toolbar", customTargetIndex);
+    config.items = movePreviewItem(config.items, dragItem.itemId, "selection-toolbar", customTargetIndex);
     persistSelectionToolbarLayout(currentItems);
     selectedId.value = dragItem.itemId;
     previewDragItem.value = null;

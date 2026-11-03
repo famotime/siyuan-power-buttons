@@ -196,7 +196,7 @@ function getActiveEditableElement(root: ParentNode, ownerDocument: Document): HT
     || root.querySelector("[contenteditable='true']") as HTMLElement | null;
 }
 
-function dispatchKeyboardEvent(target: EventTarget, hotkey: string, view: Window): boolean {
+function dispatchKeyboardEvent(target: EventTarget, hotkey: string, view: Window & typeof globalThis): boolean {
   const eventInit = parseHotkeyToKeyboardEvent(hotkey);
   if (!eventInit) {
     return false;
@@ -240,7 +240,8 @@ export async function executeExperimentalShortcut(
   const ownerDocument = options.document || document;
   const root = options.root || ownerDocument;
   const bodyTarget = options.bodyTarget || ownerDocument.body;
-  const windowTarget = options.windowTarget || window;
+  // DOM 构造器（KeyboardEvent 等）挂在全局对象上而非 Window 接口，按运行时实际能力收窄
+  const windowTarget = (options.windowTarget || window) as Window & typeof globalThis;
   const editable = getActiveEditableElement(root, ownerDocument);
   const autoPrefersEditor = Boolean(shortcutMatch?.isEditorCommand && editable);
   const shouldTargetEditor = shortcutConfig.dispatchTarget === "active-editor"
